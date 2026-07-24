@@ -1,6 +1,9 @@
-// Cascade service worker: cache the app shell for offline; pass network calls
-// (Supabase, Google Fonts) straight through.
-const CACHE = "cascade-v1";
+// Cascade service worker.
+// Navigations are network-first so a freshly uploaded index.html shows up on the
+// next open when online; it falls back to the cached copy offline. Other same-
+// origin assets (icons, manifest) are cache-first. Cross-origin (Supabase,
+// Google Fonts) passes straight through to the network.
+const CACHE = "cascade-v2";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
 
 self.addEventListener("install", (e) => {
@@ -11,12 +14,13 @@ self.addEventListener("activate", (e) => {
 });
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
-  if (url.origin !== location.origin) return; // Supabase / fonts: let the browser fetch normally
-  e.respondWith(
-    caches.match(e.request).then((cached) => cached || fetch(e.request).then((res) => {
-      const copy = res.clone();
-      caches.open(CACHE).then((c) => c.put(e.request, copy)).catch(() => {});
-      return res;
-    }).catch(() => caches.match("./index.html")))
-  );
+  if (url.origin !== location.origin) return; // Supabase / fonts: normal network
+  if (e.request.mode === "navigate") {         // the app page: fresh when online
+    e.respondWith(
+      fetch(e.request).then((res) => { caches.open(CACHE).then((c) => c.put("./index.html", res.clone())); return res; })
+        .catch(() => caches.match("./index.html"))
+    );
+    return;
+  }
+  e.respondWith(caches.match(e.request).then((cached) => cached || fetch(e.request)));
 });
