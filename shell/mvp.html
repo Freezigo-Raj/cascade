@@ -1,0 +1,22 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Edited between sessions and served from a fixed port, so a cached copy is a
+     wrong answer that looks like a defect. -->
+<meta http-equiv="Cache-Control" content="no-store">
+<title>Cascade</title>
+
+<!-- No build step, so the one bare specifier in the shell is resolved here. -->
+<script type="importmap">
+{ "imports": { "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2" } }
+</script>
+
+<link rel="stylesheet" href="./mvp.edit.css">
+
+<div id="gate" style="display:none"></div>
+<div id="screen"></div>
+
+<!-- The document is never cached, but a module it names is. Loading it under a
+     fresh query each time is the only thing that reliably stops that, and the
+     query is carried on to everything the module imports. -->
+<script type="module">import(`./mvp.js?v=${Date.now()}`);</script>

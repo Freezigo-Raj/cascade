@@ -1,0 +1,100 @@
+// Cascade Part A — repeating tasks.
+//
+// `recurrence` has been a `Task` field since Stage 2 with nothing writing it.
+// It holds an interval and nothing else: `{ every: 1, unit: "month" }`.
+//
+// Three rules, and each was a choice with a discarded alternative.
+//
+// **Marking one done spawns the next, and only then.** The alternative was
+// rolling one record forward, which breaks two things already built: a weekly
+// task done thirty times would show zero times in Done, and `push_count` and
+// `first_due_at` would accumulate across occurrences until the drift number
+// meant nothing. Spawning on close rather than on schedule means there is never
+// more than one open occurrence: three weeks late on a weekly task gives one
+// row, not three.
+//
+// **The next date counts from the schedule, never from when it was done.** Rent
+// due the 1st and paid the 4th is next due the 1st. The anchor is the thing the
+// repeat is about.
+//
+// **A push moves one occurrence and leaves the series alone.** Otherwise one
+// busy month shifts the rent reminder permanently.
+
+const DAY = 24 * 60 * 60 * 1000;
+
+const parse = (iso) => Date.parse(iso.slice(0, 19) + "Z");
+const offsetOf = (iso) => iso.slice(-6);
+
+function write(t, offset) {
+  const d = new Date(t);
+  const p = (n) => String(n).padStart(2, "0");
+  return (
+    `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())}` +
+    `T${p(d.getUTCHours())}:${p(d.getUTCMinutes())}:${p(d.getUTCSeconds())}${offset}`
+  );
+}
+
+/** One step of the interval, from an instant. Months keep the day of the month. */
+function step(at, rule) {
+  const n = rule.every ?? 1;
+  if (rule.unit === "day") return at + n * DAY;
+  if (rule.unit === "week") return at + n * 7 * DAY;
+  const d = new Date(at);
+  return Date.UTC(
+    d.getUTCFullYear(), d.getUTCMonth() + n, d.getUTCDate(),
+    d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds()
+  );
+}
+
+/**
+ * The next occurrence's due date: the schedule stepped forward from the one
+ * just closed until it lands in the future. Stepping from `now` instead would
+ * move the anchor every time the task was done late, which is the whole thing
+ * the schedule rule exists to prevent.
+ *
+ * **At least one step, always.** The loop used to run only while the date was
+ * in the past, so a repeat finished early — a monthly rent paid on the 28th,
+ * due the 1st — took no step at all and spawned a second row on the same date
+ * as the one just closed. The next occurrence is the next one; the condition
+ * for continuing is that the date is still not in the future, and the condition
+ * for starting is nothing.
+ */
+export function nextDue(task, now) {
+  const rule = task.recurrence;
+  if (!rule || !rule.unit || !task.due_at) return null;
+  const offset = offsetOf(task.due_at);
+  let at = parse(task.due_at);
+  const limit = parse(now);
+  // A guard, not a rule: a malformed interval must not spin here.
+  for (let i = 0; i < 500; i++) {
+    at = step(at, rule);
+    if (at > limit) break;
+  }
+  return at > limit ? write(at, offset) : null;
+}
+
+/**
+ * The record for the next occurrence. A fresh id, no history: `push_count` and
+ * `first_due_at` describe one occurrence, not the series, which is what makes
+ * "pushed six times" mean something.
+ *
+ * `spawned_from` names the completion that produced it, so pressing Undone on
+ * that completion can take it away again. Without it, undoing a done leaves two
+ * rows: the one that came back and the one that was created.
+ */
+export function spawn(closed, newId, now) {
+  const due = nextDue(closed, now);
+  if (!due) return null;
+  return {
+    ...closed,
+    id: newId,
+    due_at: due,
+    task_state: "ready",
+    closed_at: null,
+    push_count: 0,
+    first_due_at: null,
+    spawned_from: closed.id,
+    created_at: now,
+    updated_at: now,
+  };
+}
