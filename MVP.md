@@ -282,6 +282,8 @@ It fires at the due time less the lead. The lead is read three ways in order: th
 
 **An alarm needs a stated time.** A task due `Friday` resolves to 23:59:59, so a lead from it would ring at a quarter to midnight. The toggle is drawn only while the line carries a time, and one sentence replaces it when there is none.
 
+**Stopping the noise never waits for an unlock.** Every press stops the ringing and is queued first, whatever the screen is doing. Bringing the app forward happens after that and is allowed to fail.
+
 **Done and a push bring the app forward; a snooze does not.** Every press is queued, so the unlock is what makes a change visible rather than what makes it happen: an un-unlocked press still lands the next time the app is opened. A snooze changes nothing about the task and has nothing to show, so the phone stays locked. Nothing could apply a press at unlock with the app closed without a second copy of the write path living in Kotlin.
 
 **On the lock screen:** the title, the mobile sentence, `Done`, one button per `alarm_snooze_options` member, and up to two push targets. The targets are computed when the alarm is armed, since choosing one reads the day's load off every stored task, so they are as old as the gap between arming and ringing. No targets means no push row.

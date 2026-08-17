@@ -384,6 +384,8 @@ Every rendered string, with its template. Part 4 applies here too: these spellin
 
 **SNOOZE MOVES THE TELLING, PUSH MOVES THE TASK.** A snooze writes `alarm_snoozed_until` and touches no date. A push writes `due_at` and clears both alarm markers, because it is the later and more considered statement about when to be told.
 
+**Stopping the ringing never depends on an unlock.** Every press stops the noise, cancels or re-arms the alarm and is queued before anything else is attempted. Whatever comes after that is free to fail.
+
 **Done and a push open the app; a snooze does not.** All three are queued in the shell and applied by the app, so the difference is only whether the phone asks to be unlocked. Done and a push change the record and a change nobody can see is a change nobody can trust; a snooze changes nothing about the task. An un-unlocked press is not lost: it lands whenever the app is next opened.
 
 **Both are on the lock screen, and the push targets are computed when the alarm is armed.** Choosing a target reads the day's load off every stored task, which the shell does not have, so the two the row would offer are carried in the payload. They are as old as the gap between arming and ringing, refreshed whenever the app opens and the diff re-reads them. An alarm carrying no targets draws no push row: a button with no target would have to invent a due date, which is the thing refused everywhere else. This reverses the first design, where a push needed an unlock, and the staleness is what was bought.

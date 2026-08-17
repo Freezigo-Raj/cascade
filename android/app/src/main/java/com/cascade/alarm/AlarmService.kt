@@ -82,26 +82,23 @@ class AlarmService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        // A snooze is a broadcast: it changes nothing a person needs to see, so
-        // it must not start anything.
+        // EVERY NOTIFICATION ACTION IS A BROADCAST, Done included.
+        //
+        // Session 114 routed Done through an activity so the app could come
+        // forward. An activity on a locked phone waits for the keyguard, so the
+        // line that stops the service did not run until the phone was unlocked
+        // and the alarm went on ringing through a press that had already been
+        // made. THE RULE THAT BROKE: stopping the noise must never depend on an
+        // unlock. A broadcast runs immediately whatever the screen is doing.
+        //
+        // Bringing the app forward is attempted afterwards, from the receiver,
+        // and is allowed to fail. It is worth having and it is not worth the
+        // alarm still ringing.
         fun action(verb: String): PendingIntent = PendingIntent.getBroadcast(
             this, verb.hashCode(),
             Intent(this, AlarmActionReceiver::class.java)
                 .setAction("com.cascade.alarm.$verb")
                 .putExtra("id", alarm.id),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        // Done goes through the activity, which draws nothing and brings the app
-        // forward. A broadcast receiver cannot reliably start an activity from
-        // the background on Android 10 and later, so routing it this way is what
-        // makes Done in the shade behave like Done on the lock screen.
-        fun activityAction(verb: String): PendingIntent = PendingIntent.getActivity(
-            this, ("a" + verb).hashCode(),
-            Intent(this, AlarmActivity::class.java)
-                .putExtra("id", alarm.id)
-                .putExtra("verb", verb)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
@@ -118,7 +115,7 @@ class AlarmService : Service() {
             .setContentIntent(full)
             .setFullScreenIntent(full, true)
             .addAction(Notification.Action.Builder(null, "Snooze ${first}m", action("SNOOZE:$first")).build())
-            .addAction(Notification.Action.Builder(null, "Done", activityAction("DONE")).build())
+            .addAction(Notification.Action.Builder(null, "Done", action("DONE")).build())
             .build()
     }
 

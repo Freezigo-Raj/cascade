@@ -55,15 +55,15 @@ class AlarmActivity : Activity() {
 
         val id = intent.getStringExtra("id") ?: run { finish(); return }
 
-        // A notification button lands here too, carrying its verb, so Done from
-        // the shade and Done from the lock screen do the same thing. A broadcast
-        // receiver cannot reliably start an activity from the background on
-        // Android 10 and later, and an app that comes forward for one Done and
-        // not the other is worse than one that never comes forward at all.
+        // A verb handed in directly, drawing nothing. Nothing in the app sends
+        // one any more — the notification's buttons are broadcasts again, so a
+        // press stops the ringing without waiting for a keyguard — and this path
+        // is kept because it costs four lines and is the only way to drive this
+        // screen from a test or from a future surface that has an activity in
+        // hand already.
         val straight = intent.getStringExtra("verb")
         if (straight != null) {
             AlarmActionReceiver.handle(this, id, straight)
-            if (straight == "DONE" || straight.startsWith("PUSH:")) AlarmActionReceiver.surface(this)
             finish()
             return
         }
@@ -111,10 +111,9 @@ class AlarmActivity : Activity() {
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply { topMargin = top }
             setOnClickListener {
+                // `handle` stops the ringing and queues the press, and then
+                // brings the app forward on its own. Nothing here waits.
                 AlarmActionReceiver.handle(this@AlarmActivity, id, verb)
-                // Done changes the record, so the app comes forward and the
-                // person watches the queue drain rather than trusting it.
-                AlarmActionReceiver.surface(this@AlarmActivity)
                 finish()
             }
         }
@@ -184,7 +183,6 @@ class AlarmActivity : Activity() {
                         .apply { marginEnd = 12 }
                     setOnClickListener {
                         AlarmActionReceiver.handle(this@AlarmActivity, id, "PUSH:$iso")
-                        AlarmActionReceiver.surface(this@AlarmActivity)
                         finish()
                     }
                 })

@@ -55,6 +55,7 @@ class AlarmActionReceiver : BroadcastReceiver() {
                 verb == "DONE" -> {
                     AlarmStore.cancel(ctx, id)
                     report(ctx, id, "DONE")
+                    surface(ctx)
                 }
 
                 verb.startsWith("PUSH:") -> {
@@ -63,6 +64,7 @@ class AlarmActionReceiver : BroadcastReceiver() {
                     // The app re-arms against the new date on its next sync.
                     AlarmStore.cancel(ctx, id)
                     report(ctx, id, verb)
+                    surface(ctx)
                 }
 
                 verb.startsWith("SNOOZE") -> {
@@ -107,9 +109,17 @@ class AlarmActionReceiver : BroadcastReceiver() {
          * Open the app so the queue drains where it can be seen. Called for Done
          * and for a push, never for a snooze.
          *
-         * Nothing happens when the WebView is already alive: it heard the live
-         * event and has applied the press already, and pulling a running app to
-         * the front would take the screen off whatever was on it.
+         * BEST EFFORT, AND DELIBERATELY LAST. Everything that matters — the
+         * ringing stopping, the alarm being cancelled, the press being queued —
+         * has already happened by the time this runs, so it is free to fail.
+         * Android restricts starting an activity from the background, and on a
+         * locked phone this is what raises the keyguard rather than what applies
+         * the press: the queue applies the press, whenever the app is next
+         * opened. Nothing is lost if this does nothing at all.
+         *
+         * It also does nothing when the WebView is already alive: it heard the
+         * live event and has applied the press already, and pulling a running
+         * app to the front would take the screen off whatever was on it.
          */
         fun surface(ctx: Context) {
             if (CascadeAlarmPlugin.isLive()) return

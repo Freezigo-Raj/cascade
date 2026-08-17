@@ -2650,3 +2650,26 @@ Colour meant one thing and now means three. Accent is pressable, `#c0492b` is ov
 **Save point:** `the page is fetched past the browser cache and the sheet repairs itself, shell 32`
 
 **Next job:** the nine alarm tests.
+
+---
+## Session 116 — 17 August 2026
+
+**Job: Done did not stop the alarm, which is a defect I put in last session.**
+
+**THE RULE THAT WAS BROKEN: stopping the noise must never depend on an unlock.** Session 114 routed the notification's Done through an activity so the app could come forward afterwards. An activity on a locked phone waits for the keyguard, so `handle()` — whose first line stops the ringing service — did not run until the phone was unlocked. The alarm went on ringing through a press that had already been made, which is worse than the press doing nothing: a control that does not work can be pressed again, and one that works late teaches a person that pressing it does not work.
+
+**Every notification action is a broadcast again, Done included.** A broadcast runs immediately whatever the screen is doing. The stop, the cancel and the queue all happen there.
+
+**The pull-forward moved to the end of `handle()` and is allowed to fail.** Everything that matters has already happened by the time it runs. Android restricts background activity starts, and on a locked phone this is what raises the keyguard rather than what applies the press: the QUEUE applies the press, whenever the app is next opened. If the start is refused nothing is lost, which is what makes it safe to attempt at all. Session 114 had this the wrong way round: the convenience was load-bearing and the correctness was riding on it.
+
+**The `verb` extra path in `AlarmActivity` is kept and is now unused.** Four lines, and the only way to drive that screen without a person pressing something.
+
+**Files changed:** `AlarmService.kt`, `AlarmActionReceiver.kt`, `AlarmActivity.kt`, `contract.md`, `MVP.md`, `spec.md`, `sessions.md`, `log.manifest`
+
+**Nothing in the web app changed.** `SHELL_VERSION` stays 32.
+
+**Tests:** all six green, unchanged. No harness reaches any of this; it is Kotlin and a locked phone.
+
+**Save point:** `the ring stops on the press, not on the unlock`
+
+**Next job:** the nine alarm tests.
