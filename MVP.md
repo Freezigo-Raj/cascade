@@ -180,7 +180,7 @@ The box is at the top. The tap buttons are with it. The matching tasks are below
 
 **Everything re-reads on every keystroke.** The date, the type, the duration, the matches.
 
-**Going back is the phone's own gesture.** The swipe or the system button leaves the editor and the account screen, and from the list it closes the app. A drawn Back sits at the top of a screen, which is where a thumb cannot reach and where a long screen scrolls it out of sight; the gesture works from anywhere and is the same on every app on the phone. The drawn button stays as well and does the same single thing.
+**Going back is the phone's own gesture, and the app decides what it means.** The swipe or the system button leaves the editor and the account screen, closes an open dialog before either, and from the list it closes the app. In a browser that is `popstate`; in the Android shell the gesture reaches the activity first, so the activity asks the app and acts on the answer rather than guessing from WebView history. A drawn Back sits at the top of a screen, which is where a thumb cannot reach and where a long screen scrolls it out of sight; the gesture works from anywhere and is the same on every app on the phone. The drawn button stays as well and does the same single thing.
 
 **A date arrives one way: through the words in the box.** Every chip types words. A tapped date beats a typed one. A second tap replaces the first.
 
@@ -290,7 +290,7 @@ It fires at the due time less the lead. The lead is read three ways in order: th
 
 **Unattended** it rings two minutes, snoozes itself five, and repeats up to five times. Then it stops, `alarm_unanswered_at` is written, and the task rises to the top under `pinned` and `is_hard` with `Its alarm rang unanswered` on the row.
 
-**The account screen states whether anything can ring.** Two installs look identical on a phone and only the Android one carries the plugin.
+**The account screen states whether anything can ring, and names each permission separately.** Two installs look identical on a phone and only the Android one carries the plugin. Four Android permissions sit behind a working alarm and they fail differently: without notifications nothing appears, without exact timing the ring drifts, without full-screen access it arrives as a notification and the alarm screen never appears, without battery exemption a ring can be held back. Each is drawn with its own state and its own button, plus one that walks through everything missing.
 
 ```
 file gstr1

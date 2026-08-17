@@ -25,6 +25,7 @@ export function ask(lines, goLabel) {
   return new Promise((settle) => {
     const veil = document.createElement("div");
     veil.className = "veil";
+    veil.dataset.dialog = "1";
     const box = document.createElement("div");
     box.className = "dialog";
     box.setAttribute("role", "dialog");
@@ -47,6 +48,9 @@ export function ask(lines, goLabel) {
     const cancel = document.createElement("button");
     cancel.type = "button";
     cancel.className = "act";
+    // Marked so a back gesture can find it. A dialog is the nearest thing on the
+    // screen, so a back aimed at anything is most likely aimed at closing it.
+    cancel.dataset.cancel = "1";
     cancel.textContent = "Cancel";
     cancel.addEventListener("click", () => close(false));
 

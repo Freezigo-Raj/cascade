@@ -2673,3 +2673,45 @@ Colour meant one thing and now means three. Accent is pressable, `#c0492b` is ov
 **Save point:** `the ring stops on the press, not on the unlock`
 
 **Next job:** the nine alarm tests.
+
+---
+## Session 117 — 17 August 2026
+
+**Job: ask for every permission, including the one that was only reachable through Android's own settings.**
+
+**FOUR PERMISSIONS, AND THEY FAIL DIFFERENTLY.** That is the whole reason this needed more than one button. Without notifications nothing appears however loudly it rings. Without exact timing the ring drifts, by minutes normally and by longer while the phone is idle. Without full-screen access it arrives as a notification and the alarm screen never appears, so Done and one snooze are all that is reachable and the four snooze buttons and the push targets are unreachable. Without battery exemption a ring can be held back. Only the first two stop it working; the other two make it worse quietly, which is the harder kind to notice, and is exactly what he hit.
+
+**"Something is missing" is not something a person can act on.** The account screen said that for two builds while the answer was one switch in a settings screen most people do not know exists. Each permission is now a row with its own state and, when it is off, one sentence saying what it costs and a button that opens the screen for that one thing. There is also a button that walks through everything missing, because four screens in a row is fine when you have just installed the app and wrong when you are fixing one switch.
+
+**Full-screen access can be read, not only requested.** `canUseFullScreenIntent()` arrived with Android 14, which is the same release that stopped granting the permission on declaration alone to anything that is not a clock or a dialler. An app installed outside the Play Store is neither, as far as the system is concerned. The settings action is written as a string literal rather than referenced through the constant, so this compiles against a platform older than the one that added it.
+
+**The list redraws when the app comes back to the front.** Returning from a system screen is the only moment the answers can have changed, and it is exactly the moment the person is looking at the list. Without it the screen would tell someone to turn on a switch they had just turned on.
+
+**Files changed:** `CascadeAlarmPlugin.kt`, `shell/alarm.bridge.js`, `shell/mvp.account.js`, `shell/render.js`, `shell/mvp.css`, `shell/mvp.edit.css`, `index.html`, `contract.md`, `MVP.md`, `spec.md`, `sessions.md`, `log.manifest`
+
+**Tests:** all six green. Nothing here has a harness: it is four system screens and a phone.
+
+**Save point:** `every permission named, read and requestable from the account screen, shell 33`
+
+**Next job:** the nine alarm tests.
+
+---
+## Session 118 — 17 August 2026
+
+**Job: the back gesture, which was built for a browser and deployed into a WebView.**
+
+**TWO LAYERS AND I BUILT ONE.** Session 113 made the list the base history entry and pushed one on every navigation, with `popstate` putting the screen back. That is correct and complete in a browser. Inside the Capacitor WebView the gesture never reaches it: the activity sees it first, and what happens there is Capacitor's default, which goes back in WebView history when it judges there is history to go back to. Entries added with `pushState` are same-page, and whether a WebView counts one as somewhere to go back to is a thing that varies rather than a thing to rely on.
+
+**So the app is asked.** `window.__cascadeBack()` returns true when it handled the gesture and false when there is nothing left, and `MainActivity` closes the app only on false. The decision sits in the file that knows which screen is showing, instead of being inferred from a history list two layers away. `popstate` stays for the browser, and the two agree because the hook calls `history.back()` rather than navigating on its own.
+
+**A back closes an open dialog before it leaves a screen.** A dialog is the nearest thing on the screen and a gesture aimed at anything is most likely aimed at that. It presses Cancel, which is the one way out of a dialog that changes nothing.
+
+**`MainActivity.java` now lives in the repository.** Leaving it as a step in prose is what lost the plugin registration two sessions ago: the app built, ran, looked right and had no alarm in it, and nothing about the build said so. A file can be copied wrong once and then diffed. A step can be forgotten every time.
+
+**Files changed:** `shell/mvp.js`, `shell/mvp.dialog.js`, `android/MainActivity.java` (new), `android/README.md`, `MVP.md`, `spec.md`, `sessions.md`, `log.manifest`
+
+**Not tested:** the hook has no harness. It needs a WebView and a thumb.
+
+**Save point:** `back is one decision in one file, asked by both layers`
+
+**Next job:** the nine alarm tests.

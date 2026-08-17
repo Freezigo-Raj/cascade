@@ -170,21 +170,55 @@ export function mountAccount(root, { onBack, onSignedOut } = {}) {
           said.textContent = "This is the browser copy, so nothing can ring: a web page cannot wake a phone, sound through Do Not Disturb, or draw over a lock screen. Install the Android build to get alarms. Everything else works here.";
           return;
         }
-        const p = await bridge.alarmPermissionStatus();
         shellVal.textContent = "present";
-        if (!p.needed) {
-          said.textContent = "Alarms can ring. Exact timing and battery exemption are both granted.";
-          return;
-        }
-        said.textContent = "The shell is here, but Android has not granted everything it needs."
-          + (p.exactAlarm ? "" : " Exact alarm timing is off.")
-          + (p.batteryExempt ? "" : " The app is battery-restricted, which can delay a ring.");
-        ring.appendChild(button("act", "Grant alarm permissions", async () => {
-          // Two system screens, one after the other. Neither can be granted
-          // inside the app, and this is the only thing that opens them.
-          await bridge.requestAlarmPermissions();
-          said.textContent = "Come back to this screen to see what Android granted.";
-        }));
+
+        // ONE ROW PER PERMISSION, each with its own state and its own button.
+        // They fail differently — one silences the app, one moves the ring, one
+        // takes the lock screen away — so "something is missing" is not an
+        // answer a person can act on. Redrawn on every visit, because the only
+        // way to learn what Android granted is to ask it again.
+        const draw = async () => {
+          for (const dead of [...ring.querySelectorAll("[data-perm]")]) dead.remove();
+          const p = await bridge.alarmPermissionStatus();
+          said.textContent = p.needed
+            ? "Each of these is a switch Android holds and the app cannot set. What is missing is listed below."
+            : "Alarms can ring, on the lock screen, on time.";
+          for (const x of bridge.PERMISSIONS) {
+            const row = el("div", "stat");
+            row.dataset.perm = x.key;
+            row.appendChild(el("span", "stat-label", x.label));
+            row.appendChild(el("span", "stat-value", p[x.key] ? "on" : "off"));
+            ring.appendChild(row);
+            if (p[x.key]) continue;
+            // The reason sits with the switch rather than in a paragraph above
+            // it: a person reading a row wants to know what THIS one costs.
+            const note = el("div", "said", x.why);
+            note.dataset.perm = x.key;
+            ring.appendChild(note);
+            const go = button("act", `Turn on ${x.label.toLowerCase()}`, async () => {
+              await bridge.requestAlarmPermission(x.key);
+            });
+            go.dataset.perm = x.key;
+            ring.appendChild(go);
+          }
+          if (p.needed) {
+            const all = button("act", "Ask for everything missing", async () => {
+              await bridge.requestAlarmPermissions();
+            });
+            all.dataset.perm = "all";
+            ring.appendChild(all);
+            const again = el("div", "said",
+              "Android shows one screen at a time and each has to be closed before the next appears. Come back here afterwards to see what it granted.");
+            again.dataset.perm = "all";
+            ring.appendChild(again);
+          }
+        };
+        await draw();
+        // Coming back from a system screen is the only moment the answers can
+        // have changed, and it is the moment a person is looking at this list.
+        document.addEventListener("visibilitychange", () => {
+          if (!document.hidden) draw().catch(() => {});
+        });
       } catch (e) {
         shellVal.textContent = "unknown";
         said.textContent = "The alarm module did not load: " + (e?.message ?? e);

@@ -249,20 +249,63 @@ export async function initAlarms() {
 }
 
 /**
- * Two Android permissions, and neither can be granted from inside the app: both
- * open a system screen. Asked for on the first alarm a person sets rather than
- * at install, because a permission prompt with no reason attached gets refused.
+ * FOUR ANDROID PERMISSIONS, each read rather than assumed.
+ *
+ * None can be granted from inside the app: three open a system screen and the
+ * fourth is a runtime prompt. What matters is that they fail differently, so an
+ * app that only knows "something is missing" is an app that cannot tell a person
+ * which switch to find. Each one is named and each has its own control.
+ *
+ * `notifications`  nothing appears at all.
+ * `exactAlarm`     the ring can drift by minutes, or by an hour in Doze.
+ * `fullScreen`     it rings as a notification and the lock screen never appears,
+ *                  so Done and one snooze are all that is reachable.
+ * `batteryExempt`  the ring can be delayed when the phone has been idle.
+ *
+ * Only the first two stop it working. The other two make it worse quietly, which
+ * is the harder kind to notice.
  */
+export const PERMISSIONS = [
+  { key: "notifications", label: "Notifications",
+    why: "Without this nothing appears at all, however loudly it rings.",
+    request: "requestNotifications" },
+  { key: "exactAlarm", label: "Exact timing",
+    why: "Without this the ring can drift by minutes, or longer while the phone is idle.",
+    request: "requestExactAlarm" },
+  { key: "fullScreen", label: "Full screen on the lock screen",
+    why: "Without this it rings as a notification and the alarm screen never appears, so only Done and one snooze are reachable. Android withholds this from apps not installed from the Play Store.",
+    request: "requestFullScreen" },
+  { key: "batteryExempt", label: "Unrestricted battery",
+    why: "Without this a ring can be held back when the phone has been sitting idle.",
+    request: "requestBatteryExemption" },
+];
+
 export async function alarmPermissionStatus() {
   const Alarm = plugin();
   if (!Alarm) return { needed: false };
   const p = await Alarm.permissions();
-  return { ...p, needed: !(p.exactAlarm && p.batteryExempt) };
+  return { ...p, needed: PERMISSIONS.some((x) => !p[x.key]) };
 }
 
+/** One permission, by key. The account screen asks for them one at a time. */
+export async function requestAlarmPermission(key) {
+  const Alarm = plugin();
+  const which = PERMISSIONS.find((x) => x.key === key);
+  if (!Alarm || !which) return;
+  await Alarm[which.request]();
+}
+
+/**
+ * Everything still missing, in order, one screen after another. Android shows
+ * them one at a time and each has to be dismissed before the next appears, which
+ * is why the account screen offers the single-permission button as well: four
+ * system screens in a row is a lot to walk through to fix one switch.
+ */
 export async function requestAlarmPermissions() {
   const Alarm = plugin();
   if (!Alarm) return;
-  await Alarm.requestExactAlarm();
-  await Alarm.requestBatteryExemption();
+  const p = await Alarm.permissions();
+  for (const x of PERMISSIONS) {
+    if (!p[x.key]) await Alarm[x.request]();
+  }
 }

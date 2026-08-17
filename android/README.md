@@ -13,6 +13,7 @@ app is the only thing that talks to them.
 | `AlarmService.kt` | the noise, on the alarm audio stream so it rings through silent and DND. Hands to `AUTO` after `ringSec` |
 | `AlarmActivity.kt` | the lock screen: Done and one button per snooze interval |
 | `AlarmActionReceiver.kt` | every way an alarm ends, plus the outcome queue |
+| `MainActivity.java` | registers the plugin, and hands the back gesture to the app |
 
 ## Two things to know before changing anything
 
@@ -32,6 +33,10 @@ both and the web app's diff compares `armedFor`.
 
 1. `npx cap add android` in the web app's folder.
 2. Copy `app/src/main/java/com/cascade/alarm/` into the generated project.
+2b. Copy `MainActivity.java` over the generated one, keeping its own `package`
+   line. WITHOUT THIS THE APP HAS NO ALARM IN IT: a plugin written inside the app
+   rather than installed from npm is not found on its own, and nothing about the
+   build says so. It also hands the back gesture to the app.
 3. Merge `AndroidManifest-additions.xml` into
    `android/app/src/main/AndroidManifest.xml`.
 4. Add the Kotlin Gradle plugin to `android/app/build.gradle`:

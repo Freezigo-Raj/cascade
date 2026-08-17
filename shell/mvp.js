@@ -88,6 +88,30 @@ window.addEventListener("popstate", (e) => {
   showList();
 });
 
+/**
+ * THE ANDROID SHELL ASKS THIS BEFORE IT DOES ANYTHING WITH A BACK GESTURE.
+ *
+ * `popstate` is enough in a browser. Inside a WebView the gesture reaches the
+ * activity first, and what happens there is the shell's default rather than a
+ * decision this app made: history entries added with `pushState` are same-page,
+ * and whether the WebView counts them as somewhere to go back to varies. That is
+ * a thing to be told rather than guessed at, so `MainActivity` calls this and
+ * acts on the answer.
+ *
+ * Returns true when the app handled it, and the gesture stops there. False means
+ * there is nothing left to go back to and Android should close the app, which is
+ * the right answer on the list.
+ */
+window.__cascadeBack = () => {
+  // A dialog first: it is the nearest thing on the screen and the thing a back
+  // gesture is most likely aimed at.
+  const dialog = document.querySelector("[data-dialog] [data-cancel]");
+  if (dialog) { dialog.click(); return true; }
+  if (route === "list") return false;
+  history.back();
+  return true;
+};
+
 async function showList() {
   const { mountList } = await import(`./mvp.list.js${v}`);
   route = "list";

@@ -384,6 +384,8 @@ Every rendered string, with its template. Part 4 applies here too: these spellin
 
 **SNOOZE MOVES THE TELLING, PUSH MOVES THE TASK.** A snooze writes `alarm_snoozed_until` and touches no date. A push writes `due_at` and clears both alarm markers, because it is the later and more considered statement about when to be told.
 
+**Four Android permissions sit behind a ringing alarm and each is read rather than assumed.** Notifications, exact timing, full-screen access and battery exemption. Only the first two stop it working; the other two make it worse quietly, which is harder to notice. An app that knows only that something is missing cannot tell a person which switch to find, so each is named, drawn with its own state, and requested on its own.
+
 **Stopping the ringing never depends on an unlock.** Every press stops the noise, cancels or re-arms the alarm and is queued before anything else is attempted. Whatever comes after that is free to fail.
 
 **Done and a push open the app; a snooze does not.** All three are queued in the shell and applied by the app, so the difference is only whether the phone asks to be unlocked. Done and a push change the record and a change nobody can see is a change nobody can trust; a snooze changes nothing about the task. An un-unlocked press is not lost: it lands whenever the app is next opened.

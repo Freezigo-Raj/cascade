@@ -19,9 +19,16 @@ import com.getcapacitor.annotation.CapacitorPlugin
  *                      pushTargets, ringSec, autoSnoozeMin, autoMax })
  *   CascadeAlarm.cancel({ id })
  *   CascadeAlarm.list()                    -> { alarms: [{ id, at, armedFor, title, reason }] }
- *   CascadeAlarm.permissions()             -> { exactAlarm, batteryExempt }
+ *   CascadeAlarm.permissions()             -> { exactAlarm, batteryExempt,
+ *                                              fullScreen, notifications }
  *   CascadeAlarm.requestExactAlarm()       — opens the one-time settings screen
  *   CascadeAlarm.requestBatteryExemption() — opens the one-time settings screen
+ *   CascadeAlarm.requestFullScreen()       — opens the one-time settings screen
+ *   CascadeAlarm.requestNotifications()    — the runtime prompt, or the screen
+ *
+ * FOUR PERMISSIONS AND EACH IS READ, NOT ASSUMED. An app that cannot tell which
+ * of them it is missing can only say "something is wrong", which is what the
+ * account screen said for two builds while the answer was one switch.
  *   CascadeAlarm.drainOutcomes()           -> { outcomes: [{ id, verb, ts }] }
  *   addListener('alarmOutcome', ({ id, verb }) => …)
  *
@@ -129,7 +136,70 @@ class CascadeAlarmPlugin : Plugin() {
             JSObject()
                 .put("exactAlarm", AlarmStore.canScheduleExact(context))
                 .put("batteryExempt", pm.isIgnoringBatteryOptimizations(context.packageName))
+                .put("fullScreen", canFullScreen())
+                .put("notifications", canNotify())
         )
+    }
+
+    /**
+     * Android 14 stopped granting `USE_FULL_SCREEN_INTENT` on declaration alone
+     * to anything that is not a clock or a phone dialler, and an app installed
+     * outside the Play Store is neither as far as the system is concerned. A
+     * withheld one does not stop the alarm: it arrives as a heads-up notification
+     * that rings, with Done and one snooze, and the lock screen with the full set
+     * of buttons never appears. Nothing says so, which is why this is read.
+     */
+    private fun canFullScreen(): Boolean {
+        if (Build.VERSION.SDK_INT < 34) return true
+        val nm = context.getSystemService(android.app.NotificationManager::class.java)
+        return runCatching { nm.canUseFullScreenIntent() }.getOrDefault(true)
+    }
+
+    private fun canNotify(): Boolean {
+        if (Build.VERSION.SDK_INT < 33) return true
+        return context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+    }
+
+    /**
+     * The settings screen for full-screen notifications. The action string is
+     * written out rather than referenced, so this compiles against a platform
+     * older than the one that added the constant.
+     */
+    @PluginMethod
+    fun requestFullScreen(call: PluginCall) {
+        if (Build.VERSION.SDK_INT >= 34 && !canFullScreen()) {
+            runCatching {
+                activity.startActivity(
+                    Intent("android.settings.MANAGE_APP_USE_FULL_SCREEN_INTENT")
+                        .setData(Uri.parse("package:${context.packageName}"))
+                )
+            }.onFailure {
+                // Some builds do not carry that screen. The app's own notification
+                // settings is the nearest place a person can act.
+                activity.startActivity(
+                    Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                        .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                )
+            }
+        }
+        call.resolve()
+    }
+
+    /** The runtime prompt while it is still offered, the settings screen after. */
+    @PluginMethod
+    fun requestNotifications(call: PluginCall) {
+        if (Build.VERSION.SDK_INT >= 33 && !canNotify()) {
+            activity.requestPermissions(
+                arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 9001
+            )
+        } else if (!canNotify()) {
+            activity.startActivity(
+                Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                    .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+            )
+        }
+        call.resolve()
     }
 
     @PluginMethod
