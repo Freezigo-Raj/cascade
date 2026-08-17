@@ -21,7 +21,8 @@ const { pushed } = await import(`./push.js${v}`);
 const { matchTier } = await import(`./search.js${v}`);
 const { spawn } = await import(`./repeat.js${v}`);
 const { nowLocal } = await import(`./mvp.clock.js${v}`);
-const { readClashes, readClashDialog } = await import(`./clash.js${v}`);
+const { readClashes, readClashDialog, readDeadlineClashes, readDeadlineDialog } =
+  await import(`./clash.js${v}`);
 const { ask } = await import(`./mvp.dialog.js${v}`);
 const { el } = await import(`./mvp.paint.js${v}`);
 
@@ -38,7 +39,7 @@ const now = nowLocal;
 // screen's question and not the engine's.
 const narrow = window.matchMedia("(max-width: 600px)");
 
-export function mountList(root, { openEdit } = {}) {
+export function mountList(root, { openEdit, openAccount } = {}) {
   let tab = "Tasks";
   let slot = "Today";
   let filter = "";
@@ -101,7 +102,14 @@ export function mountList(root, { openEdit } = {}) {
       const moved = pushed(task, option.push_to, now());
       // The clash warning fires on Add, on save and on a push. A push moves the
       // date without opening the task, so this is the only place it can be told.
-      if (!(await ask([readClashDialog(readClashes(moved, all))], "Push anyway"))) return;
+      // Both warnings fire on a push. Pushing a hard deadline on to a day that
+      // already holds one is the case the second check exists for, and a push
+      // is the one place it can happen without the task being opened.
+      const warned = [
+        readClashDialog(readClashes(moved, all)),
+        readDeadlineDialog(readDeadlineClashes(moved, all), now()),
+      ];
+      if (!(await ask(warned, "Push anyway"))) return;
       await remember("push", task);
       await tasks.update(id, moved);
       say(`Moved "${task.title}" to ${option.push_label.toLowerCase()}`);
@@ -212,6 +220,12 @@ export function mountList(root, { openEdit } = {}) {
     plus.title = "Capture";
     plus.addEventListener("click", () => openEdit && openEdit(null));
     bar.appendChild(plus);
+    // Typographically subordinate, like every row action: this is the way out
+    // of the app and it is not the thing to press on the way in.
+    const acct = el("button", "act quiet-act", "ACCOUNT");
+    acct.type = "button";
+    acct.addEventListener("click", () => openAccount && openAccount());
+    bar.appendChild(acct);
     root.appendChild(bar);
 
     // The toggle lives inside Tasks and nowhere else. Ideas and Done are one

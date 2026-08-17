@@ -1,4 +1,4 @@
-// Cascade Part A — timed tasks that collide.
+// Cascade Part A — tasks that collide, in the two ways they can.
 //
 // Two tasks clash when both name a time and their windows overlap. The window
 // is `due_at` to `due_at + est_duration_min`, which means the check runs on a
@@ -72,4 +72,85 @@ export function readClashDialog(clashes) {
   const others = rest ? ` and ${rest} other${rest === 1 ? "" : "s"}` : "";
   const verb = rest ? "are" : "is";
   return `"${first.title}"${others} ${verb} at ${clock(first.due_at)}.`;
+}
+
+// ------------------------------------------------- two hard deadlines, one day
+//
+// A hard deadline does not occupy a slot, so the check above can never see one:
+// an `end` anchor is 23:59:59 and treating it as a booking would make every task
+// due today clash with every other. That is right for a meeting and wrong for a
+// promise. Two things promised by Friday are a collision whether or not either
+// one names an hour, and the collision is the DAY.
+//
+// So this is a second check with a different shape, not a widening of the first.
+// It runs on the local calendar day, ignores times entirely, and fires only
+// where both tasks are hard: a normal date is a plan and may be moved, and
+// warning about two of those would fire on an ordinary Tuesday.
+
+const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Local midnight of the instant, as a number. The offset is already in the string. */
+const midnight = (iso) => Math.floor(at(iso) / DAY_MS) * DAY_MS;
+
+/**
+ * `today` / `tomorrow` / `Friday` / `20 Aug`, the same rule the card sentence
+ * uses inside `readDuePhrase`.
+ *
+ * This is the SECOND copy of that rule, and it is a copy on purpose rather than
+ * by accident: `readDuePhrase` names a day inside a phrase it also builds a
+ * clock and a hedge for, and pulling the day out of it is a change to a function
+ * six key sections depend on. The two must be merged the first time they
+ * disagree, and this comment is where the third copy gets refused.
+ */
+export function dayWord(iso, nowIso) {
+  const start = midnight(iso), today = midnight(nowIso);
+  if (start === today) return "today";
+  if (start === today + DAY_MS) return "tomorrow";
+  const d = new Date(at(iso));
+  // Inside the coming week the weekday is unambiguous; past that it is not.
+  const untilMonday = (7 - ((new Date(today).getUTCDay() + 6) % 7)) * DAY_MS;
+  if (start > today && start < today + untilMonday) return DAYS[d.getUTCDay()];
+  return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
+}
+
+/** A promise, rather than a plan: hard, open, and carrying a date. */
+function promises(t) {
+  return Boolean(
+    t && t.task_state === "ready" && !t.archived &&
+    t.due_at && t.date_firmness === "hard"
+  );
+}
+
+/**
+ * Every open hard deadline already due on this one's day, earliest first.
+ *
+ * @param {object} task      the task being added, edited or pushed
+ * @param {Array} existing   every stored task
+ */
+export function readDeadlineClashes(task, existing) {
+  if (!promises(task) || !Array.isArray(existing)) return [];
+  const day = midnight(task.due_at);
+  return existing
+    .filter((t) => t.id !== task.id && promises(t) && midnight(t.due_at) === day)
+    .sort((a, b) => at(a.due_at) - at(b.due_at));
+}
+
+/**
+ * `"file GSTR-1" is also due Friday.` / `"file GSTR-1" and 2 others are also
+ * due Friday.`
+ *
+ * `also` is the whole of the warning: it says another promise already sits on
+ * that day and says nothing about whether the day can hold both. It cannot say
+ * that — the day's load is a sum of `est_duration_min`, which is a per-verb
+ * default, and the quiet-fields rule means the reader never sees it.
+ */
+export function readDeadlineDialog(clashes, nowIso) {
+  if (!clashes.length) return null;
+  const first = clashes[0];
+  const rest = clashes.length - 1;
+  const others = rest ? ` and ${rest} other${rest === 1 ? "" : "s"}` : "";
+  const verb = rest ? "are" : "is";
+  return `"${first.title}"${others} ${verb} also due ${dayWord(first.due_at, nowIso)}.`;
 }

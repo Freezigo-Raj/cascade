@@ -1,6 +1,6 @@
 # Cascade Part A — Contract
 
-Stage 2 deliverable, version 48. Companion to `spec/example.md`; see VERSIONS in spec.md.
+Stage 2 deliverable, version 49. Companion to `spec/example.md`; see VERSIONS in spec.md.
 
 This file says what every piece of information **is**. `spec/example.md` says what one session **was**. Where they disagree, one of them is wrong and the disagreement is a defect.
 
@@ -267,6 +267,7 @@ Every rendered string, with its template. Part 4 applies here too: these spellin
 | `alarm_reason` | text | `card_reason_short`, because a notification is the smallest screen there is | — |
 | `alarm_actions` | list of | `[Done]` `[Push]` `[Snooze <n>m]` | — |
 | `clash_dialog` | text | `"<title>" [and <n> others] is at <time>.` with `[Add anyway] [Cancel]`. Absent when nothing overlaps. | — |
+| `deadline_dialog` | text | `"<title>" [and <n> others] is also due <day>.` with `[Add anyway] [Cancel]`. Fires when this task and a stored one are both `date_firmness` `hard` and fall on the same local calendar day; times are not read. Absent otherwise. | — |
 | `duplicate_dialog` | text | `"<title>" already exists, <due_phrase_short>.` with `[Add anyway] [Cancel]`. The clause is dropped when the open task has no due date. Shown only when steps 2 and 3 both pass. | `"check sensor" already exists, due today.` |
 | `list_header` | one-of-a-fixed-set | `Default` for tasks carrying any resolved date, `due_at` or `earliest_start`; `Ideas` for tasks carrying neither | `Default` |
 | `add_button` | text | `Edit` when `bound_task_id` is present, `Add` when empty | `Add` |
@@ -346,6 +347,8 @@ Every rendered string, with its template. Part 4 applies here too: these spellin
 **The config in force is stored the first time it is used.** A record stamps `config_version` so it can say which config produced it, and until the config was stored that stamp pointed at something living only in the app bundle: a row saying `a.13` could not be checked against anything once a.14 shipped. It is evidence now rather than decoration.
 
 **The cross-field invariants are constraints as well as rules.** `closed_at` present exactly when the state is terminal, significance in range, duration positive. The engine rejects a record that breaks one; the table refuses to hold it too, because a client is one bug away from writing what the engine would not.
+
+**There are two collision checks and they have different shapes.** `clash_dialog` reads occupied slots: both tasks name a time and their windows overlap, and only a `point` anchor occupies anything. `deadline_dialog` reads promised days: both tasks are `hard` and land on the same local calendar day, whether or not either one names an hour. A deadline is not a booking — an `end` anchor is 23:59:59 — so the first check can never see one, which is why the second is a separate rule rather than a widening of the first. Two things promised by Friday collide; two things merely planned for Friday do not, or the warning would fire on an ordinary Tuesday. Both are asked in the one dialog, on Add, on save and on a push, never while typing. Neither can say whether the day will hold the work: that is a sum of `est_duration_min`, which is a per-verb default the reader never sees.
 
 **The lead is read three ways, in order: `alarm_lead_min`, then `alarm_lead_by_type`, then `alarm_defaults.lead_min`.** The per-type table exists and every entry in it is the same number, deliberately. The shape is what is being put in place, so that a correction later is a number change rather than a structural one, and no guess is recorded as if it were evidence. **While every value is equal the table changes no behaviour**, which is the honest state of it and is why it is said here rather than left to be discovered.
 

@@ -101,7 +101,7 @@ function assertShape(out) {
   };
   need(out, "result", ["task", "working", "list", "capture"]);
   need(out.list, "list", ["list_header", "sort_header", "chip_row", "cards", "ideas", "done", "results"]);
-  need(out.capture, "capture", ["add_button", "input_field", "significance_row", "type_chip", "bound_task_chip", "action_row", "duplicate_dialog"]);
+  need(out.capture, "capture", ["add_button", "input_field", "significance_row", "type_chip", "bound_task_chip", "action_row", "clash_dialog", "deadline_dialog", "duplicate_dialog"]);
   for (const [i, c] of out.list.cards.entries()) {
     need(c, `list.cards[${i}]`, ["card_title", "card_reason", "card_reason_short", "card_band"]);
   }

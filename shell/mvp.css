@@ -163,6 +163,42 @@ html, body {
 .act:hover, .act:focus-visible { color: var(--ink); }
 .act.away { margin-left: auto; }
 
+/* ------------------------------------------------------------------ account */
+/* Screen 3 borrows the panel's grammar from screen 2 rather than inventing one:
+   an uppercase mono label over the thing it names. Nothing here is coloured and
+   nothing is a new size, so the screen reads as the same app. */
+
+.quiet-act { margin-left: auto; align-self: center; }
+
+[data-screen="account"] .group { margin-top: calc(var(--step) * 7); }
+[data-screen="account"] .label {
+  font-family: var(--face-utility);
+  font-size: 10.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--quiet);
+  margin-bottom: calc(var(--step) * 2);
+}
+[data-screen="account"] .said {
+  font-family: var(--face-utility);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--quiet);
+  max-width: 46ch;
+}
+[data-screen="account"] .group > .act { display: block; }
+[data-screen="account"] .group > .act + .said { margin-top: var(--step); }
+.stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid var(--edge);
+  padding: calc(var(--step) * 2) 0;
+  max-width: 46ch;
+}
+.stat-label { font-family: var(--face-display); font-size: 14px; }
+.stat-value { font-family: var(--face-utility); font-size: 13px; color: var(--quiet); }
+
 /* -------------------------------------------------------------------- toast */
 
 .toast {

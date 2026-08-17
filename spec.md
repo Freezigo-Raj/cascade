@@ -13,7 +13,7 @@ Current stage: 5
 Gates passed: **Gate 1**, **Gate 2**, **Gate 3** and **Gate 4**, each on an older file than the one it names. All four signatures are stale and all four are waiting on a hand. See VERSIONS.
 Stage 4 is closed and signed. Stage 5 is open: the rules go in one at a time and the same command is read the other way round, so a case that still fails names a rule not yet written. `gate4.mjs` reads the stage out of the line above and inverts its own verdict on it. Every case in the key agrees with the engine. Section I taps a type, a significance and a bound task, which no case did before, and section B and H state what the card says. `gate4.mjs` reads Stage 5 and passes: 142 run, 142 green, 0 on invariants alone, 0 errored. Nine rules are written and every obligation the contract records is now met except the ranking, which is Stage 6's. Gate 5 is the hand that says Stage 5 is finished.
 
-Status: the contract is written in the protocol's three groups, with Name, Type, Required, Unit, Range, Example and From per item. 13 inputs, 13 working values, the 43-field `Task`, the 4-field `UndoEntry`, 33 rendered outputs, 14 cross-field invariants, and config at 36 objects populated. `tsc --strict` compiles clean and `gate2.py` passes. The Stage 3 shell is built and Gate 3 is signed: the panel drew correctly by hand, and deleting `card_badge` from the placeholder produced a red box naming `resolve.js` and the missing field rather than a blank screen. `resolve()` now returns three keys, `task`, `list` and `capture`, and the contract names that shape. The answer key holds 144 key cases.
+Status: the contract is written in the protocol's three groups, with Name, Type, Required, Unit, Range, Example and From per item. 13 inputs, 13 working values, the 43-field `Task`, the 4-field `UndoEntry`, 34 rendered outputs, 14 cross-field invariants, and config at 36 objects populated. `tsc --strict` compiles clean and `gate2.py` passes. The Stage 3 shell is built and Gate 3 is signed: the panel drew correctly by hand, and deleting `card_badge` from the placeholder produced a red box naming `resolve.js` and the missing field rather than a blank screen. `resolve()` now returns three keys, `task`, `list` and `capture`, and the contract names that shape. The answer key holds 144 key cases.
 
 D-1: **Typing the thought is the whole of the work.**
 
@@ -40,10 +40,10 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 ## VERSIONS
 
   example      39
-  contract     48
+  contract     49
   config       a.16
   answer_key   28
-  shell        22
+  shell        23
   gate1        signed on example 35
   gate2        signed on contract 32
   gate3        signed on shell 1
@@ -78,54 +78,45 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 
 ## THIS SESSION'S JOB
 
-The four controls a tap-only capture had no way to reach, and the label that stranded a word.
+Two hard deadlines on one day, and a way out of the account.
 
-**Everything a person can set while capturing is an input.** `duration_tap`, `firmness_tap` and
-`notes_text` join the two taps in `CaptureInput`, so `resolve()` returns one complete record and the
-save patches only what exists because the task already existed. Three more patch lines beside the nine
-the save already carries would have been three more places one value can be written from.
+**The collision he asked for could not be a widening of the one that exists.** `clash_dialog` reads
+occupied slots, and only a `point` anchor occupies anything: an `end` anchor is 23:59:59, so a
+deadline is invisible to it, and making it visible would mean every task due today collides with every
+other. `deadline_dialog` reads promised days instead. Both tasks `hard`, same local calendar day,
+times not read at all. Two rules, two shapes, one dialog.
 
-**A tapped duration outranks the verb's default and a comma list's sum**, and writes
-`duration_source` `selected`. Until this row existed the duration was a lexicon entry: `call` is
-fifteen minutes because config says so. The clash window, the day load that chooses push targets, and
-the whole order of the Ideas list are sums of that guess.
+**Both tasks have to be hard, and that is the part with a cost.** A normal date is a plan and may be
+moved; warning on two of those fires on an ordinary Tuesday and teaches a person to press straight
+through. The price is that two things genuinely promised for one day stay quiet unless somebody marked
+them, and marking one is a tap a person has to know to make. Session 102 is what made that tap
+reachable at all.
 
-**A tapped firmness reaches ranking tier one**, which no tap-only capture could. `is_hard` follows
-`date_firmness`, and the only way to set it was to type `deadline` or `by Friday`. The row carries an
-`auto` position that clears the tap, because a tap that cannot be untapped makes the marker words
-unreachable for the rest of that task's life.
+**Neither warning can say whether the day will hold the work.** The load is a sum of
+`est_duration_min`, a per-verb default the reader never sees. `also` is the whole of the sentence.
 
-**Notes are read and never matched.** `notes_text` does not enter `normalised`, so a note reaches
-neither search nor the duplicate warning. Stored records are never rewritten, so a note feeding
-`normalised` later would leave every task captured before that day unsearchable by its own note for
-ever. That is a permanent split in one field's meaning; not finding a note is the cheaper half.
+**Screen 3 exists because there was no way out.** Signing in had a screen from session 96; leaving an
+account had no control anywhere in the app, so the only exit was clearing browser storage by hand. It
+shows the address, four counts, an export and a sign-out. The counts are the first numbers this app has
+ever shown a person, and they are allowed because a count of rows is a fact where a duration is a
+guess: the quiet-fields rule is about guesses wearing the clothes of measurements.
 
-**The chip reads `Tomorrow morning` and T15 is closed.** The band-on-a-named-day rule from session 100
-consumes the whole label, so nothing strands. It cost exactly what the 4 August deviation said it
-would: a config bump, four capture panels in `spec/example.md` redrawn, and `check_render` red until
-they were.
+**The export writes the records exactly as stored.** No shape of its own, because a file in an invented
+shape needs an importer written against it, and the one thing an export has to survive is this project
+changing its mind.
 
-**Two defects, both found by making the change rather than by reading it.**
+**One hole closed while passing.** The harness's `need()` guard named seven of ten capture fields and
+four of five card fields, so `resolve()` could have quietly stopped returning `clash_dialog`,
+`deadline_dialog` or `card_id` and nothing would have said so. Sixth time a check has turned out to be
+looking at less than it appeared to.
 
-`check_render` pinned five lines by counting down from the typed line. Exact while the chip row was
-two lines, wrong the moment a longer label wrapped it to three: it compared a correct panel against a
-window one row lower and called every line a difference. It reads from the box down to the panel's
-closing rule now.
-
-The `keepDate` block carried the stored firmness back over a tapped one. Every edit of a stored task
-finds no date in the title, so every edit would have landed there and the new control would have read
-as broken on the one screen it lives on.
-
-`mvp.edit.js` crossed the 400-line cap, so the date chip row left as `shell/mvp.chips.js`. That is the
-right seam: every control in it does the one thing, which is put words in the box.
+**No theme, font, size or layout change.** His call, and the report that offered them is in the bundle.
 
 ## NEXT THREE JOBS
 
-1. The workflow migration: `waits_for` with `delay_min`, `condition_label` / `condition_met`,
-   `loop_limit` / `loop_count`, one grouping id. Decided in full and recorded under DECIDED, NOT
-   BUILT; a migration and a readiness reader, no canvas.
-2. An export: every task as JSON, one press, no server. The one failure that gets worse with every day
-   of real use.
+1. Use it for a few days. Every defect worth having was found this way, and screens 2 and 3 now carry
+   nine controls no key case names.
+2. The workflow migration, recorded in full under DECIDED, NOT BUILT.
 3. Gate 6, and the five gates already owed.
 
 ## TYPED, AND WRONG
@@ -710,6 +701,13 @@ have landed. That is the price of the single table and it is accepted.
 - 17 Aug 2026 — `notes` is read and never matched: `notes_text` does not enter `normalised`, so it reaches neither search nor duplicate detection — stored records are never rewritten, so notes feeding `normalised` later would leave every task captured before that day unsearchable by its own note for ever, which is a permanent split in one field's meaning — the cost is that a note cannot be found by searching for what is in it, and that is the cheaper half to change later.
 - 17 Aug 2026 — `check_render` finds its window from the box to the panel's closing rule instead of counting five lines down from the typed line — the count was exact while the chip row was two lines and became wrong the moment a longer label wrapped it to three, reporting every line of a correct panel as a difference — a chip row is now free to grow without the check having to be told.
 - 17 Aug 2026 — Cancel and Archive stay members of `row_action` with no control on any screen, and `MVP.md` says so — a row carries Done, Pin, Delete and its push targets, and adding two more presses to it costs the row the two-line reading the whole screen is built on — an archived or cancelled task is unreachable from the UI until a screen is built that wants them, which is stated rather than left to be discovered.
+- 17 Aug 2026 — Two hard deadlines on one calendar day warn, through a SECOND check rather than a widening of the clash check — the clash check reads occupied slots and only a `point` anchor occupies one, so a deadline at 23:59:59 can never appear in it, and forcing it to would make every task due today clash with every other — the two checks now have to be kept in step by hand, and the second one cannot say whether the day will hold the work because the load is a per-verb guess the reader never sees.
+- 17 Aug 2026 — The deadline warning fires only where BOTH tasks are `hard` — a normal date is a plan and may be moved, so warning on two of those would fire on an ordinary Tuesday and teach the reader to press through the dialog — two things genuinely promised for one day do not warn if neither was marked hard, and marking one is a tap that a person has to know to make.
+- 17 Aug 2026 — All warnings share ONE dialog and a line that trips three is stopped once — `mvp.dialog.js` already took an array, which is why a third warning cost no new interruption — the dialog can now carry three sentences and a person reads all of them or none.
+- 17 Aug 2026 — `dayWord` in `clash.js` is a second copy of the day-naming rule that lives inside `readDuePhrase` — pulling the day out of `readDuePhrase` is a change to a function six key sections depend on, and this was a screen sentence needing four words of it — the two must be merged the first time they disagree, and the comment above it is where the third copy gets refused.
+- 17 Aug 2026 — Screen 3, the account, with an export and a sign-out — signing in had a screen from session 96 and leaving an account had no control anywhere, so the only way out was clearing browser storage by hand — the four counts it shows are the first numbers the app has ever shown a person, allowed because a count of rows is a fact where `est_duration_min` is a default.
+- 17 Aug 2026 — The export writes the records exactly as stored, with no shape of its own — a file in an invented shape needs an importer written against it, and the one thing an export must survive is this project changing its mind — the file carries whatever defects the records carry.
+- 17 Aug 2026 — The harness's `need()` guard now names `clash_dialog`, `deadline_dialog` and `card_id` — it named seven of ten capture fields and four of five card fields, so `resolve()` could have stopped returning any of the other four in silence — `check_loud` covers them from here, which is the sixth time a check has turned out to be looking at less than it appeared to.
 
 
 ## DELIBERATE DEVIATIONS FROM PROTOCOL

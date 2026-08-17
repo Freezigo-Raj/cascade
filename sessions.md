@@ -2329,3 +2329,30 @@ Session 1 closed.
 **Next job:** the workflow migration, or the export.
 
 ---
+## Session 103 — 17 August 2026
+
+**Job: two hard deadlines on one day, and a way out of the account.**
+
+**The collision he asked for could not be a widening of the one that already existed.** `clash_dialog` reads occupied slots and only a `point` anchor occupies one, so a deadline sitting at 23:59:59 is invisible to it. Making it visible was the obvious move and is wrong: every task due today would collide with every other, which is the reason session 93 excluded `end` anchors in the first place. `deadline_dialog` reads promised days instead — both tasks `hard`, same local calendar day, times not read at all. Two checks, two shapes, kept in step by hand from here.
+
+**Both tasks have to be hard, and that is the part with a price.** A normal date is a plan and may be moved. Warning on two of those would fire on an ordinary Tuesday and teach a person to press through the dialog without reading it, which costs more than the warning buys. So two things genuinely promised for one day stay quiet unless somebody marked them hard, and marking one is a tap a person has to know to make. Session 102 is what made that tap reachable at all; before it, only typing `deadline` or `by Friday` could.
+
+**Neither warning can say whether the day will hold the work.** The day's load is a sum of `est_duration_min`, a per-verb default the reader never sees, so `also` is the whole of the sentence: another promise already sits there, and nothing about whether both fit.
+
+**`dayWord` is a second copy of a rule that already exists**, and a deliberate one. `readDuePhrase` names days inside a phrase it also builds a clock and a hedge for, and pulling four words out of it is a change to a function six key sections depend on. The comment above the copy is where the third copy gets refused.
+
+**Screen 3 exists because there was no way out.** Signing in has had a screen since session 96. Leaving an account had no control anywhere in the app, so the only exit was clearing browser storage by hand. It draws the signed-in address, four counts, an export and a sign-out, and in local mode it says so rather than showing a sign-out that would do nothing.
+
+**The four counts are the first numbers this app has ever shown a person.** That is allowed, and the line is worth stating: a count of rows is a fact, where `est_duration_min` is a per-verb guess. The quiet-fields rule is about guesses wearing the clothes of measurements, not about arithmetic.
+
+**The export writes the records exactly as stored, with no shape of its own.** A file in an invented shape needs an importer written against that shape, and the one thing an export has to survive is this project changing its mind about a field. It carries whatever defects the records carry, which is the point.
+
+**One hole closed while passing through.** The harness's `need()` guard named seven of ten capture fields and four of five card fields, so `resolve()` could have stopped returning `clash_dialog`, `deadline_dialog` or `card_id` and every check would still have been green. `check_loud` covers all three now. Sixth time a check has turned out to be looking at less than it appeared to.
+
+**No theme, font, size or layout change, by his decision.** The UI report that offered them ships with the bundle; the only thing taken from it is the account screen, which was the one item in it with logic rather than taste behind it.
+
+**Save point:** `two collision checks, one dialog; screen 3 with export and sign-out; gates 1, 2, 3, 4, 5 and 6 waiting on a hand`
+
+**Next job:** use it for a few days, then the workflow migration.
+
+---

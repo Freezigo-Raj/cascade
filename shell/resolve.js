@@ -2,7 +2,7 @@ import { lemmas } from "./lemma.js";
 import { readCards, readIdeas, readDone, rankKeyFor } from "./cards.js";
 import { readResults } from "./search.js";
 import { readPushOptions } from "./push.js";
-import { readClashes, readClashDialog } from "./clash.js";
+import { readClashes, readClashDialog, readDeadlineClashes, readDeadlineDialog } from "./clash.js";
 
 // Cascade Part A — Stage 5, rule 1: the verb.
 //
@@ -168,6 +168,10 @@ function readCapture(input, task, duplicate, config) {
     // The clash warning, alongside the duplicate one and fired the same way:
     // on Add, on save and on a push, never while typing.
     clash_dialog: readClashDialog(readClashes(task, input.existing_tasks)),
+    // The second collision, and a different shape: two hard deadlines on one
+    // day. A deadline occupies no slot, so `clash_dialog` can never see one, and
+    // this fires whether or not either task names an hour.
+    deadline_dialog: readDeadlineDialog(readDeadlineClashes(task, input.existing_tasks), input.now),
     duplicate_dialog: duplicate.duplicate_dialog,
   };
 }

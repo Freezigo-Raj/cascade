@@ -7,10 +7,11 @@ D-1: **Typing the thought is the whole of the work.**
 
 ---
 
-## Two screens
+## Three screens
 
 **Screen 1 — the list.** Three tabs, a toggle inside the first, and a search box.
 **Screen 2 — capture and edit.** The same screen for both. Reached by `+` from the list, or by tapping a task.
+**Screen 3 — the account.** Reached by `ACCOUNT` on the list. Who is signed in, four counts, an export, and a sign-out. It exists because sign-out had a screen for signing in and no control anywhere for leaving.
 
 ---
 
@@ -142,6 +143,10 @@ The box is at the top. The tap buttons are with it. The matching tasks are below
 
 **The clash warning** fires the same way as the duplicate dialog: on Add, on save and on a push, never while typing. It reads `"meet supplier" is at 5pm.` with `[Add anyway]` and `[Cancel]`, and never says how long anything takes.
 
+**The deadline warning** is a second collision with a different shape, and it fires the same three ways. It reads `"file GSTR-1" is also due Friday.` It fires when this task and a stored one are **both hard** and land on the **same calendar day**, whether or not either one names a time. A deadline occupies no slot — an `end` anchor is 23:59:59 — so the clash check can never see one, which is why this is a separate rule. Two promises on one day collide; two plans on one day do not, or it would fire on an ordinary Tuesday. It cannot say whether the day will hold the work, because the day's load is a per-verb guess the reader never sees.
+
+**All three warnings share one dialog.** A line that is a repeat, a collision and a second deadline is stopped once and told three things, not three times.
+
 **The duplicate dialog fires on Add only, never while typing.** It reads `"check sensor" already exists, due today.` with `[Add anyway]` and `[Cancel]`. Cancel leaves the typed text in the box.
 
 **The undo toast** reads `Added "Call markan" · this morning` with `[Undo]`, and holds 8 seconds. The undo entry outlives the toast.
@@ -240,7 +245,7 @@ The mobile sentence, because a notification is the smallest screen there is. Pus
 
 ## Counts
 
-2 text boxes (capture, and the list's search). 26 fixed buttons, plus 2 or 3 push buttons per row. 1 dialog, 1 toast.
+3 text boxes (capture, the notes, and the list's search). 27 fixed buttons on screens 1 and 2, plus 2 or 3 push buttons per row, plus 3 on screen 3 (export, sign out, back). 1 dialog carrying up to 3 warnings, 1 toast.
 
 ---
 

@@ -260,9 +260,13 @@ export interface CaptureView {
   bound_task_chip: string | null;
   /** Labels for row_action done, cancel, archive. Empty when nothing is bound. */
   action_row: string[];
-  /** '"<title>" already exists, <band sentence>.' Null when no duplicate fires. */
   /** '"<title>" [and <n> others] is at <time>.' Absent when nothing overlaps. */
   clash_dialog: string | null;
+  /** '"<title>" [and <n> others] is also due <day>.' Two `hard` dates on one
+   *  calendar day. A deadline occupies no slot, so `clash_dialog` cannot see
+   *  one; this reads the day and never the time. */
+  deadline_dialog: string | null;
+  /** '"<title>" already exists, <band sentence>.' Null when no duplicate fires. */
   duplicate_dialog: string | null;
 }
 

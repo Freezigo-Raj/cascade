@@ -23,7 +23,7 @@ async function showList() {
   const { mountList } = await import(`./mvp.list.js${v}`);
   screen.innerHTML = "";
   screen.dataset.screen = "list";
-  mountList(screen, { openEdit: showEdit });
+  mountList(screen, { openEdit: showEdit, openAccount: showAccount });
 }
 
 async function showEdit(taskId) {
@@ -31,6 +31,15 @@ async function showEdit(taskId) {
   screen.innerHTML = "";
   screen.dataset.screen = "edit";
   mountEdit(screen, { taskId, onBack: () => showList() });
+}
+
+// The third case, and the reason this file was written with a third case in
+// mind: sign-out had no control anywhere in the app until now.
+async function showAccount() {
+  const { mountAccount } = await import(`./mvp.account.js${v}`);
+  screen.innerHTML = "";
+  screen.dataset.screen = "account";
+  mountAccount(screen, { onBack: () => showList(), onSignedOut: () => { started = false; gate(); } });
 }
 
 async function start() {

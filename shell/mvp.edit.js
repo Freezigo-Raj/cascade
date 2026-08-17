@@ -197,7 +197,7 @@ export function mountEdit(root, { taskId = null, onBack } = {}) {
     if (boundId) {
       const old = all.find((t) => t.id === boundId);
       if (!old) return;
-      if (!(await ask([out.capture.clash_dialog], "Save anyway"))) return;
+      if (!(await ask([out.capture.clash_dialog, out.capture.deadline_dialog], "Save anyway"))) return;
       // A title carries no date words, so re-reading one finds none. Clearing
       // the date on that evidence would destroy it on every edit of every task.
       // Dropped on purpose by the tick chip, so the words' silence is not the
@@ -232,7 +232,8 @@ export function mountEdit(root, { taskId = null, onBack } = {}) {
 
     // Both warnings are asked once. The duplicate fires on Add and nowhere
     // else; the clash fires here, on a save and on a push.
-    if (!(await ask([out.capture.duplicate_dialog, out.capture.clash_dialog], "Add anyway"))) return;
+    if (!(await ask([out.capture.duplicate_dialog, out.capture.clash_dialog,
+                     out.capture.deadline_dialog], "Add anyway"))) return;
 
     const task = { ...out.task, ...advancedFields() };
     await tasks.add(task);

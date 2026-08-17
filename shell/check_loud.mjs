@@ -5,8 +5,8 @@ const need=(o,p,k)=>{ if(!o||typeof o!=="object") throw new Error(`resolve() ret
   for(const x of k) if(!(x in o)) throw new Error(`resolve() returned ${p} with no ${x}`); };
 const check=(out)=>{ need(out,"result",["task","working","list","capture"]);
   need(out.list,"list",["list_header","sort_header","chip_row","cards","ideas","done","results"]);
-  need(out.capture,"capture",["add_button","input_field","significance_row","type_chip","bound_task_chip","action_row","duplicate_dialog"]);
-  out.list.cards.forEach((c,i)=>need(c,`list.cards[${i}]`,["card_title","card_reason","card_reason_short","card_band"])); };
+  need(out.capture,"capture",["add_button","input_field","significance_row","type_chip","bound_task_chip","action_row","clash_dialog","deadline_dialog","duplicate_dialog"]);
+  out.list.cards.forEach((c,i)=>need(c,`list.cards[${i}]`,["card_id","card_title","card_reason","card_reason_short","card_band"])); };
 // A line the engine accepts. An empty one is refused now, which is rule 8.
 const good=resolve({typed_line:"Call markan morning",config:partAConfig,now:"2026-08-03T10:40:00+05:30",new_id:""});
 const breaks=[["returns null",()=>null],
