@@ -41,7 +41,7 @@ const now = nowLocal;
 // screen's question and not the engine's.
 const narrow = window.matchMedia("(max-width: 600px)");
 
-export function mountList(root, { openEdit, openAccount } = {}) {
+export function mountList(root, { openEdit, openAccount, onTasks } = {}) {
   let tab = "Tasks";
   let slot = "Today";
   let filter = "";
@@ -56,6 +56,9 @@ export function mountList(root, { openEdit, openAccount } = {}) {
     all = await tasks.all();
     draw();
     readSync();
+    // The rail's counts and the detail panel read from here rather than from the
+    // store, so a number beside `Today` cannot disagree with the rows under it.
+    onTasks && onTasks(all);
   }
 
   /** The undo entry is written before the action, never after. */
@@ -349,6 +352,28 @@ export function mountList(root, { openEdit, openAccount } = {}) {
   return {
     /** For `/` in the wide layout. A pointer has a keyboard beside it. */
     focusSearch() { searchBox?.focus(); },
+    /** Everything the rail and the detail panel need, handed out rather than read. */
+    state: () => ({ tab, slot }),
+    tasks: () => all,
+    go(nextTab, nextSlot) {
+      tab = nextTab;
+      if (nextSlot) slot = nextSlot;
+      paint();
+    },
+    say,
+    act,
+    /**
+     * A stored task plus the two things only a card knows: the sentence, and the
+     * push targets the day's load left standing. The detail panel wants both and
+     * neither is on the record.
+     */
+    cardFor(id) {
+      const task = all.find((t) => t.id === id);
+      if (!task) return null;
+      const lists = listOnly(all, partAConfig, now());
+      const card = [...lists.cards, ...lists.ideas, ...lists.done].find((c) => c.card_id === id);
+      return { ...task, card_reason: card?.card_reason ?? "", push_options: card?.push_options ?? [] };
+    },
     unmount() {
       window.removeEventListener("cascade:store-changed", onStore);
       narrow.removeEventListener("change", onNarrow);

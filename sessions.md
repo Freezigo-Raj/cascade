@@ -2473,3 +2473,49 @@ Colour meant one thing and now means three. Accent is pressable, `#c0492b` is ov
 **Next job:** confirm build 27 is running, then the workflow migration.
 
 ---
+## Session 109 — 17 August 2026
+
+**Job: the `Cascade Web` frame, whole, with everything unbuilt drawn and marked.**
+
+**His instruction was to keep the shape and mark what is missing rather than leave it out, and it is the right call.** A nav or a panel that grows later moves everything a person has learned the position of. So the rail and the detail panel are built as the design draws them, and the eleven controls behind them that have nothing to do yet are dimmed, tagged `WIP`, and say on a press what is missing and which Part owns it. That is the same reasoning session 98 used when a row press said the edit screen was not built yet instead of swallowing the press: a control that explains itself reads as unfinished, which is what it is, where a control that does nothing reads as broken.
+
+**One treatment for all eleven.** Eleven different ways of saying "not yet" is eleven things for a person to learn. The sentences live in one object per file, so they cannot drift apart in tone as they get edited one at a time.
+
+**Three things the design draws are deliberately NOT drawn, and are NOT marked WIP.** A duration on every row, a day's load beside each push target, and a push count. All three are collected and none of them is ever shown, which is the quiet-fields rule from session 89. Drawing them would reverse a decision rather than fill a gap, and the distinction is worth the paragraph: `decided` and `not yet` are different answers, exactly as in the not-built register, and only the second is worth chasing.
+
+**The detail panel is read-only and `Edit` hands the task to the capture box.** Every field it shows is already set in the editor, and a second control for one field is how two controls come to disagree — a bill this project has paid four times now. One extra press is the price and it is the cheap side of the trade.
+
+**A row press means three different things at three widths, and that is the layout rather than three special cases.** On a phone it navigates. At 940 it loads the box above the list, because that is the only place the task can be shown at that width. At 1180 it selects into the detail panel and leaves the box alone, because a press on a row is "show me this" and the box is for the thing not written down yet.
+
+**Two breakpoints now, each stated in exactly one stylesheet and in `mvp.js`.** 940 moves the capture box above the list; 1180 adds the rail and the detail panel. A rail needs a first column and a panel needs a third, and at 940 there is room for neither. Crossing either one mid-session lands on the list with whatever does not fit closed.
+
+**The rail's counts come from the list's own `listOnly()` pass, handed over rather than read again.** A number beside `Today` that disagreed with the rows under it would be the same defect as two orderings for one list, which is the thing this project has avoided five times by sharing a function rather than a description.
+
+**Save point:** `the web frame built whole, WIP marked in place; gates 1, 2, 3, 4, 5 and 6 waiting on a hand`
+
+**Next job:** confirm build 28, then the workflow migration.
+
+---
+## Session 110 — 17 August 2026
+
+**Job: the pickers.**
+
+**The words were never the problem, and that was checked first.** `dateWords` returns `20 Aug`, `timeWords` returns `5:30pm`, and the engine reads both correctly, with the year appearing only when it is not this one. What failed was reaching the native control at all.
+
+**Two causes, and the second one is the one worth writing down.**
+
+**The chip was a `<label>` with an invisible `<input type="date">` stretched across it.** So whether the control opened depended on the press landing on the browser's own calendar indicator, which sits at the right edge of the field — under a chip of a different width, in a position nobody had measured. Hit sometimes for time, never for date. Reported exactly that way. It is a real button calling `showPicker()` now, with focus-and-click as the fallback where `showPicker` is missing or refused, and the field takes no clicks at all. The field stays 1px at the bottom-left of the chip rather than being moved off the page, because a browser anchors the popup to where the field is and not to what opened it.
+
+**And the row was rebuilt on every keystroke.** A picker that is rebuilt while it is open closes without returning anything, and opening a calendar takes several clicks and a few seconds. Every repaint in that window — a keystroke in the box, a sync arriving from the phone — destroyed the input the calendar was attached to. A date picker that never works and a time picker that works when you are quick is precisely what that produces.
+
+**Third place, second time late.** The capture box has been built once and never redrawn since session 99, with the reasoning written out in full. The search box got the same treatment in session 107, two sessions ago, after failing the same way. This row was still being thrown away and remade. Only the tick chip actually changes, so only the tick chip is repainted now. The rule is stated once more, in the file, in capitals: anything that can hold a caret or an open popup is built once.
+
+**Four things proved rather than argued:** the chip press calls `showPicker`; the input is the same object after a repaint; picking a date types `20 Aug` into the box; and picking a time afterwards types `5:30pm` beside the date rather than after the sentence, which is `typeBeside` doing what session 99 built it for.
+
+**The gate now holds `--css-version` to `SHELL_VERSION`.** Yesterday's runtime check reads that token to decide whether to accuse the browser of serving an old stylesheet. A token left behind by a version bump would have the app blaming the browser for a mistake in the repository, which is the worst possible failure for a check whose whole job is telling those two apart. Proved by setting it to 24 and watching the gate name both numbers.
+
+**Save point:** `pickers open and survive a repaint, proved; gates 1, 2, 3, 4, 5 and 6 waiting on a hand`
+
+**Next job:** confirm build 28, then the workflow migration.
+
+---

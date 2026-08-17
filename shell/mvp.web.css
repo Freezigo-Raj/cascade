@@ -1,0 +1,145 @@
+/* Cascade Part A — the three-column web frame, the rail and the detail panel.
+ *
+ * From `Cascade Web` in the R2 pack. Everything in this file is inside one media
+ * query, so below the breakpoint it changes nothing: the phone layout is the
+ * default rather than a thing this file has to undo.
+ *
+ * WIP is one treatment, everywhere. A drawn control that does not work is dimmed,
+ * carries a `WIP` tag, and says on a press what is missing and which Part owns it.
+ * It is kept in place rather than removed, because a nav or a panel that grows
+ * later moves everything a person has learned the position of.
+ */
+
+@media (min-width: 1180px) {
+  #app {
+    max-width: 1560px;
+    display: grid;
+    grid-template-columns: 232px minmax(0, 1fr) minmax(340px, 400px);
+    gap: calc(var(--step) * 7);
+    align-items: start;
+    padding: calc(var(--step) * 7) calc(var(--step) * 7) calc(var(--step) * 12);
+  }
+
+  /* -------------------------------------------------------------- the rail */
+
+  #rail {
+    position: sticky;
+    top: calc(var(--step) * 7);
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--step) * 2);
+    background: var(--sunk);
+    border-radius: var(--r-block);
+    padding: calc(var(--step) * 5) calc(var(--step) * 4);
+    min-height: 70vh;
+  }
+  .brand { display: flex; align-items: center; gap: calc(var(--step) * 2.5); padding: 0 calc(var(--step) * 2); }
+  .brand-mark {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--signal); color: #fff8f2;
+    font-family: var(--face-display); font-size: 15px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .brand-name { font-family: var(--face-display); font-size: 19px; font-weight: 600; }
+
+  .capture-btn {
+    font-family: inherit; font-size: 14.5px; font-weight: 700;
+    color: #fff8f2; background: var(--signal);
+    border: 0; border-radius: var(--r-pill);
+    padding: calc(var(--step) * 3) 0;
+    margin: calc(var(--step) * 3) 0 calc(var(--step) * 2);
+    cursor: pointer; box-shadow: 0 4px 12px rgba(140, 73, 26, 0.28);
+  }
+
+  .rail-group { margin-top: calc(var(--step) * 3); }
+  .rail-label {
+    font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--quiet); padding: 0 calc(var(--step) * 2) calc(var(--step) * 1.5);
+  }
+  .rail-item {
+    display: flex; align-items: baseline; justify-content: space-between; width: 100%;
+    font-family: inherit; font-size: 14px; color: var(--ink);
+    background: none; border: 0; border-radius: var(--r-pill);
+    padding: calc(var(--step) * 2) calc(var(--step) * 2.5);
+    cursor: pointer; text-align: left;
+  }
+  .rail-item:hover { background: rgba(198, 113, 57, 0.12); }
+  .rail-item.on { background: var(--signal); color: #fff8f2; font-weight: 600; }
+  .rail-item.on .rail-count { color: #fff8f2; }
+  .rail-count { font-size: 12px; font-weight: 600; color: var(--quiet); }
+  .wip-tag {
+    font-size: 9px; font-weight: 700; letter-spacing: 0.1em;
+    color: var(--signal-deep); background: var(--signal-wash);
+    border-radius: var(--r-pill); padding: 2px 6px;
+  }
+
+  .rail-foot {
+    display: flex; align-items: center; gap: calc(var(--step) * 2.5);
+    margin-top: auto; padding: calc(var(--step) * 3) calc(var(--step) * 2) 0;
+    border-top: 1px solid var(--edge);
+    background: none; border-left: 0; border-right: 0; border-bottom: 0;
+    font-family: inherit; text-align: left; cursor: pointer;
+  }
+  .avatar.small { width: 32px; height: 32px; font-size: 12px; }
+  .rail-who-name { font-size: 13.5px; font-weight: 600; }
+  .rail-who-mail { font-size: 11.5px; color: var(--quiet); }
+
+  /* --------------------------------------------------- the middle column */
+
+  #capture {
+    background: var(--sheet);
+    border: 1.5px solid var(--edge);
+    border-radius: var(--r-block);
+    padding: calc(var(--step) * 5);
+    margin-bottom: calc(var(--step) * 5);
+  }
+  #capture .matches { max-height: 30vh; overflow-y: auto; }
+  /* The head is empty in the panel: no Back, and no bound chip until one is bound. */
+  #capture .head:empty { display: none; }
+
+  /* ----------------------------------------------------- the detail panel */
+
+  #aside {
+    position: sticky;
+    top: calc(var(--step) * 7);
+    background: var(--sheet);
+    border: 1.5px solid var(--edge);
+    border-radius: var(--r-block);
+    padding: calc(var(--step) * 5);
+    box-shadow: var(--lift);
+    max-height: 88vh;
+    overflow-y: auto;
+  }
+  .d-empty { font-size: 13.5px; line-height: 1.6; color: var(--quiet); }
+  .d-head { display: flex; align-items: baseline; justify-content: space-between; }
+  .d-kind {
+    font-size: 10.5px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase;
+    color: var(--signal-deep);
+  }
+  .d-title { font-family: var(--face-display); font-size: 21px; font-weight: 600; line-height: 1.2; margin-top: var(--step); }
+  .d-said { font-size: 13px; font-weight: 600; color: var(--quiet); margin-top: calc(var(--step) * 1.5); }
+  .d-acts { display: flex; flex-wrap: wrap; align-items: center; gap: calc(var(--step) * 3); margin-top: calc(var(--step) * 4); }
+  .go.small { margin-left: 0; font-size: 13px; padding: calc(var(--step) * 2) calc(var(--step) * 4); box-shadow: none; }
+
+  .d-group { margin-top: calc(var(--step) * 5); }
+  .d-label {
+    font-size: 10.5px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase;
+    color: var(--quiet); margin-bottom: calc(var(--step) * 1.5);
+  }
+  .d-push { display: flex; flex-direction: column; align-items: flex-start; gap: var(--step); }
+  .wide-nudge { padding: calc(var(--step) * 1.5) calc(var(--step) * 3); }
+  .d-notes {
+    font-size: 13px; line-height: 1.6; color: var(--ink);
+    background: var(--sunk); border-radius: var(--r-card);
+    padding: calc(var(--step) * 3);
+  }
+  .d-wip { display: flex; align-items: baseline; gap: calc(var(--step) * 2); cursor: help; }
+  .d-wip-text { font-size: 12px; line-height: 1.5; color: var(--quiet); }
+  .d-facts { display: flex; flex-direction: column; }
+  .d-fact {
+    display: flex; justify-content: space-between; align-items: baseline;
+    border-bottom: 1px solid var(--edge); padding: calc(var(--step) * 2) 0;
+  }
+  .d-fact-k { font-size: 13px; }
+  .d-fact-v { font-size: 13px; font-weight: 600; color: var(--signal-deep); }
+}

@@ -33,15 +33,21 @@
      query on the two `@import` lines inside these files included, because an
      imported sheet is fetched under its own address and would go stale one level
      down otherwise. -->
-<link rel="stylesheet" href="./shell/mvp.edit.css?v=27">
+<link rel="stylesheet" href="./shell/mvp.edit.css?v=28">
 
 <div id="gate" style="display:none"></div>
 
-<!-- Two panes. A phone uses the first and leaves the second empty; a wide window
-     runs the list in one and the capture box in the other, so nothing has to be
-     navigated away from to type. Which is which is decided in `mvp.js`, once. -->
+<!-- Three panes, from the R2 web design. A phone fills only the middle one and
+     leaves the rail and the detail panel empty, so they collapse and nothing has
+     to be hidden. A wide window runs all three: the nav on the left, the capture
+     box above the list in the middle, the selected task on the right. Which is
+     which is decided in `mvp.js`, once. -->
 <div id="app">
-  <div id="screen"></div>
+  <nav id="rail"></nav>
+  <main id="main">
+    <div id="capture"></div>
+    <div id="screen"></div>
+  </main>
   <aside id="aside"></aside>
 </div>
 

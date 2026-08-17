@@ -23,16 +23,31 @@ const { mountGate } = await import(`./gate.js${v}`);
 const { SHELL_VERSION } = await import(`./render.js${v}`);
 
 const app = document.getElementById("app");
+const rail = document.getElementById("rail");
+const capture = document.getElementById("capture");
 const screen = document.getElementById("screen");
 const aside = document.getElementById("aside");
 const gateEl = document.getElementById("gate");
 
-/** One number, in one place, and the stylesheet's `min-width` matches it. */
-const WIDE = window.matchMedia("(min-width: 940px)");
+/**
+ * TWO numbers, and each is stated in one stylesheet and here.
+ *
+ * `ROOMY` (940) is where the capture box moves above the list instead of being a
+ * screen you navigate to. `WIDE` (1180) is where the rail and the detail panel
+ * appear, because those need a first and a third column. CSS cannot decide
+ * whether a row press navigates, loads a box, or selects into a panel, so the
+ * numbers live in both places and must agree: `mvp.wide.css` holds 940 and
+ * `mvp.web.css` holds 1180.
+ */
+const ROOMY = window.matchMedia("(min-width: 940px)");
+const WIDE = window.matchMedia("(min-width: 1180px)");
 
 let started = false;
 let here = null;      // what is in `#screen`
-let panel = null;     // the capture panel in `#aside`, wide layout only
+let panel = null;     // the capture box, in `#capture` on wide
+let bar = null;       // the left rail, wide only
+let detail = null;    // the selected task, in `#aside`, wide only
+let picked = null;    // the task id the detail panel is showing
 let route = "list";   // where a narrow layout would be
 
 async function put(into, mod, name, args) {
@@ -47,41 +62,87 @@ async function put(into, mod, name, args) {
 async function showList() {
   const { mountList } = await import(`./mvp.list.js${v}`);
   route = "list";
-  await put(screen, mountList, "list", { openEdit: openTask, openAccount: showAccount });
-  if (WIDE.matches) await openPanel(null, { keepFocus: true });
+  await put(screen, mountList, "list", {
+    openEdit: openTask,
+    openAccount: showAccount,
+    onTasks: (tasks) => { bar?.setTasks(tasks); detail?.draw(); },
+    onGo: null,
+  });
+  if (ROOMY.matches) await openPanel(null, { keepFocus: true });
+  if (WIDE.matches) await wideFrame();
 }
 
 /**
- * Tapping a row. On a phone this is a navigation; in a wide window it loads the
- * task into the panel that is already open beside the list, so the list stays
- * where it was and keeps its scroll, its tab and its search.
+ * The three panes. The rail and the detail panel exist only here: a phone has one
+ * screen's worth of room and both of them are things you look at while doing
+ * something else, which is what a second and third column are for.
+ */
+async function wideFrame() {
+  const [{ mountRail }, { mountDetail }] = await Promise.all([
+    import(`./mvp.rail.js${v}`),
+    import(`./mvp.detail.js${v}`),
+  ]);
+  if (!bar) {
+    bar = mountRail(rail, {
+      tab: () => here?.state?.().tab,
+      slot: () => here?.state?.().slot,
+      go: (tab, slot) => here?.go?.(tab, slot),
+      capture: () => openPanel(null),
+      openAccount: showAccount,
+      email: () => whoEmail,
+      say: (text) => here?.say?.(text),
+    });
+  }
+  if (!detail) {
+    detail = mountDetail(aside, {
+      task: () => (picked ? here?.cardFor?.(picked) : null),
+      act: (what, index) => here?.act?.(picked, what, index),
+      edit: (id) => openPanel(id),
+      close: () => { picked = null; detail.draw(); },
+      say: (text) => here?.say?.(text),
+    });
+  }
+  bar.setTasks(here?.tasks?.() ?? []);
+  detail.draw();
+}
+
+/**
+ * Tapping a row. On a phone it is a navigation. In the wide layout it SELECTS:
+ * the detail panel on the right fills, the list keeps its scroll and its tab, and
+ * the capture box above it is left alone — because a row press is "show me this"
+ * and the box is for the thing you have not written down yet. `Edit` in the detail
+ * panel is what puts the words back in the box.
  */
 async function openTask(taskId) {
-  if (WIDE.matches) return openPanel(taskId, { keepFocus: false });
+  // Three columns: a press SELECTS, and the detail panel on the right fills.
+  if (WIDE.matches) { picked = taskId; detail?.draw(); return; }
+  // Two columns and no detail panel: a press loads the box above the list, which
+  // is the only place the task can be shown at that width.
+  if (ROOMY.matches) return openPanel(taskId);
   const { mountEdit } = await import(`./mvp.edit.js${v}`);
   route = "edit";
   await put(screen, mountEdit, "edit", { taskId, onBack: () => showList() });
 }
 
 /**
- * `keepFocus` is the difference between the panel being opened because the list
- * was drawn and being opened because a row was pressed. The first must not take
- * the caret: a page that loads with the cursor in a text box scrolls itself to
- * that box on a phone-sized window and steals the first keystroke on a wide one.
+ * `keepFocus` is the difference between the box being drawn because the page was
+ * and being asked for. The first must not take the caret: a page that loads with
+ * the cursor in a text box steals the first keystroke.
  */
 async function openPanel(taskId, { keepFocus = false } = {}) {
   const { mountEdit } = await import(`./mvp.edit.js${v}`);
   if (panel) { if (!keepFocus) panel.load(taskId); return panel; }
-  aside.dataset.screen = "edit";
-  aside.innerHTML = "";
-  panel = mountEdit(aside, { taskId, onBack: null, inPanel: true });
+  capture.dataset.screen = "edit";
+  capture.innerHTML = "";
+  panel = mountEdit(capture, { taskId, onBack: null, inPanel: true });
   return panel;
 }
 
-function closePanel() {
-  panel?.unmount?.();
-  panel = null;
-  aside.innerHTML = "";
+function closeWide() {
+  panel?.unmount?.(); panel = null; capture.innerHTML = "";
+  bar?.unmount?.(); bar = null; rail.innerHTML = "";
+  detail?.unmount?.(); detail = null; aside.innerHTML = "";
+  picked = null;
 }
 
 async function showAccount() {
@@ -90,7 +151,7 @@ async function showAccount() {
   // The account screen takes the whole window in both layouts. It is a place you
   // go rather than a thing you work beside, and leaving the capture box open next
   // to a Sign out button offers to type into an account you are leaving.
-  closePanel();
+  closeWide();
   await put(screen, mountAccount, "account", {
     onBack: () => showList(),
     onSignedOut: () => { started = false; gate(); },
@@ -102,11 +163,19 @@ async function showAccount() {
  * is open has to land somewhere, and the answer is the route a phone would be
  * on: the list, with the panel closed.
  */
-WIDE.addEventListener("change", () => {
+/**
+ * Crossing a breakpoint mid-session lands on the route a smaller window would be
+ * on: the list, with whatever that width does not have room for closed. Dragging a
+ * window narrow with three columns open has to land somewhere.
+ */
+const settle = () => {
   if (!started) return;
-  if (WIDE.matches) { if (route === "list") openPanel(null, { keepFocus: true }); }
-  else { closePanel(); if (route === "list") showList(); }
-});
+  if (route !== "list") return;
+  closeWide();
+  showList();
+};
+WIDE.addEventListener("change", settle);
+ROOMY.addEventListener("change", settle);
 
 /**
  * Three keys, and only where there is a keyboard to press them on. This is the
@@ -145,7 +214,7 @@ function tellTheTruth() {
   const say = [];
   if (!css) say.push("No stylesheet loaded at all.");
   else if (css !== SHELL_VERSION) say.push(`Stylesheet is v${css}, app is v${SHELL_VERSION}. Your browser is serving an old copy — close the app fully and reopen it.`);
-  if (css === SHELL_VERSION && WIDE.matches && !wide) say.push("The wide layout stylesheet did not load, so this is the phone layout in a large window.");
+  if (css === SHELL_VERSION && ROOMY.matches && !wide) say.push("The wide layout stylesheet did not load, so this is the phone layout in a large window.");
   const old = document.getElementById("truth");
   if (old) old.remove();
   if (!say.length) return;
@@ -161,13 +230,16 @@ async function start() {
   started = true;
   gateEl.style.display = "none";
   app.style.display = "";
+  whoEmail = (await account.current())?.email ?? "";
   await showList();
   tellTheTruth();
 }
 
+let whoEmail = "";
+
 function gate() {
   app.style.display = "none";
-  closePanel();
+  closeWide();
   here?.unmount?.();
   here = null;
   gateEl.style.display = "";

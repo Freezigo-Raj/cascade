@@ -9,6 +9,31 @@ D-1: **Typing the thought is the whole of the work.**
 
 ---
 
+## Three layouts
+
+**One set of screens, arranged three ways.** `mvp.js` decides, and the two numbers are stated in `mvp.wide.css` (940) and `mvp.web.css` (1180).
+
+| | Phone (under 940) | Tablet (940–1179) | Web (1180 and over) |
+|---|---|---|---|
+| Columns | One | One, wider | Three: rail, list, detail |
+| Capture box | A screen you navigate to | Above the list, always open | Above the list, always open |
+| Left rail | — | — | Nav with live counts, plus WIP items |
+| Row press | Navigates to screen 2 | Loads the box above the list | SELECTS into the detail panel; the box is left alone |
+| Detail panel | — | — | Everything the task carries, read-only, with WIP sections in place |
+| Keys | — | `n` `/` `Esc` | `n` `/` `Esc` |
+
+**WIP is one treatment everywhere.** A drawn control that does not work is dimmed, carries a `WIP` tag, and says on a press what is missing and which Part owns it. It is kept in place rather than removed, because a nav or a panel that grows later moves everything a person has learned the position of.
+
+**Three things the design draws that are deliberately NOT drawn, and are not WIP.** A duration on every row, a day's load beside each push target, and a push count. All three are collected and none is shown: that is the quiet-fields rule from session 89, and drawing them would reverse a decision rather than fill a gap.
+
+**Live in the rail:** Today, Tomorrow, Upcoming, Ideas, Done, all with real counts from the same pass the list uses; Capture; the account foot. **WIP in the rail:** Week, Day plan, Workflow, Activity, Projects.
+
+**Live in the detail panel:** the type and firmness kicker, title, sentence, Done/Undone, Pin, Edit, Delete, the real push targets, notes, and a read-only list of what the task carries (duration and whether it was chosen, firmness, weight, alarm, repeat, pushes). **WIP:** Project, People, Tags, Blocked by, Activity.
+
+**The detail panel is read-only on purpose.** Every field on it is set in the editor, and `Edit` hands the task to the capture box. A second control for one field is how two controls come to disagree.
+
+---
+
 ## Two layouts
 
 **One set of screens, arranged twice.** `mvp.js` decides which, at 940px, and no screen knows which it is in.

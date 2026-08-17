@@ -23,7 +23,7 @@ const { ask } = await import(`./mvp.dialog.js${v}`);
 const { drawPanel } = await import(`./mvp.panel.js${v}`);
 const { typeInto, typeBeside, removeSpans } = await import(`./mvp.words.js${v}`);
 const { el, button } = await import(`./mvp.paint.js${v}`);
-const { drawDates, when } = await import(`./mvp.chips.js${v}`);
+const { makeDates, storedWhen, when } = await import(`./mvp.chips.js${v}`);
 
 export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {}) {
   let line = "";
@@ -62,6 +62,20 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
   // then the press. Add sat above the type chips and asked to be pressed before
   // the last two answers were given.
   root.append(head, box, dateRow, typeRow, panel, doRow, matches);
+
+  // The chip row is built once. It holds two native pickers, and a picker that is
+  // rebuilt while it is open closes without returning anything: opening a
+  // calendar takes several clicks, and every keystroke and every sync used to
+  // destroy the input underneath it. Only the tick chip changes, and it has its
+  // own slot inside the row.
+  // Wrapped rather than passed by name: `typeWords` and `typeTime` are declared
+  // below this line, and handing them over directly reads a `const` before it
+  // exists. The wrappers resolve when the chip is pressed, which is after.
+  const dates = makeDates(dateRow, partAConfig, {
+    typeWords: (words) => typeWords(words),
+    typeTime: (words) => typeTime(words),
+    clearDate: () => clearDate(read()),
+  });
 
   // ------------------------------------------------------------- the engine
 
@@ -365,10 +379,7 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
   function paint() {
     const out = read();
     drawHead(out);
-    drawDates(dateRow, partAConfig, out, {
-      said: when(out), boundId, dropDate, cards: out?.list.cards ?? [],
-      typeWords, typeTime, clearDate: () => clearDate(out),
-    });
+    dates.update(when(out) || (dropDate ? "" : storedWhen(out?.list.cards ?? [], boundId)));
     drawDo(out);
     drawTypes(out);
     drawMatches(out);

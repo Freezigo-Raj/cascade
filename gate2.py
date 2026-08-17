@@ -309,6 +309,18 @@ except IOError:
 # person has to remember to bump is a number that goes stale, and this one going
 # stale means a whole session's design never reaching a browser. So it is read
 # rather than trusted.
+# The stylesheet also states its own version in a token the app reads at runtime,
+# and a token that disagrees with SHELL_VERSION makes the app accuse the browser
+# of serving something old when the repository is what disagrees. Two numbers in
+# two files, so the gate holds them together like it holds the queries.
+if sv:
+    try:
+        _MC=io.open('shell/mvp.css',encoding='utf-8').read()
+        _m2=re.search(r'--css-version:\s*(\d+)', _MC)
+        if not _m2: bad('shell/mvp.css states no --css-version; the app cannot tell a stale stylesheet from a fresh one')
+        elif _m2.group(1)!=sv: bad('shell/mvp.css says --css-version %s, SHELL_VERSION is %s'%(_m2.group(1),sv))
+    except IOError: bad('shell/mvp.css is missing')
+
 if sv:
     _css_refs=[]
     try:

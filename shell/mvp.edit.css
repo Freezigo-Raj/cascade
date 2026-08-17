@@ -10,10 +10,11 @@
  * that reason and for no other.
  */
 
-@import url("./mvp.css?v=27");
-@import url("./mvp.account.css?v=27");
-@import url("./mvp.wide.css?v=27");
-@import url("./mvp.chrome.css?v=27");
+@import url("./mvp.css?v=28");
+@import url("./mvp.account.css?v=28");
+@import url("./mvp.wide.css?v=28");
+@import url("./mvp.chrome.css?v=28");
+@import url("./mvp.web.css?v=28");
 
 /* ------------------------------------------------------------ screen 2
  *
@@ -86,16 +87,26 @@
 .chip.on { background: var(--signal); border-color: var(--signal); color: var(--sheet); }
 .chip.more { letter-spacing: 0.14em; }
 
-/* A picker is a chip with a real control inside it. The control is invisible
-   and covers the chip, so the whole chip opens it rather than a hairline. */
+/* A picker is a chip beside a native control, not a native control stretched
+   under a chip. The old shape relied on the press landing on the browser's own
+   calendar indicator, which sits at the right edge of the field and was under a
+   chip of a different width: hit sometimes for time and never for date. The
+   button calls `showPicker()` instead and the field takes no clicks at all.
+   It stays 1px at the bottom-left of the chip rather than being moved off the
+   page, because the browser anchors the popup to where the field is. */
 .picker { position: relative; display: inline-flex; align-items: center; }
-.picker input {
+.picker-field {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  left: 0;
+  bottom: 0;
+  width: 1px;
+  height: 1px;
   opacity: 0;
-  cursor: pointer;
+  pointer-events: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: none;
 }
 
 .dorow {

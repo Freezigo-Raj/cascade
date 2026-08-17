@@ -43,7 +43,7 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
   contract     49
   config       a.16
   answer_key   28
-  shell        27
+  shell        28
   gate1        signed on example 35
   gate2        signed on contract 32
   gate3        signed on shell 1
@@ -78,30 +78,32 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 
 ## THIS SESSION'S JOB
 
-Say what arrived, and stop shipping half of it.
+The pickers, and the rule that has now been learned three times.
 
-**The report was "the web version doesn't work, no version shown", and the code was not at fault.** The
-capture panel mounts correctly under a wide window; proved headlessly. What was wrong was the delivery:
-the session 107 `changed` zip held 106's files and 107's files and NOT 105's, so `mvp.account.js` never
-reached him and the version block he had asked for was missing from a build that otherwise looked
-correct. A half-applied set of files across three sessions is indistinguishable from a bug in the code,
-and an hour went into telling them apart.
+**The words were never the problem.** `dateWords` and `timeWords` produce `20 Aug` and `5:30pm`, and the
+engine reads both correctly; checked first. What failed was reaching the native control at all.
 
-**So the zip is cumulative from the last build he has confirmed running.** Written into the decision log
-rather than remembered.
+**Two causes, and the second is the one that matters.**
 
-**And the app now says what it is running on.** `mvp.css` states `--css-version` and `mvp.wide.css` sets
-`--wide`; `mvp.js` reads both and draws one loud line when either disagrees with `SHELL_VERSION`. Three
-sessions have been spent on this question. A stale stylesheet used to be invisible, and a wide window
-missing its layout sheet looked exactly like a phone — which is the worst kind of failure, because it
-looks like a decision. Four states proved: agreeing and silent, stale and named, wide sheet missing and
-named, no stylesheet at all.
+The chip was a `<label>` with an invisible `<input type="date">` stretched over it, so opening the
+control depended on the press landing on the browser's own calendar indicator — which sits at the right
+edge of the field, under a chip of a different width. Hit sometimes for time, never for date. It is a
+button calling `showPicker()` now, and the field takes no clicks at all.
 
-**The build number is in the header.** One press away was one press too far when the question is whether
-a push arrived. Every screenshot of the app now carries its own version.
+**And the row was rebuilt on every keystroke.** A picker that is rebuilt while it is open closes without
+returning anything. Opening a calendar takes several clicks and a few seconds, and every repaint in that
+window — a keystroke, a sync arriving from the phone — destroyed the input the calendar was attached to.
+So the row is built once and only the tick chip is repainted, which is the third place this rule has been
+needed: the capture box had it from session 99, the search box got it in session 107, and this row was
+still being thrown away and remade.
 
-**`mvp.chrome.css`.** The toast and the truth strip left `mvp.css`, which crossed the cap again. Both
-belong to no single screen: one is fixed to the window, the other is about the build.
+**Four things proved rather than argued:** the chip press calls `showPicker`; the input is the same object
+after a repaint; picking a date types `20 Aug` into the box; and picking a time afterwards types
+`5:30pm` beside it rather than after the sentence.
+
+**The gate now holds `--css-version` to `SHELL_VERSION`.** The app reads that token to decide whether to
+accuse the browser of serving an old stylesheet, so a token left behind by a bump would have the app
+blaming the browser for the repository's mistake.
 
 ## NEXT THREE JOBS
 
@@ -724,6 +726,14 @@ have landed. That is the price of the single table and it is accepted.
 - 17 Aug 2026 — The running build is in the HEADER, not only on the account screen — one press away is one press too far when the question is whether a push arrived at all — every screenshot of the app now carries its own version, which is what the last three rounds of this were missing.
 - 17 Aug 2026 — A delivery rule, written down because breaking it cost a session: the `changed`-only zip is CUMULATIVE from the last build he has confirmed running, never per-session — session 107's zip held 106's and 107's files and not 105's, so `mvp.account.js` never reached him and the version block he asked for was missing from a build that otherwise looked correct — a half-applied set of files across three sessions is indistinguishable from a bug in the code.
 - 17 Aug 2026 — The toast and the truth strip left `mvp.css` as `mvp.chrome.css` — the file crossed the 400-line cap again and both of these belong to no single screen: one is fixed to the window and the other is about the build — fifth stylesheet, fifth `?v=` query, all checked by the gate.
+- 17 Aug 2026 — The date chip row is BUILT ONCE, which is the third place this rule has been needed and the second time it arrived late — a picker that is rebuilt while it is open closes without returning anything, and opening a calendar takes several clicks and a few seconds, during which any keystroke or any sync from the other device destroyed the input the calendar was attached to — a date picker that never works and a time picker that works when you are quick is exactly what that produces, and only the tick chip actually changes.
+- 17 Aug 2026 — A picker is a button that calls `showPicker()`, not an invisible input stretched over a chip — the old shape relied on the press landing on the browser's own calendar indicator, which sits at the right edge of the field and was under a chip of a different width — the field now takes no clicks at all and stays 1px at the bottom-left of the chip, because the browser anchors the popup to where the field is rather than to what opened it. Where `showPicker` is missing or refused, focus-and-click is the fallback rather than the plan.
+- 17 Aug 2026 — `gate2.py` holds `--css-version` in `mvp.css` to `SHELL_VERSION` — the app reads that token to decide whether to accuse the browser of serving an old stylesheet, so a token left behind by a bump would have the app blaming the browser for what the repository got wrong — proved by setting it to 24 and watching the gate name both numbers.
+- 17 Aug 2026 — The `Cascade Web` frame is built in full at 1180px — rail, list, detail panel — with everything unbacked DRAWN AND MARKED WIP rather than left out, his instruction — a nav or a panel that grows later moves everything a person has learned the position of, so the shape is put in place now and filled in later — the cost is a screen with eleven controls that do not work, each of which has to say so on a press or it reads as broken.
+- 17 Aug 2026 — WIP is ONE treatment everywhere: dimmed, a `WIP` tag, and one sentence on a press naming what is missing and which Part owns it — eleven different ways of saying "not yet" is eleven things to learn — the sentences live in one object per file, so they cannot drift from each other in tone.
+- 17 Aug 2026 — THREE things the design draws are deliberately NOT drawn and are NOT marked WIP: a duration on every row, a day's load beside each push target, and a push count — all three are collected and never shown, which is the quiet-fields rule from session 89, so drawing them would reverse a decision rather than fill a gap — `decided` and `not yet` are kept apart here for the same reason they are kept apart in the register.
+- 17 Aug 2026 — The detail panel is READ-ONLY and `Edit` hands the task to the capture box — every field on it is already set in the editor, and a second control for one field is how two controls come to disagree, which this project has now paid for four times — the cost is one extra press to change anything from the panel.
+- 17 Aug 2026 — TWO breakpoints now: 940 moves the capture box above the list, 1180 adds the rail and the detail panel — a rail needs a first column and a panel needs a third, and at 940 there is room for neither — each number is stated in exactly one stylesheet and in `mvp.js`, and crossing either lands on the list with whatever does not fit closed.
 
 
 ## DELIBERATE DEVIATIONS FROM PROTOCOL

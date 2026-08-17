@@ -16,31 +16,22 @@
      of failure: it looks like a decision. */
   :root { --wide: 1; }
 
+  /* 940 to 1179: one column, wider, with the capture box above the list. The rail
+     and the detail panel need a third and a second column and there is not room
+     for either, so they stay collapsed and nothing is hidden to achieve it. */
   #app {
-    max-width: 1180px;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(380px, 460px);
-    gap: calc(var(--step) * 10);
-    align-items: start;
-    padding: calc(var(--step) * 8) calc(var(--step) * 8) calc(var(--step) * 12);
+    max-width: 860px;
+    padding: calc(var(--step) * 7) calc(var(--step) * 6) calc(var(--step) * 12);
   }
-  /* The panel stays put while the list scrolls under it. On a page this long the
-     alternative is a capture box that leaves the window the moment you scroll to
-     find the task you were about to edit. */
-  #aside {
-    position: sticky;
-    top: calc(var(--step) * 8);
+  #capture {
     background: var(--sheet);
     border: 1.5px solid var(--edge);
     border-radius: var(--r-block);
-    padding: calc(var(--step) * 6);
-    box-shadow: var(--lift);
+    padding: calc(var(--step) * 5);
+    margin-bottom: calc(var(--step) * 5);
   }
-  /* Wide enough for the long sentence, so the phone's short one is not used
-     here. A row can also afford a hover state, because there is a pointer. */
+  #capture .head:empty { display: none; }
+  /* A row can afford a hover state here, because there is a pointer. */
   .row:hover { border-color: rgba(198, 113, 57, 0.45); }
-  /* The panel has nowhere to go back to: it is already beside what it would
-     have gone back to. */
-  #aside .head .act:first-child { display: none; }
-  #aside .matches { max-height: 40vh; overflow-y: auto; }
+  #capture .matches { max-height: 30vh; overflow-y: auto; }
 }
