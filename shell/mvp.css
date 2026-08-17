@@ -1,31 +1,51 @@
-/* Cascade Part A — screen 1.
+/* Cascade Part A — tokens and screen 1.
  *
- * A row is a title and a sentence. Everything here exists to keep that true
- * while the row still carries five things to press.
+ * The visual system is the one in `Cascade_Mobile_UI_Design_R2`: warm ground,
+ * a terracotta accent, Fraunces over Figtree, rounded cards on a soft
+ * elevation. What it replaced was a cool, flat, hairline system with a mono
+ * utility face, and two things had to be rebuilt rather than recoloured.
  *
- * The actions are not hidden. They were, on hover, which read beautifully on a
- * laptop and put every control out of reach of a thumb. They are typographically
- * subordinate instead: small, mono, uppercase, low contrast, gaining contrast
- * when addressed. The row reads as two lines and answers to a finger.
+ * ONE. The row actions were subordinate because they were mono: small,
+ * uppercase, letter-spaced, low contrast. There is no mono face here, so they
+ * are built out of Figtree at 600 with the same four signals. A row still reads
+ * as a title and a sentence that happens to carry controls.
  *
- * One colour, three jobs: the focus ring, the tab you are on, and a pin. Nothing
- * else in the app is coloured, so a colour anywhere means a state.
+ * TWO. Colour used to mean one thing. It now means three, and each has exactly
+ * one job: ACCENT is what you can press, WARN is overdue, GOOD is synced. That
+ * is a real widening of the old rule and it is written down rather than drifted
+ * into. Nothing else on either screen is coloured.
+ *
+ * To go back to the previous look, the token block is the whole of the change.
+ *
+ * Screen 3 is in `mvp.account.css`; this file crossed the 400-line cap while the
+ * design was being applied and the split is by screen.
  */
 
-@import url("https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Figtree:wght@400;500;600;700&display=swap");
 
 :root {
-  --paper:  #eef0f3;
-  --sheet:  #ffffff;
-  --ink:    #14161a;
-  --quiet:  #666e7a;
-  --edge:   #d9dde3;
-  --signal: #1f4d46;
+  --paper:  #f5ead8;   /* the ground */
+  --sheet:  #fdf7f0;   /* a card */
+  --sunk:   #eee7db;   /* a track or a field: below the ground, not above it */
+  --ink:    #201e1d;
+  --quiet:  rgba(32, 30, 29, 0.58);
+  --edge:   rgba(32, 30, 29, 0.16);
 
-  --face-display: "Familjen Grotesk", "Segoe UI", system-ui, sans-serif;
-  --face-utility: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --signal:      #c67139;  /* pressable, pinned, focused */
+  --signal-deep: #8c491a;  /* the same thing, pressed */
+  --signal-wash: #fbeee2;  /* the Now block only */
+  --warn:        #c0492b;  /* overdue, and nothing else */
+  --good-ink:    #3d472b;  /* synced */
+  --good-wash:   #e1eecc;
+
+  --face-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --face-body: "Figtree", "Segoe UI", system-ui, sans-serif;
 
   --step: 4px;
+  --r-card: 18px;
+  --r-block: 24px;
+  --r-pill: 999px;
+  --lift: 0 8px 22px rgba(140, 73, 26, 0.13);
 }
 
 * { box-sizing: border-box; }
@@ -34,170 +54,282 @@ html, body {
   margin: 0;
   background: var(--paper);
   color: var(--ink);
-  font-family: var(--face-display);
+  font-family: var(--face-body);
   -webkit-font-smoothing: antialiased;
 }
 
 #screen {
   max-width: 680px;
   margin: 0 auto;
-  padding: calc(var(--step) * 7) calc(var(--step) * 4) calc(var(--step) * 20);
+  padding: calc(var(--step) * 4) calc(var(--step) * 4) calc(var(--step) * 24);
 }
 
-/* ------------------------------------------------------------------ chrome */
+/* ------------------------------------------------------------------- header */
+/* The kicker names the tab, the title names the slot inside it, and the date
+   is the one thing on this screen the app knows and the person might not. */
 
-.bar {
+.head-block {
   display: flex;
-  align-items: baseline;
-  gap: calc(var(--step) * 5);
-  flex-wrap: wrap;
-  margin-bottom: calc(var(--step) * 3);
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: calc(var(--step) * 3);
+  padding: calc(var(--step) * 2) calc(var(--step) * 1) calc(var(--step) * 3);
 }
+.kicker {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--signal-deep);
+}
+.head-title {
+  font-family: var(--face-display);
+  font-weight: 600;
+  font-size: 32px;
+  line-height: 1;
+  margin: 2px 0 0;
+}
+.head-date { font-size: 14px; color: var(--quiet); margin-top: 5px; }
 
-/* The tab you are on is heavier and larger. State is carried by the type, so
-   there is no underline, pill or bar to also carry it. */
-.tab {
+.head-right { display: flex; flex-direction: column; align-items: flex-end; gap: calc(var(--step) * 2); }
+.head-tools { display: flex; align-items: center; gap: calc(var(--step) * 2); }
+
+/* The way to screen 3. A circle rather than a word, because it is the only
+   control up here that is not about the list. */
+.avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--signal);
+  color: var(--sheet);
   font-family: var(--face-display);
   font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Green means synced and amber means it is not. The only place in the app that
+   reports the store's own state, and it says a word rather than a colour alone. */
+.sync {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: var(--r-pill);
+  padding: 3px 9px;
+  font-size: 11.5px;
+  font-weight: 600;
+  background: var(--good-wash);
+  color: var(--good-ink);
+  white-space: nowrap;
+}
+.sync .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--good-ink); }
+.sync.local { background: var(--sunk); color: var(--quiet); }
+.sync.local .dot { background: var(--quiet); }
+
+/* --------------------------------------------------------------------- tabs */
+
+.bar { display: flex; align-items: center; gap: calc(var(--step) * 4); flex-wrap: wrap;
+       padding: 0 var(--step) calc(var(--step) * 3); }
+.tab {
+  font-family: var(--face-display);
+  font-size: 17px;
   font-weight: 400;
-  letter-spacing: -0.01em;
   color: var(--quiet);
   background: none;
   border: 0;
   padding: 0;
   cursor: pointer;
 }
-.tab[aria-selected="true"] {
-  font-size: 22px;
-  font-weight: 600;
-  color: var(--ink);
-}
+.tab[aria-selected="true"] { font-size: 20px; font-weight: 600; color: var(--ink); }
 
 .search {
   margin-left: auto;
-  font-family: var(--face-utility);
-  font-size: 12px;
+  font-family: inherit;
+  font-size: 13px;
   color: var(--ink);
-  background: var(--sheet);
-  border: 1px solid var(--edge);
-  border-radius: 2px;
-  padding: calc(var(--step) * 1.5) calc(var(--step) * 2);
-  width: 168px;
+  background: var(--sunk);
+  border: 1.5px solid transparent;
+  border-radius: var(--r-pill);
+  padding: calc(var(--step) * 2) calc(var(--step) * 3.5);
+  width: 150px;
 }
 .search::placeholder { color: var(--quiet); }
+.search:focus-visible { outline: 0; border-color: var(--signal); background: var(--sheet); }
 
+.plus {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--signal);
+  color: var(--sheet);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(140, 73, 26, 0.28);
+}
+
+/* A segmented track, which is what the design uses for a choice of three. The
+   toggle lives inside Tasks and nowhere else. */
 .slots {
   display: flex;
-  gap: calc(var(--step) * 3);
-  margin-bottom: calc(var(--step) * 5);
+  gap: calc(var(--step) * 1.5);
+  background: var(--sunk);
+  border-radius: var(--r-pill);
+  padding: var(--step);
+  margin: 0 var(--step) calc(var(--step) * 4);
 }
 .slot {
-  font-family: var(--face-utility);
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  flex: 1;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--quiet);
   background: none;
   border: 0;
-  padding: 0;
+  border-radius: var(--r-pill);
+  padding: calc(var(--step) * 2) 0;
   cursor: pointer;
 }
-.slot[aria-pressed="true"] { color: var(--signal); font-weight: 500; }
+.slot[aria-pressed="true"] { background: var(--sheet); color: var(--ink); box-shadow: 0 1px 3px rgba(46, 43, 37, 0.14); }
 
-/* -------------------------------------------------------------------- rows */
+/* --------------------------------------------------------------- the groups */
+/* A heading over a set of cards, with its own count. `Now` is overdue and is
+   the only group the design gives a wash of its own, so it is the only group
+   that gets one here. */
 
-.rows { display: flex; flex-direction: column; gap: 1px; background: var(--edge); }
-.rows:empty { background: none; }
+.group-head {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--step) * 2);
+  padding: 0 calc(var(--step) * 2) calc(var(--step) * 2);
+}
+.group-name { font-family: var(--face-display); font-size: 19px; }
+.group-count { font-size: 13px; font-weight: 600; color: var(--quiet); }
+.group-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--warn);
+  box-shadow: 0 0 0 4px rgba(192, 73, 43, 0.18);
+}
+
+.block { margin-bottom: calc(var(--step) * 5); }
+.block.now .rows {
+  background: var(--signal-wash);
+  border: 1.5px solid rgba(198, 113, 57, 0.32);
+  border-radius: var(--r-block);
+  padding: calc(var(--step) * 2);
+  box-shadow: var(--lift);
+}
+
+/* --------------------------------------------------------------------- rows */
+
+.rows { display: flex; flex-direction: column; gap: calc(var(--step) * 2); }
 
 .row {
   background: var(--sheet);
-  padding: calc(var(--step) * 4);
+  border: 1.5px solid var(--edge);
+  border-radius: var(--r-card);
+  padding: calc(var(--step) * 3) calc(var(--step) * 3.5);
   display: grid;
-  gap: calc(var(--step) * 1.5);
+  grid-template-columns: auto 1fr auto;
+  gap: calc(var(--step) * 3);
+  align-items: start;
 }
+.row.pinned { border-color: var(--signal); }
+
+/* Done is a circle, which is the design's own control for it and is the one
+   thing on a row a thumb finds without reading. The word left the action row
+   with it: two ways to do one thing is how two of them come to disagree. */
+.tick {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2.4px solid var(--edge);
+  background: none;
+  cursor: pointer;
+  padding: 0;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+.tick:hover, .tick:focus-visible { border-color: var(--signal); }
+.tick.on { border-color: var(--signal); background: var(--signal); color: var(--sheet); }
+.tick.on::after { content: "\2713"; font-size: 16px; line-height: 1; }
+.row.overdue .tick { border-color: rgba(192, 73, 43, 0.45); }
+
+.row .body { min-width: 0; }
 
 .row .title {
-  font-size: 17px;
-  font-weight: 500;
-  letter-spacing: -0.015em;
+  display: block;
+  width: 100%;
+  font-family: inherit;
+  font-size: 15.5px;
+  font-weight: 600;
   line-height: 1.25;
   color: var(--ink);
   background: none;
   border: 0;
   padding: 0;
-  margin: 0;
   text-align: left;
   cursor: pointer;
-  font-family: inherit;
 }
-.row.pinned .title::before {
-  content: "";
-  display: inline-block;
-  width: 5px;
-  height: 5px;
-  margin-right: 8px;
-  vertical-align: 3px;
-  background: var(--signal);
-  border-radius: 50%;
-}
+.row.done .title { color: var(--quiet); text-decoration: line-through; }
 
 .row .said {
-  font-family: var(--face-utility);
-  font-size: 12.5px;
-  line-height: 1.45;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--quiet);
+  margin-top: 5px;
 }
+.row.overdue .said { color: var(--warn); }
 
-.acts { display: flex; flex-wrap: wrap; gap: calc(var(--step) * 3); margin-top: var(--step); }
+/* The push targets, on the right, where the design puts its nudges. The labels
+   are the engine's own — a band pushes to a band — and not a fixed `+3d`. */
+.nudges { display: flex; flex-direction: column; gap: 5px; flex-shrink: 0; }
+.nudge {
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--signal-deep);
+  background: var(--sunk);
+  border: 0;
+  border-radius: var(--r-pill);
+  padding: 4px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.nudge:hover, .nudge:focus-visible { background: var(--signal); color: var(--sheet); }
+
+/* ------------------------------------------------------------------ actions */
+/* No mono face in this system, so the four signals that made these subordinate
+   are rebuilt out of Figtree: small, uppercase, letter-spaced, low contrast. */
+
+.acts { display: flex; flex-wrap: wrap; gap: calc(var(--step) * 4); margin-top: calc(var(--step) * 2.5); }
 .act {
-  font-family: var(--face-utility);
+  font-family: inherit;
   font-size: 10.5px;
+  font-weight: 600;
   letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--quiet);
   background: none;
   border: 0;
-  padding: calc(var(--step) * 1.5) 0;
+  padding: 0;
   cursor: pointer;
 }
-.act:hover, .act:focus-visible { color: var(--ink); }
+.act:hover, .act:focus-visible { color: var(--signal-deep); }
 .act.away { margin-left: auto; }
 
-/* ------------------------------------------------------------------ account */
-/* Screen 3 borrows the panel's grammar from screen 2 rather than inventing one:
-   an uppercase mono label over the thing it names. Nothing here is coloured and
-   nothing is a new size, so the screen reads as the same app. */
+/* A control that is drawn and does not work yet. One treatment, everywhere, so
+   `later` is a state a person can learn rather than a surprise per screen. */
+.later, .act.later { color: var(--quiet); opacity: 0.55; cursor: help; }
+.later:hover, .act.later:hover { color: var(--quiet); }
 
-.quiet-act { margin-left: auto; align-self: center; }
-
-[data-screen="account"] .group { margin-top: calc(var(--step) * 7); }
-[data-screen="account"] .label {
-  font-family: var(--face-utility);
-  font-size: 10.5px;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--quiet);
-  margin-bottom: calc(var(--step) * 2);
+:where(button, input, textarea, a):focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
-[data-screen="account"] .said {
-  font-family: var(--face-utility);
-  font-size: 12px;
-  line-height: 1.6;
-  color: var(--quiet);
-  max-width: 46ch;
-}
-[data-screen="account"] .group > .act { display: block; }
-[data-screen="account"] .group > .act + .said { margin-top: var(--step); }
-.stat {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  border-bottom: 1px solid var(--edge);
-  padding: calc(var(--step) * 2) 0;
-  max-width: 46ch;
-}
-.stat-label { font-family: var(--face-display); font-size: 14px; }
-.stat-value { font-family: var(--face-utility); font-size: 13px; color: var(--quiet); }
 
 /* -------------------------------------------------------------------- toast */
 
@@ -210,43 +342,28 @@ html, body {
   align-items: center;
   gap: calc(var(--step) * 4);
   background: var(--ink);
-  color: var(--sheet);
-  font-family: var(--face-utility);
-  font-size: 12px;
-  padding: calc(var(--step) * 3) calc(var(--step) * 4);
-  border-radius: 2px;
-  max-width: calc(100vw - var(--step) * 8);
+  color: var(--paper);
+  border-radius: var(--r-pill);
+  padding: calc(var(--step) * 3) calc(var(--step) * 5);
+  font-size: 13px;
+  box-shadow: var(--lift);
+  max-width: calc(100vw - 32px);
 }
 .toast button {
-  font: inherit;
-  letter-spacing: 0.09em;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+  color: var(--signal);
   background: none;
   border: 0;
-  color: var(--sheet);
-  text-decoration: underline;
   cursor: pointer;
 }
 
-.state {
-  font-family: var(--face-utility);
-  font-size: 11px;
-  color: var(--quiet);
-  margin-top: calc(var(--step) * 5);
-}
-
-:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
-
 @media (max-width: 600px) {
-  #screen { padding: calc(var(--step) * 5) calc(var(--step) * 3) calc(var(--step) * 20); }
-  .search { margin-left: 0; width: 100%; order: 3; }
-  /* The push targets sit hard right on a wide row, which reads as a second
-     group. At this width the row wraps anyway and the gap only splits it. */
-  .act.away { margin-left: 0; }
-  .tab[aria-selected="true"] { font-size: 20px; }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .row { animation: settle 160ms ease-out both; }
-  @keyframes settle { from { opacity: 0; transform: translateY(2px); } }
+  #screen { padding-left: calc(var(--step) * 3); padding-right: calc(var(--step) * 3); }
+  .head-title { font-size: 28px; }
+  .search { width: 100%; margin-left: 0; order: 3; }
+  .row { padding: calc(var(--step) * 3); }
 }

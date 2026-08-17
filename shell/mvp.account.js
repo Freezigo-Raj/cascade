@@ -11,6 +11,11 @@
 // a fact, where `est_duration_min` is a default. The quiet-fields rule is about
 // guesses appearing as though they were measurements, and it stands.
 //
+// It also carries the NOT BUILT register: every control the design draws, or
+// the record carries, that has no working control behind it yet. It lives on a
+// screen rather than only in `MVP.md` because a gap nobody can see is a gap that
+// gets rediscovered, and this project has rediscovered four of them.
+//
 // The export is the answer to the one failure that gets worse every day: the
 // tasks live in one account and one browser cache and there is no other copy.
 // It writes what the store holds, unchanged, so a restore later reads records
@@ -22,6 +27,31 @@ const { account } = await import(`./auth.js${v}`);
 const { el, button } = await import(`./mvp.paint.js${v}`);
 
 const open = (t) => t.task_state === "ready" && !t.archived;
+
+/**
+ * Drawn but dead, or in the design and not drawn at all. Each line names the
+ * thing, why it does not work, and which Part owns it.
+ *
+ * The rule for being on this list: a person could reasonably expect it to work.
+ * Decisions that went the other way on purpose are here too, marked `decided`,
+ * because "we chose not to" and "we have not got to it" are different answers
+ * and the second one is the only one worth chasing.
+ */
+const NOT_BUILT = [
+  ["Alarms ring", "Every alarm is recorded and nothing fires. A browser cannot wake itself, so the scheduler is Part B.", "Part B"],
+  ["Reminder timing", "Lead times, repeats and the notification budget are set and read by nothing yet.", "Part B"],
+  ["Workflow", "One task activating the next. Decided in full — dependencies, and/or, if/else, bounded loops — and no column exists yet.", "Part C"],
+  ["Projects", "`project_id` is on every record and nothing writes it. No grouping screen.", "Part C"],
+  ["Cancel and Archive", "Both are `row_action` members with no control anywhere. A row carries Pin, Delete and its push targets.", "decided"],
+  ["Swipe on a row", "Buttons only, no gesture. A control hidden behind a swipe cannot be found by reading the screen.", "decided"],
+  ["Notes on a row", "Notes are read in the editor and never previewed on a row, which stays a title and a sentence.", "decided"],
+  ["Delivery channels", "The design offers alarm, notification and in-app. The record holds one alarm field, not three channels.", "later"],
+  ["Streaks and percent done", "A repeat spawns its next occurrence and keeps no history of the ones before it.", "later"],
+  ["People and tags", "Two vocabularies the design draws and the record has no column for.", "later"],
+  ["Context", "Derived from the verb, stored, and read by nothing. Config holds two members.", "later"],
+  ["Import", "The export writes a file and nothing reads one back.", "later"],
+  ["Dark theme", "One set of tokens, tuned for the light ground.", "later"],
+];
 
 /**
  * @param {HTMLElement} root
@@ -89,6 +119,19 @@ export function mountAccount(root, { onBack, onSignedOut } = {}) {
     out.appendChild(el("div", "said",
       "Every task as it is stored, in one file. Alarms are recorded and ring nothing until Part B."));
     root.appendChild(out);
+
+    const later = el("div", "group");
+    later.appendChild(el("div", "label", "Not built yet"));
+    later.appendChild(el("div", "said",
+      "Everything the app or the design offers that does not work. `decided` means it was chosen against, not forgotten."));
+    for (const [what, why, when] of NOT_BUILT) {
+      const item = el("div", "later-item");
+      item.appendChild(el("div", "what", what));
+      item.appendChild(el("div", "why", why));
+      item.appendChild(el("span", "when", when));
+      later.appendChild(item);
+    }
+    root.appendChild(later);
 
     if (who) {
       const bye = el("div", "group");

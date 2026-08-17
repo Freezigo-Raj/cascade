@@ -29,19 +29,34 @@ const STATES = {
 };
 
 const CSS = `
-#gate { max-width: 340px; margin: 60px auto; font: 14px ui-monospace, Menlo, Consolas, monospace; }
-#gate h1 { font-size: 15px; font-weight: 600; margin: 0 0 18px; }
-#gate input { font: inherit; width: 100%; box-sizing: border-box; padding: 7px 8px;
-              border: 1px solid #bbb; margin-bottom: 8px; }
-#gate button.go { font: inherit; width: 100%; padding: 8px; border: 1px solid #333;
-                  background: #333; color: #fff; cursor: pointer; }
-#gate button.go[disabled] { opacity: .5; cursor: default; }
-#gate .alt { margin-top: 14px; font-size: 12px; }
-#gate .alt button { font: inherit; background: none; border: 0; padding: 0; color: #333;
-                    text-decoration: underline; cursor: pointer; }
-#gate .alt span { color: #999; }
-#gate .say { margin-top: 12px; font-size: 12px; min-height: 16px; white-space: pre-wrap; }
-#gate .say.bad { color: #c02626; }
+/* The values here are mvp.css's own, so the way in and the app are one design.
+   This block held hardcoded greys and a monospace face, which read as a
+   different product to the one behind it. They are literals rather than var()
+   because the gate draws before mvp.css is fetched. */
+#gate { max-width: 360px; margin: 56px auto; padding: 0 20px;
+        font-family: "Figtree", "Segoe UI", system-ui, sans-serif;
+        font-size: 15px; color: #201e1d; }
+#gate h1 { font-family: "Fraunces", Georgia, serif; font-size: 30px; font-weight: 600;
+           line-height: 1.05; margin: 0 0 22px; }
+#gate label { display: block; font-size: 13px; font-weight: 600;
+              color: rgba(32,30,29,.6); margin-bottom: 6px; }
+#gate input { font: inherit; width: 100%; box-sizing: border-box; height: 52px;
+              padding: 0 16px; background: #f9f4ed; color: #201e1d;
+              border: 1.5px solid rgba(32,30,29,.16); border-radius: 16px;
+              margin-bottom: 12px; }
+#gate input:focus-visible { outline: 0; border-color: #c67139; background: #fdf7f0; }
+#gate button.go { font: inherit; font-weight: 700; width: 100%; height: 54px;
+                  border: 0; border-radius: 999px; background: #c67139;
+                  color: #fff8f2; cursor: pointer;
+                  box-shadow: 0 6px 16px rgba(140,73,26,.3); }
+#gate button.go[disabled] { opacity: .5; cursor: default; box-shadow: none; }
+#gate .alt { margin-top: 18px; font-size: 13.5px; text-align: center; }
+#gate .alt button { font: inherit; font-weight: 700; background: none; border: 0;
+                    padding: 0 4px; color: #8c491a; cursor: pointer; }
+#gate .alt span { color: rgba(32,30,29,.5); }
+#gate .say { margin-top: 14px; font-size: 13px; line-height: 1.5; min-height: 18px;
+             white-space: pre-wrap; color: rgba(32,30,29,.6); }
+#gate .say.bad { color: #c0492b; }
 `;
 
 /**

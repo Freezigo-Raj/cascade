@@ -2356,3 +2356,32 @@ Session 1 closed.
 **Next job:** use it for a few days, then the workflow migration.
 
 ---
+## Session 104 — 17 August 2026
+
+**Job: the R2 design applied, and everything that does not work marked.**
+
+**He reversed the morning's decision and asked for the design.** So the visual system is the pack's own: warm ground `#f5ead8`, cards `#fdf7f0` at 18px on a soft elevation, terracotta `#c67139`, Fraunces over Figtree. The token block at the top of `mvp.css` is the whole of it, which is the only reason a change this wide is reversible in one edit.
+
+**Two things had to be rebuilt rather than recoloured, and both were load-bearing.**
+
+The row actions were subordinate *because* they were mono. Small, uppercase, letter-spaced, low contrast: four signals carried by one face. There is no mono face in this system, so the same four signals are rebuilt out of Figtree at 600, and a row still reads as a title and a sentence that happens to carry controls. Recoloured and nothing else, `PIN DELETE` would have become ordinary text sitting under the sentence and competing with it.
+
+Colour meant one thing and now means three. Accent is pressable, `#c0492b` is overdue, `#e1eecc` is synced. The old rule was one colour with three jobs and it worked because the ground was cool and flat; a warm palette cannot carry overdue on type weight alone. Three is the limit, and the limit is stated on the account screen rather than left to be inferred by whoever adds the fourth.
+
+**Done became a circle and the word left the action row with it.** The design's own control for it, and the one thing on a row a thumb finds without reading. Two controls for one outcome is how two of them come to disagree, which is the same argument that took `Park` out of config and merged four functions into one over the last twenty sessions. The Done tab reuses the same circle, filled, as Undone.
+
+**Where the design and the engine disagreed, the engine won and the design's shape stayed.** That rule settled three arguments in one session. The `+1h` and `+3d` nudges are drawn exactly where the design puts them and carry the engine's own push targets, because a band pushes to a band and a day over capacity is not offered — two fixed offsets would have been two numbers nothing chose. The `All / Timed / Soft` segmented control is drawn as the segmented control it is and carries `Today / Tomorrow / Upcoming`, a choice of three that already exists. `Now` is a heading, a count and a wash over the Today list rather than a fourth list, because the ranking already puts overdue first.
+
+**The sync state moved from the foot of the page into the header.** The foot is the last place a person looks and this is the first thing they want when a task has not arrived on the other phone. It is drawn from a remembered word and corrected a frame later, because `sync.status()` is async and the draw is not: a stale word for one frame beats a header that jumps after the page has settled.
+
+**Everything that does not work is now written where it can be seen.** A register on the account screen, the same table in `MVP.md`, fourteen lines. `decided` and `later` are kept apart in it, and that distinction is the whole value of the list: "we chose not to" and "we have not got to it" are different answers and only the second one is worth chasing. Every drawn-but-dead control gets one treatment — dimmed, and on a press it says in one sentence what is missing and which Part owns it. A control that swallows a press reads as broken; a control that explains itself reads as unfinished, which is what it is. `Workflow` on a row is the only one drawn today.
+
+**What it cost, recorded rather than discovered later.** `mvp.css` crossed the 400-line cap, so screen 3's styles left as `mvp.account.css`; the split is by screen, the seam every other split in this shell has used. The gate's stylesheet holds the same six colours as literals rather than tokens, because it draws before `mvp.css` is fetched and a token there would mean an unstyled screen on the one page a first-time user sees — so two files now carry one palette and they will drift. Fraunces and Figtree are more font than the app pulled before, and the worker is network first, so a cold start waits on them.
+
+**No gate could see any of this.** `check_render` pins the Stage 3 harness at `/shell/`, which has its own styling and is deliberately not the app. That separation was argued for in session 98 on the grounds that deleting the harness would cost two checks to save a file, and this is the second session it has paid for itself.
+
+**Save point:** `R2 design applied, not-built register drawn; gates 1, 2, 3, 4, 5 and 6 waiting on a hand`
+
+**Next job:** use it for a few days, then the workflow migration.
+
+---

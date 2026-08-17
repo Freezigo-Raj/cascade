@@ -43,7 +43,7 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
   contract     49
   config       a.16
   answer_key   28
-  shell        23
+  shell        24
   gate1        signed on example 35
   gate2        signed on contract 32
   gate3        signed on shell 1
@@ -78,46 +78,59 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 
 ## THIS SESSION'S JOB
 
-Two hard deadlines on one day, and a way out of the account.
+The R2 design, applied, with everything that does not work marked.
 
-**The collision he asked for could not be a widening of the one that exists.** `clash_dialog` reads
-occupied slots, and only a `point` anchor occupies anything: an `end` anchor is 23:59:59, so a
-deadline is invisible to it, and making it visible would mean every task due today collides with every
-other. `deadline_dialog` reads promised days instead. Both tasks `hard`, same local calendar day,
-times not read at all. Two rules, two shapes, one dialog.
+**He reversed the morning's decision and asked for the design.** So the visual system is the pack's:
+warm ground `#f5ead8`, cards `#fdf7f0` at 18px on a soft elevation, terracotta `#c67139`, Fraunces
+over Figtree. The token block at the top of `mvp.css` is the whole of it, which is what makes it
+reversible.
 
-**Both tasks have to be hard, and that is the part with a cost.** A normal date is a plan and may be
-moved; warning on two of those fires on an ordinary Tuesday and teaches a person to press straight
-through. The price is that two things genuinely promised for one day stay quiet unless somebody marked
-them, and marking one is a tap a person has to know to make. Session 102 is what made that tap
-reachable at all.
+**Two things had to be rebuilt rather than recoloured.**
 
-**Neither warning can say whether the day will hold the work.** The load is a sum of
-`est_duration_min`, a per-verb default the reader never sees. `also` is the whole of the sentence.
+There is no mono face in this system, and the row actions were subordinate *because* they were mono:
+small, uppercase, letter-spaced, low contrast. Four signals out of one face. They are the same four
+signals out of Figtree at 600 now, and a row still reads as a title and a sentence that happens to
+carry controls.
 
-**Screen 3 exists because there was no way out.** Signing in had a screen from session 96; leaving an
-account had no control anywhere in the app, so the only exit was clearing browser storage by hand. It
-shows the address, four counts, an export and a sign-out. The counts are the first numbers this app has
-ever shown a person, and they are allowed because a count of rows is a fact where a duration is a
-guess: the quiet-fields rule is about guesses wearing the clothes of measurements.
+Colour meant one thing and now means three: accent is pressable, `#c0492b` is overdue, `#e1eecc` is
+synced. A warm palette cannot carry overdue on type weight the way a cool one could. Three is the
+limit, and the register says so on screen rather than leaving it to be inferred.
 
-**The export writes the records exactly as stored.** No shape of its own, because a file in an invented
-shape needs an importer written against it, and the one thing an export has to survive is this project
-changing its mind.
+**Done became a circle and the word left with it.** The design's own control, and the one thing on a
+row a thumb finds without reading. Two controls for one outcome is how two of them come to disagree.
+The Done tab reuses the same circle, filled, as Undone.
 
-**One hole closed while passing.** The harness's `need()` guard named seven of ten capture fields and
-four of five card fields, so `resolve()` could have quietly stopped returning `clash_dialog`,
-`deadline_dialog` or `card_id` and nothing would have said so. Sixth time a check has turned out to be
-looking at less than it appeared to.
+**Where the design and the engine disagreed, the engine won and the shape stayed.** The `+1h`/`+3d`
+nudges are drawn where the design puts them and carry the engine's own push targets, because a band
+pushes to a band and a full day is not offered. The `All / Timed / Soft` segmented control is drawn as
+the segmented control it is and carries `Today / Tomorrow / Upcoming`, which is a choice of three that
+already exists. `Now` is a heading and a wash over the Today list, not a fourth list.
 
-**No theme, font, size or layout change.** His call, and the report that offered them is in the bundle.
+**The sync state moved into the header.** It was a line at the foot of the page, which is the last
+place a person looks and the first thing they need when a task has not reached the other phone.
+
+**Everything that does not work is now written where it can be seen.** A register on the account
+screen and the same table in `MVP.md`, with `decided` and `later` kept apart: "we chose not to" and
+"we have not got to it" are different answers and only the second is worth chasing. Every drawn-but-
+dead control gets one treatment, dimmed, and says on a press what is missing and which Part owns it.
+`Workflow` on a row is the only one drawn today.
+
+**What this cost.** `mvp.css` crossed the 400-line cap, so screen 3's styles left as
+`mvp.account.css`. The gate's stylesheet holds the same six colours as literals, because it draws
+before `mvp.css` is fetched, so two files now carry one palette and will drift. Fraunces and Figtree
+are more font than the app pulled before and the worker is network first, so a cold start waits on
+them.
+
+**No gate could see any of this.** `check_render` pins the Stage 3 harness, which has its own styling
+and is deliberately not the app. That separation was built in session 98 and this is the second time it
+has paid.
 
 ## NEXT THREE JOBS
 
-1. Use it for a few days. Every defect worth having was found this way, and screens 2 and 3 now carry
-   nine controls no key case names.
+1. Use it for a few days on the phone. The design is new, the row grammar changed, and every defect
+   worth having in this project was found this way.
 2. The workflow migration, recorded in full under DECIDED, NOT BUILT.
-3. Gate 6, and the five gates already owed.
+3. Gate 6 against `MVP.md`, and the five gates already owed.
 
 ## TYPED, AND WRONG
 
@@ -708,6 +721,15 @@ have landed. That is the price of the single table and it is accepted.
 - 17 Aug 2026 — Screen 3, the account, with an export and a sign-out — signing in had a screen from session 96 and leaving an account had no control anywhere, so the only way out was clearing browser storage by hand — the four counts it shows are the first numbers the app has ever shown a person, allowed because a count of rows is a fact where `est_duration_min` is a default.
 - 17 Aug 2026 — The export writes the records exactly as stored, with no shape of its own — a file in an invented shape needs an importer written against it, and the one thing an export must survive is this project changing its mind — the file carries whatever defects the records carry.
 - 17 Aug 2026 — The harness's `need()` guard now names `clash_dialog`, `deadline_dialog` and `card_id` — it named seven of ten capture fields and four of five card fields, so `resolve()` could have stopped returning any of the other four in silence — `check_loud` covers them from here, which is the sixth time a check has turned out to be looking at less than it appeared to.
+- 17 Aug 2026 — The R2 design system replaces the cool flat one: warm ground, terracotta accent, Fraunces over Figtree, rounded cards on a soft elevation — his call, reversing the same day's decision to change nothing visual, and the token block at the top of `mvp.css` is the whole of the change — the mono utility face is gone, so every control that was subordinate by being mono is now subordinate by weight, size, tracking and contrast, which is four signals rebuilt out of one face instead of two.
+- 17 Aug 2026 — Colour now means THREE states, not one: accent is pressable, `#c0492b` is overdue, `#e1eecc` is synced — the old rule was one colour with three jobs, and a warm palette cannot carry overdue on type weight alone the way a cool one could — a fourth coloured thing would end the rule, so the register says the rule out loud on the account screen rather than leaving it to be inferred.
+- 17 Aug 2026 — Done is a circle on the row and the word `Done` left the action row with it — the design's own control for it, and the one thing on a row a thumb finds without reading — two controls for one outcome is how two of them come to disagree, and the Done tab reuses the same circle, filled, as Undone.
+- 17 Aug 2026 — The design's `+1h` and `+3d` nudges are drawn as the engine's own push targets instead — a band pushes to a band and a day already over capacity is not offered, so two fixed offsets would be two numbers nothing chose — the row now shows two or three labels of differing width where the design had two of equal width.
+- 17 Aug 2026 — `Now` is a grouping of the Today list rather than a fourth list — the ranking already puts overdue first, so the block adds a heading, a count and a wash and no new ordering — a heading is only drawn when something else is drawn beside it.
+- 17 Aug 2026 — The sync state moves from a line at the foot of the page to a pill in the header — the foot is the last place a person looks and this is the first thing they need when a task has not reached the other device — the pill is drawn from a remembered word and corrected a frame later, because `sync.status()` is async and the draw is not.
+- 17 Aug 2026 — A NOT BUILT register is drawn on the account screen and stated in `MVP.md`, and every drawn-but-dead control gets one treatment — a gap nobody can see is a gap that gets rediscovered, and this project has rediscovered four — `decided` and `later` are kept apart in it, because "we chose not to" and "we have not got to it" are different answers and only the second is worth chasing.
+- 17 Aug 2026 — `mvp.css` crossed the 400-line cap applying the design, and screen 3's styles left as `mvp.account.css` — the split is by screen, which is the seam every other split in this shell has used — `mvp.edit.css` imports both, so `index.html` still loads one stylesheet.
+- 17 Aug 2026 — The gate's inline stylesheet is retuned to the same values as literals rather than as `var()` — it draws before `mvp.css` is fetched, so a token would be an unstyled screen on the one page a first-time user sees — the two files now hold the same six colours in two places and will drift.
 
 
 ## DELIBERATE DEVIATIONS FROM PROTOCOL

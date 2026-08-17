@@ -1,0 +1,57 @@
+/* Cascade Part A — screen 3, the account.
+ *
+ * Its own file because `mvp.css` crossed the 400-line cap while the design was
+ * being applied. The split is by screen, which is the seam every other split in
+ * this shell has used. Tokens come from `mvp.css`, which `mvp.edit.css` imports
+ * ahead of this one.
+ */
+
+/* ------------------------------------------------------------------ account */
+/* Screen 3 borrows the panel grammar from screen 2: a small label over the
+   thing it names. The `Not built yet` register lives here, because a list of
+   what does not work belongs where a person goes to look at the app itself. */
+
+[data-screen="account"] .group { margin-top: calc(var(--step) * 7); }
+[data-screen="account"] .label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--signal-deep);
+  margin-bottom: calc(var(--step) * 2);
+}
+[data-screen="account"] .said { font-size: 13.5px; line-height: 1.6; color: var(--quiet); max-width: 52ch; }
+[data-screen="account"] .group > .act { display: block; }
+[data-screen="account"] .group > .act + .said { margin-top: var(--step); }
+
+.stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid var(--edge);
+  padding: calc(var(--step) * 2.5) 0;
+  max-width: 52ch;
+}
+.stat-label { font-size: 14.5px; font-weight: 500; }
+.stat-value { font-family: var(--face-display); font-size: 15px; color: var(--signal-deep); }
+
+.later-item {
+  border-top: 1px solid var(--edge);
+  padding: calc(var(--step) * 2.5) 0;
+  max-width: 52ch;
+}
+.later-item .what { font-size: 14px; font-weight: 600; }
+.later-item .why { font-size: 12.5px; line-height: 1.5; color: var(--quiet); margin-top: 2px; }
+.later-item .when {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--signal-deep);
+  background: var(--sunk);
+  border-radius: var(--r-pill);
+  padding: 2px 8px;
+  margin-top: 5px;
+}
+

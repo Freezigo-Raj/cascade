@@ -3,6 +3,8 @@
 Everything on this page is settled. Nothing here is a suggestion.
 Positions, sizes, colours and spacing are not decided here.
 
+**The visual system is `Cascade_Mobile_UI_Design_R2`**: warm ground `#f5ead8`, card `#fdf7f0`, terracotta accent `#c67139`, Fraunces over Figtree, 18px cards on a soft elevation. Colour means three states and no more: **accent** is what you can press, **warn** `#c0492b` is overdue, **good** `#e1eecc` is synced. The token block at the top of `shell/mvp.css` is the whole of it.
+
 D-1: **Typing the thought is the whole of the work.**
 
 ---
@@ -246,6 +248,31 @@ The mobile sentence, because a notification is the smallest screen there is. Pus
 ## Counts
 
 3 text boxes (capture, the notes, and the list's search). 27 fixed buttons on screens 1 and 2, plus 2 or 3 push buttons per row, plus 3 on screen 3 (export, sign out, back). 1 dialog carrying up to 3 warnings, 1 toast.
+
+---
+
+## Not built yet — the register
+
+The same list the account screen draws. `decided` means it was chosen against and is not waiting on anything; `later` means nobody has got to it. The second kind is the only kind worth chasing.
+
+| Thing | Why it does not work | Owner |
+|---|---|---|
+| Alarms ring | Recorded and never fired. A browser cannot wake itself | Part B |
+| Reminder timing | Lead, repeat interval and the notification budget are set and read by nothing | Part B |
+| Workflow | Decided in full — dependencies, and/or, if/else, bounded loops, conditions — and no column exists | Part C |
+| Projects | `project_id` is on every record and nothing writes it | Part C |
+| Cancel and Archive | `row_action` members with no control anywhere. A row carries Pin, Delete and its push targets | decided |
+| Swipe on a row | Buttons only. A control behind a gesture cannot be found by reading the screen | decided |
+| Notes on a row | Read in the editor, never previewed on a row. A row stays a title and a sentence | decided |
+| Note preview, +1h/+3d nudges | The design draws both. The nudges are replaced by the engine's own push targets, which come from `date_precision` | decided |
+| Delivery channels | The design offers alarm, notification and in-app. The record holds one alarm field | later |
+| Streaks, percent done | A repeat spawns its next occurrence and keeps no history of the ones before | later |
+| People, tags | Two vocabularies the design draws and the record has no column for | later |
+| Context | Derived from the verb, stored, read by nothing. Config holds two members | later |
+| Import | The export writes a file and nothing reads one back | later |
+| Dark theme | One set of tokens, tuned for the light ground | later |
+
+**Every `later` control that is drawn looks the same.** Dimmed, and pressing it says in one sentence what is missing and which Part owns it. A control that swallows a press reads as broken; a control that explains itself reads as unfinished, which is what it is. `Workflow` on a row is the only one drawn today.
 
 ---
 
