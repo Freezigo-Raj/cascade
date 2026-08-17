@@ -25,6 +25,7 @@ const { readClashes, readClashDialog, readDeadlineClashes, readDeadlineDialog } 
   await import(`./clash.js${v}`);
 const { ask } = await import(`./mvp.dialog.js${v}`);
 const { el } = await import(`./mvp.paint.js${v}`);
+const { rowOf, blockOf } = await import(`./mvp.row.js${v}`);
 
 const TABS = ["Tasks", "Ideas", "Done"];
 const SLOTS = ["Today", "Tomorrow", "Upcoming"];
@@ -159,157 +160,111 @@ export function mountList(root, { openEdit, openAccount } = {}) {
 
   // ---------------------------------------------------------------- drawing
 
-  function drawRow(card) {
-    const task = all.find((t) => t.id === card.card_id);
-    const late = tab !== "Done" && card.card_band === "Today" &&
-      (card.card_reason_short || "").startsWith("Overdue");
-    const row = el("div", "row" + (task?.pinned ? " pinned" : "") +
-      (tab === "Done" ? " done" : "") + (late ? " overdue" : ""));
+  // A row and a block of rows live in `mvp.row.js`; this file crossed the
+  // 400-line cap building its chrome once. Everything they need is handed in,
+  // so a row cannot read this screen's state behind its own back.
+  const ctx = () => ({ all, tab, narrow, act, say, openEdit });
+  const drawRow = (card) => rowOf(card, ctx());
+  const drawBlock = (name, cards, isNow) => blockOf(name, cards, isNow, ctx());
 
-    // Done is a circle now, which is the design's control for it. The word went
-    // with it: two controls for one outcome is how two of them start to
-    // disagree. On the Done tab the same circle is Undone, filled.
-    const tick = el("button", "tick" + (tab === "Done" ? " on" : ""));
-    tick.type = "button";
-    tick.title = tab === "Done" ? "Undone" : "Done";
-    tick.setAttribute("aria-label", tick.title);
-    tick.addEventListener("click", () => act(card.card_id, tab === "Done" ? "undone" : "done"));
-    row.appendChild(tick);
+  /** `Sat 17 Aug`, the one thing the header knows that a person might not. */
+  const today = () =>
+    new Date().toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
 
-    const body = el("div", "body");
-    const title = el("button", "title", card.card_title);
-    title.type = "button";
-    // Tapping the row opens screen 2 with the task loaded. The box holds the
-    // title, never `raw_text`, and screen 2 is the one that decides that.
-    title.addEventListener("click", () => openEdit && openEdit(card.card_id));
-    body.appendChild(title);
+  // ------------------------------------------------------------- the skeleton
+  //
+  // BUILT ONCE AND NEVER REDRAWN, which is the rule screen 2's capture box has
+  // had since session 99 and this screen did not. `draw()` emptied `root` and
+  // rebuilt the search input on every keystroke, so the element being typed into
+  // was destroyed and replaced after the first letter. It called `focus()` on the
+  // old node afterwards, which is detached by then and focuses nothing. One
+  // letter, then the caret gone: exactly what a rebuilt input does.
+  //
+  // So the chrome is made here, once: the header, the tab row, the search box,
+  // the toggle. `paint()` changes their text and their state and never their
+  // identity. Only the list itself and the toast are rebuilt, and nothing in
+  // either can hold a caret.
 
-    // A Done row is a title alone. `Overdue since Friday` on a finished task is
-    // a sentence about a deadline that no longer applies.
-    const said = narrow.matches ? card.card_reason_short : card.card_reason;
-    if (said && tab !== "Done") body.appendChild(el("div", "said", said));
+  const headBlock = el("div", "head-block");
+  const headLeft = el("div", "");
+  const kicker = el("div", "kicker", tab);
+  const title = el("h1", "head-title", slot);
+  const dateLine = el("div", "head-date", today());
+  headLeft.append(kicker, title, dateLine);
+  headBlock.appendChild(headLeft);
 
-    const acts = el("div", "acts");
-    const button = (label, fn, cls) => {
-      const b = el("button", "act" + (cls ? " " + cls : ""), label);
-      b.type = "button";
-      b.addEventListener("click", fn);
-      return b;
-    };
-    if (tab !== "Done") {
-      acts.appendChild(button(task?.pinned ? "Unpin" : "Pin", () => act(card.card_id, "pin")));
-      acts.appendChild(button("Delete", () => act(card.card_id, "delete")));
-      // Drawn, and doing nothing until Part C. The design puts a workflow tag
-      // here; there is no `waits_for` column yet, so it says so on a press
-      // rather than being left out and forgotten. Every `later` control in the
-      // app looks like this one.
-      acts.appendChild(button("Workflow", () => say("Workflow is Part C. Nothing on this task depends on another yet."), "later"));
-    }
-    body.appendChild(acts);
-    row.appendChild(body);
+  const headRight = el("div", "head-right");
+  const tools = el("div", "head-tools");
+  const acct = el("button", "avatar", "\u2022\u2022");
+  acct.type = "button";
+  acct.title = "Account";
+  acct.setAttribute("aria-label", "Account");
+  acct.addEventListener("click", () => openAccount && openAccount());
+  tools.appendChild(acct);
+  const syncSlot = el("div", "sync-slot");
+  headRight.append(tools, syncSlot);
+  headBlock.appendChild(headRight);
 
-    // The push targets, on the right, where the design puts its nudges. The
-    // labels are the engine's own — a band pushes to a band — rather than a
-    // fixed `+1h` and `+3d`, which would be two offsets nothing chose.
-    const nudges = el("div", "nudges");
-    if (tab !== "Done") {
-      (card.push_options ?? []).forEach((o, i) => {
-        const b = el("button", "nudge", o.push_label);
-        b.type = "button";
-        b.title = `Push to ${o.push_label.toLowerCase()}`;
-        b.addEventListener("click", () => act(card.card_id, "push", i));
-        nudges.appendChild(b);
-      });
-    }
-    row.appendChild(nudges);
-    return row;
-  }
+  const bar = el("div", "bar");
+  const tabButtons = TABS.map((name) => {
+    const b = el("button", "tab", name);
+    b.type = "button";
+    b.setAttribute("role", "tab");
+    b.addEventListener("click", () => { tab = name; paint(); });
+    bar.appendChild(b);
+    return b;
+  });
 
-  /** A heading with its own count, and the wash the design gives `Now`. */
-  function drawBlock(name, cards, isNow) {
-    const block = el("div", "block" + (isNow ? " now" : ""));
-    const head = el("div", "group-head");
-    if (isNow) head.appendChild(el("span", "group-dot"));
-    head.appendChild(el("span", "group-name", name));
-    head.appendChild(el("span", "group-count", String(cards.length)));
-    block.appendChild(head);
-    const rows = el("div", "rows");
-    for (const card of cards) rows.appendChild(drawRow(card));
-    block.appendChild(rows);
-    return block;
-  }
+  const searchBox = el("input", "search");
+  searchBox.type = "search";
+  searchBox.placeholder = "search";
+  // No `draw()` and no `focus()`. The box keeps its own value and its own caret
+  // because it is the same element it was a keystroke ago.
+  searchBox.addEventListener("input", () => { filter = searchBox.value; paint(); });
+  bar.appendChild(searchBox);
 
-  /** `Sat 17 Aug`, the one thing this screen knows that a person might not. */
-  function today() {
-    const d = new Date();
-    return d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
-  }
+  // Opens screen 2 empty. It is the only control on this screen that is not
+  // about a row that already exists. On a phone it navigates; in the wide layout
+  // it unbinds the panel that is already open and puts the caret in it.
+  const plus = el("button", "plus", "+");
+  plus.type = "button";
+  plus.title = "Capture";
+  plus.addEventListener("click", () => openEdit && openEdit(null));
+  bar.appendChild(plus);
 
-  function draw() {
-    root.innerHTML = "";
+  // The toggle lives inside Tasks and nowhere else. Ideas and Done are one list
+  // each and a toggle over them would be a control with one position. It is built
+  // here and hidden rather than built conditionally, so the tab row above it does
+  // not move when a tab changes.
+  const slots = el("div", "slots");
+  const slotButtons = SLOTS.map((name) => {
+    const b = el("button", "slot", name);
+    b.type = "button";
+    b.addEventListener("click", () => { slot = name; paint(); });
+    slots.appendChild(b);
+    return b;
+  });
 
-    // The kicker names the tab, the title names the slot inside it. Two levels
-    // of where-you-are, which the tab row alone was carrying on its own.
-    const headBlock = el("div", "head-block");
-    const left = el("div", "");
-    // The kicker is the tab, the title is the slot inside it. Two levels of
-    // where-you-are: the tab row alone was carrying both, which is why the
-    // design gives the current one a heading of its own.
-    left.appendChild(el("div", "kicker", tab));
-    left.appendChild(el("h1", "head-title", tab === "Tasks" ? slot : tab));
-    left.appendChild(el("div", "head-date", today()));
-    headBlock.appendChild(left);
+  const body = el("div", "body-list");
+  const toastSlot = el("div", "toast-slot");
+  root.innerHTML = "";
+  root.append(headBlock, bar, slots, body, toastSlot);
 
-    const right = el("div", "head-right");
-    const tools = el("div", "head-tools");
-    const acct = el("button", "avatar", "\u2022\u2022");
-    acct.type = "button";
-    acct.title = "Account";
-    acct.setAttribute("aria-label", "Account");
-    acct.addEventListener("click", () => openAccount && openAccount());
-    tools.appendChild(acct);
-    right.appendChild(tools);
-    right.appendChild(syncPill());
-    headBlock.appendChild(right);
-    root.appendChild(headBlock);
+  // ---------------------------------------------------------------- painting
 
-    const bar = el("div", "bar");
-    for (const name of TABS) {
-      const b = el("button", "tab", name);
-      b.type = "button";
-      b.setAttribute("role", "tab");
-      b.setAttribute("aria-selected", String(tab === name));
-      b.addEventListener("click", () => { tab = name; draw(); });
-      bar.appendChild(b);
-    }
-    const box = el("input", "search");
-    box.type = "search";
-    box.placeholder = "search";
-    box.value = filter;
-    box.addEventListener("input", (e) => { filter = e.target.value; draw(); box.focus(); });
-    bar.appendChild(box);
-    // Opens screen 2 empty. It is the only control on this screen that is not
-    // about a row that already exists.
-    const plus = el("button", "plus", "+");
-    plus.type = "button";
-    plus.title = "Capture";
-    plus.addEventListener("click", () => openEdit && openEdit(null));
-    bar.appendChild(plus);
-    root.appendChild(bar);
+  function paint() {
+    kicker.textContent = tab;
+    // Recomputed rather than built once: a tab left open past midnight showed
+    // yesterday's date under a list that had already rolled over.
+    dateLine.textContent = today();
+    title.textContent = tab === "Tasks" ? slot : tab;
+    tabButtons.forEach((b, i) => b.setAttribute("aria-selected", String(tab === TABS[i])));
+    slotButtons.forEach((b, i) => b.setAttribute("aria-pressed", String(slot === SLOTS[i])));
+    slots.style.display = tab === "Tasks" ? "" : "none";
+    if (searchBox.value !== filter) searchBox.value = filter;
 
-    // The toggle lives inside Tasks and nowhere else. Ideas and Done are one
-    // list each and a toggle over them would be a control with one position.
-    if (tab === "Tasks") {
-      const slots = el("div", "slots");
-      for (const name of SLOTS) {
-        const b = el("button", "slot", name);
-        b.type = "button";
-        b.setAttribute("aria-pressed", String(slot === name));
-        b.addEventListener("click", () => { slot = name; draw(); });
-        slots.appendChild(b);
-      }
-      root.appendChild(slots);
-    }
+    syncSlot.innerHTML = "";
+    syncSlot.appendChild(syncPill());
 
     // With nothing stored the screen shows nothing. No message, no illustration,
     // no prompt. An empty list is not a problem to explain.
@@ -317,21 +272,23 @@ export function mountList(root, { openEdit, openAccount } = {}) {
     // `Now` is the design's own block and it holds what is overdue. It is a
     // grouping of the Today list, not a fourth list: the ranking already puts
     // these first, and the wash says why they are there.
+    body.innerHTML = "";
     const shown = visible();
     const isLate = (c) => (c.card_reason_short || "").startsWith("Overdue");
     const late = tab === "Tasks" && slot === "Today" ? shown.filter(isLate) : [];
     const rest = shown.filter((c) => !late.includes(c));
-    if (late.length) root.appendChild(drawBlock("Now", late, true));
+    if (late.length) body.appendChild(drawBlock("Now", late, true));
     if (rest.length) {
       // A heading is only worth drawing when something else is drawn beside it.
-      if (late.length) root.appendChild(drawBlock("Later today", rest, false));
+      if (late.length) body.appendChild(drawBlock("Later today", rest, false));
       else {
         const rows = el("div", "rows");
         for (const card of rest) rows.appendChild(drawRow(card));
-        root.appendChild(rows);
+        body.appendChild(rows);
       }
     }
 
+    toastSlot.innerHTML = "";
     if (toast) {
       const t = el("div", "toast");
       t.appendChild(el("span", "", toast));
@@ -339,10 +296,12 @@ export function mountList(root, { openEdit, openAccount } = {}) {
       u.type = "button";
       u.addEventListener("click", undoLast);
       t.appendChild(u);
-      root.appendChild(t);
+      toastSlot.appendChild(t);
     }
-
   }
+
+  // Every caller said `draw()` before the skeleton existed. One name, one job.
+  const draw = paint;
 
   /**
    * The store's own state, in the header where the design puts it. It was a line
@@ -369,8 +328,29 @@ export function mountList(root, { openEdit, openAccount } = {}) {
 
   // A task arriving from another device changes the list without anything here
   // being pressed.
-  window.addEventListener("cascade:store-changed", () => { reload(); });
-  narrow.addEventListener("change", draw);
+  // BOTH LISTENERS ARE RETURNED, and that is a defect fix rather than tidiness.
+  //
+  // They were registered on `window` and never removed. Mounting screen 2 empties
+  // `#screen`, which takes the list out of the document and leaves this closure
+  // alive and still listening. The next sync event — a realtime message, or the
+  // sixty-second pull — called `reload()`, which called `draw()`, which wrote the
+  // list straight back into the element screen 2 was using. Typing a task and
+  // being returned to the list mid-word is exactly what that produces, and every
+  // navigation added another listener that would do it again.
+  const onStore = () => { reload(); };
+  const onNarrow = () => draw();
+  window.addEventListener("cascade:store-changed", onStore);
+  narrow.addEventListener("change", onNarrow);
 
   reload();
+
+  return {
+    /** For `/` in the wide layout. A pointer has a keyboard beside it. */
+    focusSearch() { searchBox?.focus(); },
+    unmount() {
+      window.removeEventListener("cascade:store-changed", onStore);
+      narrow.removeEventListener("change", onNarrow);
+      clearTimeout(toastTimer);
+    },
+  };
 }

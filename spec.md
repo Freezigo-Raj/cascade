@@ -43,7 +43,7 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
   contract     49
   config       a.16
   answer_key   28
-  shell        24
+  shell        26
   gate1        signed on example 35
   gate2        signed on contract 32
   gate3        signed on shell 1
@@ -78,52 +78,27 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 
 ## THIS SESSION'S JOB
 
-The R2 design, applied, with everything that does not work marked.
+The search box that took one letter, and the two layouts before it.
 
-**He reversed the morning's decision and asked for the design.** So the visual system is the pack's:
-warm ground `#f5ead8`, cards `#fdf7f0` at 18px on a soft elevation, terracotta `#c67139`, Fraunces
-over Figtree. The token block at the top of `mvp.css` is the whole of it, which is what makes it
-reversible.
+**One letter, then the caret gone.** `draw()` emptied `root` and rebuilt everything, including the
+search input, on every keystroke. The element being typed into was destroyed after the first letter and
+replaced by a fresh one holding the same value; the `focus()` call on the next line addressed the old
+node, which by then was detached and focuses nothing. That is what a rebuilt input does, and it is
+exactly the defect screen 2's capture box was built to avoid in session 99 — "the box is built once and
+never redrawn" — a rule written for one screen and needed in two. Fifth time.
 
-**Two things had to be rebuilt rather than recoloured.**
+**So screen 1's chrome is built once.** Header, tab row, search box, toggle: made at mount, and `paint()`
+changes their text and their state and never their identity. Only the list itself and the toast are
+rebuilt, and neither can hold a caret. The toggle is built once and hidden on the other tabs rather than
+built conditionally, because a control that appears and disappears moves the tab row a person is aiming
+at.
 
-There is no mono face in this system, and the row actions were subordinate *because* they were mono:
-small, uppercase, letter-spaced, low contrast. Four signals out of one face. They are the same four
-signals out of Figtree at 600 now, and a row still reads as a title and a sentence that happens to
-carry controls.
+**The header date is recomputed on every paint.** Built once, it showed yesterday on a tab left open
+past midnight, over a list that had already rolled over.
 
-Colour meant one thing and now means three: accent is pressable, `#c0492b` is overdue, `#e1eecc` is
-synced. A warm palette cannot carry overdue on type weight the way a cool one could. Three is the
-limit, and the register says so on screen rather than leaving it to be inferred.
-
-**Done became a circle and the word left with it.** The design's own control, and the one thing on a
-row a thumb finds without reading. Two controls for one outcome is how two of them come to disagree.
-The Done tab reuses the same circle, filled, as Undone.
-
-**Where the design and the engine disagreed, the engine won and the shape stayed.** The `+1h`/`+3d`
-nudges are drawn where the design puts them and carry the engine's own push targets, because a band
-pushes to a band and a full day is not offered. The `All / Timed / Soft` segmented control is drawn as
-the segmented control it is and carries `Today / Tomorrow / Upcoming`, which is a choice of three that
-already exists. `Now` is a heading and a wash over the Today list, not a fourth list.
-
-**The sync state moved into the header.** It was a line at the foot of the page, which is the last
-place a person looks and the first thing they need when a task has not reached the other phone.
-
-**Everything that does not work is now written where it can be seen.** A register on the account
-screen and the same table in `MVP.md`, with `decided` and `later` kept apart: "we chose not to" and
-"we have not got to it" are different answers and only the second is worth chasing. Every drawn-but-
-dead control gets one treatment, dimmed, and says on a press what is missing and which Part owns it.
-`Workflow` on a row is the only one drawn today.
-
-**What this cost.** `mvp.css` crossed the 400-line cap, so screen 3's styles left as
-`mvp.account.css`. The gate's stylesheet holds the same six colours as literals, because it draws
-before `mvp.css` is fetched, so two files now carry one palette and will drift. Fraunces and Figtree
-are more font than the app pulled before and the worker is network first, so a cold start waits on
-them.
-
-**No gate could see any of this.** `check_render` pins the Stage 3 harness, which has its own styling
-and is deliberately not the app. That separation was built in session 98 and this is the second time it
-has paid.
+**A row and a block of rows left as `mvp.row.js`**, with everything they need handed in. The file crossed
+the cap making its chrome build-once, and the seam is the right one: a row can no longer read the
+screen's state behind its own back.
 
 ## NEXT THREE JOBS
 
@@ -733,6 +708,15 @@ have landed. That is the price of the single table and it is accepted.
 - 17 Aug 2026 — The stylesheet link carries the SHELL_VERSION as a query, in three places, and `gate2.py` fails when any of them disagrees — every module is loaded under a fresh date and the stylesheet link was the one thing in the app with no query, so a whole session's design landed on a browser that went on serving the previous one; that is the cache defect of sessions 96 and 98 for the THIRD time, in the file type nobody had thought to bust — a static file cannot carry a date, so it carries a number a person must bump, which is exactly the kind of number that goes stale and is therefore read by the gate rather than trusted.
 - 17 Aug 2026 — The `@import` lines inside `mvp.edit.css` carry the same query — an imported sheet is fetched under its own address, so busting the outer file alone leaves the two inner ones stale one level down, which is the same defect one layer further in and would have read as a partial design — three literals now hold one number, and the gate is what holds them together.
 - 17 Aug 2026 — The account screen states the running shell and config versions — a design change arrived and there was no way on screen to tell a build that had not reached the browser from a build that had reached it and looked wrong, which cost a round trip to find out — it is the first version number the app has ever shown a person.
+- 17 Aug 2026 — Every screen mount RETURNS A HANDLE and the router unmounts the previous one — a screen's `window` listeners outlived it: emptying `#screen` took the list out of the document and left its closure listening, so the next sync event redrew the list over whatever had replaced it, which is being thrown back to the list in the middle of typing a task — and every navigation added another listener, so the fault got worse the longer a session ran. Proved fixed by mounting, unmounting, firing the event and counting redraws.
+- 17 Aug 2026 — The web layout is two panes at 940px: the list, and the capture panel beside it, both live — a phone navigates because it has one screen's worth of room and a laptop does not, and making the wide window navigate anyway was the whole of "both look the same" — the breakpoint is now stated twice, in `mvp.css` and in `mvp.js`, because CSS cannot decide whether a tap navigates or loads a panel, and the two numbers must agree.
+- 17 Aug 2026 — In the wide layout a row press loads the panel instead of replacing the screen, and the panel draws no Back button — the list keeps its scroll, its tab and its search, which is what it lost on every edit before, and a Back button whose destination is already on screen is a control that explains nothing.
+- 17 Aug 2026 — Three keys in the wide layout only: `n`, `/`, `Escape`, and nothing fires while a field has focus — a window that size is used with two hands, and reaching for a mouse to put a caret in a box is what makes a stretched phone app feel like one — `Escape` is the exception that only works inside a field, because "let go of this" is only ever asked from there.
+- 17 Aug 2026 — `mvp.css` crossed the cap again and the wide layout left as `mvp.wide.css`, entirely inside one media query — below the breakpoint the file changes nothing, which is what makes "the phone layout is the default" true rather than claimed — a fourth stylesheet is a fourth `?v=` query, which the gate now checks.
+- 17 Aug 2026 — Screen 1's chrome is BUILT ONCE and `paint()` changes text and state rather than identity — `draw()` emptied `root` and rebuilt the search input on every keystroke, so the element being typed into was destroyed after the first letter and the `focus()` call that followed addressed a detached node; one letter, then the caret gone — this is the rule screen 2's capture box has had since session 99 and the second screen never got it, which is the fifth time a rule written for one place turned out to be needed in two.
+- 17 Aug 2026 — The `Today / Tomorrow / Upcoming` toggle is built once and hidden on the other tabs rather than built conditionally — a control that appears and disappears moves the row above it, and the tab row is what a person is aiming at when they change tabs — the markup now holds three buttons that are not always reachable, which a reader of the DOM has to be told about.
+- 17 Aug 2026 — The header date is recomputed on every paint rather than at mount — a tab left open past midnight showed yesterday's date over a list that had already rolled over — one string per paint.
+- 17 Aug 2026 — A row and a block of rows left `mvp.list.js` as `mvp.row.js`, with everything they need handed in — the file crossed the 400-line cap making its chrome build-once — a row can no longer read the screen's state behind its own back, which is the shape that let `drawRow` quietly depend on `tab` in the first place.
 
 
 ## DELIBERATE DEVIATIONS FROM PROTOCOL

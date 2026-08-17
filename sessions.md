@@ -2404,3 +2404,49 @@ Colour meant one thing and now means three. Accent is pressable, `#c0492b` is ov
 **Next job:** use it for a few days, then the workflow migration.
 
 ---
+## Session 106 — 17 August 2026
+
+**Job: a web layout, and the sync that threw him off the capture screen.**
+
+**The defect first, because it was costing him tasks.** A screen's `window` listeners outlived the screen. `mountList` registered `cascade:store-changed` and nothing ever removed it. Mounting screen 2 empties `#screen`, which takes the list out of the document and leaves its closure alive and still listening. The next sync event — a realtime message from the other device, or the sixty-second pull — called `reload()`, which called `draw()`, which wrote the list straight back into the element screen 2 was using. Typing a task and being returned to the list mid-word is precisely what that produces. Every navigation added another listener, so a long session got worse rather than staying broken at a constant rate.
+
+**Every mount returns a handle now and the router unmounts the previous screen before mounting the next.** Proved rather than argued: mount, unmount, fire the event, count the redraws. One listener while mounted, none after, no redraw. Screen 2 had the same leak in a milder form — it repainted the screen it belonged to — and it accumulated one repaint per visit.
+
+**Then the layout. A phone navigates because it has one screen's worth of room; a laptop does not.** Making the wide window navigate anyway was the whole of "both look the same". At 940px the app is two panes: the list on the left, the capture panel on the right, both live and neither waiting on the other. A row press loads the panel rather than replacing the screen, so the list keeps its scroll, its tab and its search — all three of which it lost on every single edit before this.
+
+**The panel is sticky and draws no Back button.** Sticky because a capture box that leaves the window the moment you scroll to find the task you were about to edit is worse than no panel at all. No Back because its destination is already on screen, and a control whose destination is visible explains nothing.
+
+**Three keys, and only where there is a keyboard to press them.** `n` to capture, `/` to search, `Escape` to let go of a field. Nothing fires while a field has focus, so `n` typed into a title is an `n`. This is the other half of what makes a web version a web version: a window that size is being used with two hands, and reaching for the mouse to put a caret in a box is the thing that makes a stretched phone app feel like one.
+
+**The breakpoint is now stated twice, in `mvp.css` and in `mvp.js`.** They must agree. CSS cannot decide whether a tap navigates or loads a panel, and JavaScript should not be measuring the window to lay out a grid. That is a genuine duplicate rather than an accident, and it is written down where both halves live rather than left for the first person who changes one of them.
+
+**Crossing the breakpoint mid-session lands on the list with the panel closed**, which is the route a phone would be on. Dragging a window narrow with a panel open had to land somewhere and the answer should be the same place a phone starts.
+
+**`mvp.css` crossed the 400-line cap again and the wide layout left as `mvp.wide.css`**, entirely inside one media query. Below the breakpoint that file changes nothing, which is what makes "the phone layout is the default" true rather than claimed. Fourth stylesheet, fourth `?v=` query, and all four are checked by yesterday's gate rule — the first thing that rule has caught for free.
+
+**Save point:** `two layouts; the sync-over-capture leak fixed and proved; gates 1, 2, 3, 4, 5 and 6 waiting on a hand`
+
+**Next job:** use it, then the workflow migration.
+
+---
+## Session 107 — 17 August 2026
+
+**Job: the search box that took one letter.**
+
+**The defect.** `draw()` emptied `root` and rebuilt everything on it, including the search input, on every keystroke. So the element being typed into was destroyed after the first letter and replaced by a fresh one carrying the same value, and the `focus()` call on the very next line addressed the old node, which was detached by then and focuses nothing. One letter, then the caret gone.
+
+**It is the same defect screen 2 was built to avoid, and the rule was already written down.** Session 99: "the box is built once and never redrawn. Everything around it repaints on every keystroke; replacing a focused input mid-word loses the caret on a laptop and dismisses the keyboard on a phone, and this is a screen whose whole job is being typed into." Screen 1 got a search box nine sessions later and none of that reasoning came with it. That is the fifth time a rule written for one place turned out to be needed in two, and the fifth time nothing carried it across.
+
+**Screen 1's chrome is built once now.** Header, tab row, search box, `+`, toggle: all made at mount. `paint()` changes their text and their pressed state and never their identity. Only the list and the toast are rebuilt, and neither of those can hold a caret. Proved by typing four letters into the mounted screen and checking the element is the same object afterwards, that no input was constructed during the typing, and that the value survived.
+
+**The toggle is built once and hidden on the other tabs, rather than built only inside Tasks.** A control that appears and disappears moves the row above it, and the row above it is the tab row a person is aiming at when they change tabs. The cost is three buttons in the markup that are not always reachable, which is worth one line of comment.
+
+**The header date is recomputed on every paint.** Built once, it showed yesterday's date on a tab left open past midnight, over a list that had already rolled over to today.
+
+**`mvp.row.js`.** The file crossed the 400-line cap making its chrome build-once, so a row and a block of rows left, with everything they need handed in as an argument. The seam is the right one rather than the convenient one: a row can no longer read the screen's state behind its own back, which is the shape that let it quietly depend on `tab` before.
+
+**Save point:** `screen 1's chrome built once; search survives typing, proved; gates 1, 2, 3, 4, 5 and 6 waiting on a hand`
+
+**Next job:** use it, then the workflow migration.
+
+---

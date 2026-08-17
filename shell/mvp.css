@@ -58,11 +58,22 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
-#screen {
+/* ------------------------------------------------------------------ layout */
+/* A phone reads one column and navigates. A wide window reads two and does not:
+ * the list on the left, the capture box on the right, both live. That is the
+ * difference between the two layouts and it is the whole of it — the same
+ * screens, the same markup, arranged twice.
+ *
+ * `#aside` is empty on a phone and the grid collapses to one track, so nothing
+ * has to be hidden and no screen has to know where it is.
+ */
+
+#app {
   max-width: 680px;
   margin: 0 auto;
   padding: calc(var(--step) * 4) calc(var(--step) * 4) calc(var(--step) * 24);
 }
+#aside:empty { display: none; }
 
 /* ------------------------------------------------------------------- header */
 /* The kicker names the tab, the title names the slot inside it, and the date

@@ -25,7 +25,7 @@ const { typeInto, typeBeside, removeSpans } = await import(`./mvp.words.js${v}`)
 const { el, button } = await import(`./mvp.paint.js${v}`);
 const { drawDates, when } = await import(`./mvp.chips.js${v}`);
 
-export function mountEdit(root, { taskId = null, onBack } = {}) {
+export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {}) {
   let line = "";
   let chipSpan = null;      // where the last tapped words landed, or null
   let boundId = null;       // the task being edited, or null
@@ -265,7 +265,10 @@ export function mountEdit(root, { taskId = null, onBack } = {}) {
 
   function drawHead(out) {
     head.innerHTML = "";
-    head.appendChild(button("act", "\u2039 Back", () => onBack && onBack()));
+    // In the wide layout the panel sits beside the list, so there is nowhere to
+    // go back to. A Back button there would be a control whose destination is
+    // already on screen.
+    if (!inPanel) head.appendChild(button("act", "\u2039 Back", () => onBack && onBack()));
     // Only while editing. The ✕ leaves without saving, which is the one way out
     // that changes nothing.
     if (out?.capture.bound_task_chip) {
@@ -382,10 +385,28 @@ export function mountEdit(root, { taskId = null, onBack } = {}) {
   // outranks the words while it was the last thing that happened.
   box.addEventListener("input", () => { line = box.value; chipSpan = null; paint(); });
 
-  window.addEventListener("cascade:store-changed", () => { reload(); });
+  // Returned for the same reason screen 1's are: a listener that outlives its
+  // screen redraws a screen that is no longer on the page. This one is milder —
+  // it repaints the screen it belongs to — but it accumulated one per visit, so
+  // one sync event meant four repaints on the fourth visit.
+  const onStore = () => { reload(); };
+  window.addEventListener("cascade:store-changed", onStore);
 
   reload().then(() => {
     if (taskId) load(taskId);
     box.focus();
   });
+
+  return {
+    /** Load a task in place. On a wide screen this panel never unmounts. */
+    load(id) {
+      if (id) load(id);
+      else unbind();
+      box.focus();
+    },
+    unmount() {
+      window.removeEventListener("cascade:store-changed", onStore);
+      clearTimeout(toastTimer);
+    },
+  };
 }

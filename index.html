@@ -33,10 +33,17 @@
      query on the two `@import` lines inside these files included, because an
      imported sheet is fetched under its own address and would go stale one level
      down otherwise. -->
-<link rel="stylesheet" href="./shell/mvp.edit.css?v=24">
+<link rel="stylesheet" href="./shell/mvp.edit.css?v=26">
 
 <div id="gate" style="display:none"></div>
-<div id="screen"></div>
+
+<!-- Two panes. A phone uses the first and leaves the second empty; a wide window
+     runs the list in one and the capture box in the other, so nothing has to be
+     navigated away from to type. Which is which is decided in `mvp.js`, once. -->
+<div id="app">
+  <div id="screen"></div>
+  <aside id="aside"></aside>
+</div>
 
 <!-- The document is never cached, but a module it names is. Loading it under a
      fresh query each time is the only thing that reliably stops that, and the

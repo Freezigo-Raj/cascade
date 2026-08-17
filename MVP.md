@@ -9,6 +9,25 @@ D-1: **Typing the thought is the whole of the work.**
 
 ---
 
+## Two layouts
+
+**One set of screens, arranged twice.** `mvp.js` decides which, at 940px, and no screen knows which it is in.
+
+| | Phone (under 940px) | Web (940px and over) |
+|---|---|---|
+| Shape | One column, one screen at a time | Two columns: the list, and the capture panel beside it |
+| Tapping a row | Navigates to screen 2 | Loads the task into the panel. The list keeps its scroll, its tab and its search |
+| `+` | Navigates to an empty screen 2 | Unbinds the panel and puts the caret in it |
+| Back | On screen 2 | Not drawn. There is nowhere to go back to |
+| The panel | — | Sticky, so it does not leave the window when the list scrolls |
+| Sentence on a row | `card_reason_short` under 600px | `card_reason` |
+| Keys | — | `n` capture, `/` search, `Esc` let go. None fires while a field has focus |
+| Account | Full width | Full width, and the panel closes: a capture box beside a Sign out button offers to type into an account you are leaving |
+
+**Crossing the breakpoint mid-session lands on the list with the panel closed**, which is the route a phone would be on.
+
+---
+
 ## Three screens
 
 **Screen 1 — the list.** Three tabs, a toggle inside the first, and a search box.
