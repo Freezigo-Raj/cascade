@@ -21,33 +21,9 @@ const { tasks, undo, UNDO_ID } = await import(`./store.select.js${v}`);
 const { nowLocal } = await import(`./mvp.clock.js${v}`);
 const { ask } = await import(`./mvp.dialog.js${v}`);
 const { drawPanel } = await import(`./mvp.panel.js${v}`);
-const { dateWords, timeWords, typeInto, typeBeside, removeSpans } =
-  await import(`./mvp.words.js${v}`);
+const { typeInto, typeBeside, removeSpans } = await import(`./mvp.words.js${v}`);
 const { el, button } = await import(`./mvp.paint.js${v}`);
-
-/** The four preset chips type their labels; the two pickers write what was picked. */
-const PICKERS = new Set(["Pick date", "Pick time"]);
-
-/** `due this afternoon` is what the engine says; the chip and the toast say the rest. */
-const when = (out) => (out?.working.due_phrase_short || "").replace(/^due /, "");
-
-/**
- * The same chip, for a task being edited.
- *
- * A title carries no date words — they left the line when the task was made —
- * so re-reading one finds no date and the chip vanished, which left the edit
- * screen with nothing showing the date and nothing to clear it with. MVP.md
- * says the chip is both. So it reads the stored task instead of the line.
- *
- * The words come off the card rather than out of `due_phrase_short`, because a
- * stored task's short phrase is reachable only through a card. That is why an
- * overdue task reads `overdue` here and not `since Wednesday`: the card is the
- * mobile sentence and collapses it, and this chip inherits the collapse.
- */
-function storedWhen(cards, id) {
-  const said = cards.find((c) => c.card_id === id)?.card_reason_short ?? "";
-  return said.replace(/\.$/, "").replace(/^Due /, "").replace(/^Overdue/, "overdue");
-}
+const { drawDates, when } = await import(`./mvp.chips.js${v}`);
 
 export function mountEdit(root, { taskId = null, onBack } = {}) {
   let line = "";
@@ -60,6 +36,10 @@ export function mountEdit(root, { taskId = null, onBack } = {}) {
   let repeat = null;        // { every, unit } | null
   let alarmType = "none";
   let leadMin = null;
+  let repeatMin = null;     // minutes between rings while the alarm repeats
+  let durTap = null;        // minutes the person chose, or null for the verb's default
+  let firmTap = null;       // "hard" | "normal" | "soft" | null for what the words said
+  let notesText = "";
   let newId = crypto.randomUUID();
   let all = [];
   let toast = null;
@@ -93,6 +73,9 @@ export function mountEdit(root, { taskId = null, onBack } = {}) {
         chip_spans: chipSpan ? [{ start: chipSpan.start, end: chipSpan.end }] : [],
         type_chip_tap: typeTap,
         significance_tap: sigTap,
+        duration_tap: durTap,
+        firmness_tap: firmTap,
+        notes_text: notesText,
         bound_task_id: boundId,
         row_action: null,
         now: nowLocal(),
@@ -156,7 +139,16 @@ export function mountEdit(root, { taskId = null, onBack } = {}) {
     repeat = task.recurrence ?? null;
     alarmType = task.alarm_type ?? "none";
     leadMin = task.alarm_lead_min ?? null;
-    advanced = Boolean(repeat) || alarmType !== "none";
+    repeatMin = task.alarm_repeat_min ?? null;
+    // The same reason the type and the significance are loaded back: a title
+    // carries no evidence of either, so re-deriving would reset both on save.
+    // A duration is seeded only when the person chose it. Seeding the verb's
+    // own default would turn every edit into a selection and stop the default
+    // ever moving again.
+    durTap = task.duration_source === "selected" ? task.est_duration_min : null;
+    firmTap = task.date_firmness ?? null;
+    notesText = task.notes ?? "";
+    advanced = Boolean(repeat) || alarmType !== "none" || durTap !== null || Boolean(notesText);
     paint();
   }
 
@@ -170,6 +162,10 @@ export function mountEdit(root, { taskId = null, onBack } = {}) {
     repeat = null;
     alarmType = "none";
     leadMin = null;
+    repeatMin = null;
+    durTap = null;
+    firmTap = null;
+    notesText = "";
     advanced = false;
     dropDate = false;
     newId = crypto.randomUUID();
@@ -187,7 +183,9 @@ export function mountEdit(root, { taskId = null, onBack } = {}) {
     recurrence: repeat,
     alarm_type: alarmType,
     alarm_lead_min: alarmType === "none" ? null : leadMin,
-    alarm_repeat_min: alarmType === "repeat" ? partAConfig.alarm_defaults.repeat_min : null,
+    alarm_repeat_min: alarmType === "repeat"
+      ? (repeatMin ?? partAConfig.alarm_defaults.repeat_min)
+      : null,
   });
 
   // ----------------------------------------------------------------- the press
@@ -208,7 +206,12 @@ export function mountEdit(root, { taskId = null, onBack } = {}) {
         ? { due_at: old.due_at, earliest_start: old.earliest_start, has_time: old.has_time,
             date_phrase: old.date_phrase, date_spans: old.date_spans, date_marker: old.date_marker,
             date_precision: old.date_precision, date_anchor: old.date_anchor,
-            date_firmness: old.date_firmness, date_hedge: old.date_hedge }
+            // The tap wins where there is one. Carrying the old firmness back
+            // over it would make the control read as broken on exactly the
+            // screen it lives on: every edit of a stored task finds no date in
+            // the title, so every edit would land here.
+            date_firmness: firmTap || old.date_firmness,
+            date_hedge: old.date_hedge }
         : {};
       await undo.remove(UNDO_ID);
       await undo.add({ id: UNDO_ID, action: "edit", task_id: old.id, prior_state: old, created_at: nowLocal() });
@@ -272,32 +275,6 @@ export function mountEdit(root, { taskId = null, onBack } = {}) {
     }
   }
 
-  function drawDates(out) {
-    dateRow.innerHTML = "";
-    const said = when(out) || (dropDate ? "" : storedWhen(out?.list.cards ?? [], boundId));
-    if (said) dateRow.appendChild(button("chip on", `\u2713 ${said}`, () => clearDate(out)));
-    for (const preset of partAConfig.chip_presets) {
-      if (!PICKERS.has(preset)) {
-        dateRow.appendChild(button("chip", preset, () => typeWords(preset)));
-        continue;
-      }
-      // The picker is a real one. It writes words into the box like every other
-      // chip, so a date still arrives one way.
-      const wrap = el("label", "chip picker");
-      wrap.appendChild(el("span", "", preset));
-      const field = el("input");
-      field.type = preset === "Pick date" ? "date" : "time";
-      field.addEventListener("change", () => {
-        if (!field.value) return;
-        if (preset === "Pick date") typeWords(dateWords(field.value, new Date().getFullYear()));
-        else typeTime(timeWords(field.value));
-        field.value = "";
-      });
-      wrap.appendChild(field);
-      dateRow.appendChild(wrap);
-    }
-  }
-
   function drawDo(out) {
     doRow.innerHTML = "";
     const sig = el("div", "sigs");
@@ -331,7 +308,13 @@ export function mountEdit(root, { taskId = null, onBack } = {}) {
     more.title = "Advanced";
     typeRow.appendChild(more);
     if (advanced) {
-      drawPanel(panel, partAConfig, { chosen, repeat, alarmType, leadMin }, {
+      drawPanel(panel, partAConfig, {
+        chosen, repeat, alarmType, leadMin, repeatMin,
+        durationMin: durTap ?? out.task.est_duration_min,
+        durationTapped: durTap !== null,
+        firmness: firmTap,
+        notes: notesText,
+      }, {
         setType: (id) => { typeTap = id; paint(); },
         setRepeat: (r) => { repeat = r; paint(); },
         setAlarm: (kind) => {
@@ -340,6 +323,12 @@ export function mountEdit(root, { taskId = null, onBack } = {}) {
           paint();
         },
         setLead: (n) => { leadMin = n; },
+        setRepeatMin: (n) => { repeatMin = n; paint(); },
+        setDuration: (n) => { durTap = n; paint(); },
+        setFirmness: (f) => { firmTap = f; paint(); },
+        // No repaint: the same reason the box itself is built once. Replacing a
+        // focused textarea mid-word loses the caret and dismisses the keyboard.
+        setNotes: (t) => { notesText = t; },
       });
     }
   }
@@ -372,7 +361,10 @@ export function mountEdit(root, { taskId = null, onBack } = {}) {
   function paint() {
     const out = read();
     drawHead(out);
-    drawDates(out);
+    drawDates(dateRow, partAConfig, out, {
+      said: when(out), boundId, dropDate, cards: out?.list.cards ?? [],
+      typeWords, typeTime, clearDate: () => clearDate(out),
+    });
     drawDo(out);
     drawTypes(out);
     drawMatches(out);

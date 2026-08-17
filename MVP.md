@@ -114,16 +114,20 @@ The box is at the top. The tap buttons are with it. The matching tasks are below
 | Add / Edit | 1 | Reads `Add` when empty, `Edit` when a task is loaded |
 | This afternoon | 1 | Types its own words into the box |
 | Tonight | 1 | Same |
-| Tomorrow AM | 1 | Same |
+| Tomorrow morning | 1 | Same. It reads `morning` as a band on a named day, so the whole label is consumed and none of it strands in the title |
 | Weekend | 1 | Same |
 | Pick date | 1 | A date picker. Writes its date into the box, with the year only when it is not this year |
 | Pick time | 1 | A time picker. Writes the time beside the date |
 | `✓ <date>` | 1 | The date the engine read. Tapping it removes those words from the box |
 | Type chips | 3 + 1 | The engine's guess, marked, beside `deadline`, `action`, `appointment`. A small button opens the advanced panel |
-| Advanced | 1 | Opens a panel on the same screen: the other eleven types, and Repeat |
+| Advanced | 1 | Opens a panel on the same screen. Everything that corrects what the typing already said, in one place |
+| Takes about | 1 + 3 + 4 | In the advanced panel. A number box and `min` / `hour` / `day`, plus four suggestions. Sets `duration_tap`; the label says whether the number is the person's or the verb's |
+| How firm | 4 | In the advanced panel. `auto` / `normal` / `soft` / `hard`. `auto` gives the marker words their say back, so the tap is undoable |
 | Repeat | 1 | In the advanced panel. An interval: every N days, weeks or months |
 | Alarm | 1 | In the advanced panel. None, once, or repeating |
 | Lead | 1 | Minutes before the task. 15 by default, changed per task |
+| Ring again every | 5 | In the advanced panel, and only while the alarm repeats. 5 / 10 / 15 / 30 / 60 minutes |
+| Notes | 1 | In the advanced panel, at the foot of it. Read, never matched: a note reaches neither search nor the duplicate warning |
 | Low / Normal / High | 3 | Normal is the default and is marked |
 | `⟨ task ✕ ⟩` | 1 | Only while editing. The ✕ leaves without saving |
 | Match row | 0 or more | Tapping one loads that task for editing |
@@ -242,4 +246,6 @@ The mobile sentence, because a notification is the smallest screen there is. Pus
 
 ## Not in the MVP
 
-Tabs. Reminders and alarms. Notes. Projects. Recurrence. Blockers. A duration control. Sub-tasks. Sync. Cancel and Archive as row actions. `Park`. Anything that reaches a done task.
+Tabs. Reminders and alarms that fire. Projects. Blockers and workflow. Sub-tasks. `Park`.
+
+**Arrived since this page was written**, and now on it: recurrence, sync, the duration control, notes, firmness. **Decided and deliberately still absent:** Cancel and Archive as row actions. A row carries Done, Pin, Delete and its push targets, and a Done row carries Undone. Cancel and Archive stay members of `row_action` with no control on any screen, which is stated here so the gap reads as a decision rather than an oversight.

@@ -1,6 +1,6 @@
 # Cascade Part A — Contract
 
-Stage 2 deliverable, version 47. Companion to `spec/example.md`; see VERSIONS in spec.md.
+Stage 2 deliverable, version 48. Companion to `spec/example.md`; see VERSIONS in spec.md.
 
 This file says what every piece of information **is**. `spec/example.md` says what one session **was**. Where they disagree, one of them is wrong and the disagreement is a defect.
 
@@ -63,6 +63,9 @@ Handed in by the user, the clock, the client or config. Nothing here is computed
 | `chip_spans` | list of | yes | characters | half-open `[start, end)` ranges in `typed_line`. Empty list when nothing was tapped. | `[{start: 21, end: 35}]` |
 | `type_chip_tap` | one-of-a-fixed-set | no | — | an active member of `commitment_types` | `deadline` |
 | `significance_tap` | whole number | no | points | a member of `significance_buttons` | `70` |
+| `duration_tap` | whole number | no | minutes | `limits.duration_min` to `limits.duration_max`. Non-null writes `duration_source` `selected` and the per-verb default is not consulted; a comma list's sum loses to it too. | `30` |
+| `firmness_tap` | one-of-a-fixed-set | no | — | `hard` `normal` `soft`. Overrides the firmness the marker words implied, so `is_hard` follows it. Empty leaves the words their say. | `hard` |
+| `notes_text` | text | yes | characters | 0 to `limits.notes_chars`. Written to `notes` verbatim and read by nothing else: it never enters `normalised`, so it reaches neither search nor duplicate detection. | *(empty)* |
 | `row_action` | one-of-a-fixed-set | no | — | `done` `cancel` `archive` `pin` `edit` `undo` `delete` `push` `undone` | `done` |
 | `bound_task_id` | text | no | — | UUID v7 of the task being edited. Empty means capturing a new one. | `019876e2-…` |
 | `now` | date-and-time | yes | — | local with offset | `2026-08-03T10:40:00+05:30` |
@@ -71,6 +74,8 @@ Handed in by the user, the clock, the client or config. Nothing here is computed
 | `existing_tasks` | list of | yes | — | every open `Task`, handed in whole. Empty list on a first capture. Duplicate detection reads each one's stored `normalised`. | `check sensor` |
 
 **`bound_task_id` is handed in, not held by the engine.** The three bound-state signals are each a function of it, so they cannot disagree. Holding the binding inside the engine would mean a golden case could not set up an edit without first replaying the tap, and would give the engine memory that persists between calls.
+
+**Whatever a person can set while capturing is an input.** `duration_tap`, `firmness_tap` and `notes_text` join the two taps for that reason, and the record comes back complete rather than patched afterwards by the screen. What the screen patches on save is the other kind: the fields that exist only because the task already existed — `id`, `created_at`, `pinned`, `task_state`, `closed_at`, `archived`, `push_count`, `first_due_at`, `spawned_from` — plus `recurrence` and the three alarm fields, which no typed line asks for and the engine writes empty on every capture.
 
 **`now` is an input, not a clock the engine reads.** It is handed in on every call. That is what makes the resolver testable: Stage 4's golden cases pin `now` and the output is then a pure function of the inputs.
 
@@ -121,7 +126,7 @@ Timestamps are ISO 8601 local with offset, `2026-08-09T04:30:00+05:30`. Comparis
 | `chip_spans` | list of | yes | characters | the ranges of `raw_text` a chip typed. Empty when nothing was tapped. | `[{start: 21, end: 35}]` | `chip_spans` |
 | `title` | text | yes | — | `raw_text` minus the date span **found in `raw_text`** (nothing to subtract when the date came from a chip), minus every `strong` marker, and minus a `weak`, `start` or `point` marker when a date span was removed. Full `raw_text` if the result would be empty. | `Call markan` | Rule |
 | `normalised` | text | yes | — | `raw_text` minus every structured span, lowercased, punctuation stripped, runs of whitespace collapsed to one space, then trimmed. Full normalised `raw_text` if the result would be empty. | `call markan` | Rule |
-| `notes` | text | optional | — | No maximum. Empty means none. Not written at capture. | *(empty)* | `row_action` `edit` |
+| `notes` | text | optional | — | 0 to `limits.notes_chars`. Empty means none. | *(empty)* | `notes_text` |
 
 ### Classification
 
@@ -154,7 +159,7 @@ Timestamps are ISO 8601 local with offset, `2026-08-09T04:30:00+05:30`. Comparis
 | Name | Type | Required | Unit | Range | Example | From |
 |---|---|---|---|---|---|---|
 | `est_duration_min` | whole number | yes | minutes | `limits.duration_min` to `limits.duration_max` | `15` | `duration_defaults` |
-| `duration_source` | one-of-a-fixed-set | yes | — | `default` `selected` `learned` `summed` | `default` | Rule |
+| `duration_source` | one-of-a-fixed-set | yes | — | `default` `selected` `learned` `summed` | `default` | Rule, or `duration_tap` |
 
 ### Deferred to later parts
 
@@ -196,11 +201,13 @@ Part 4 forbids an unused contract item without a written reason. These are reach
 | `pinned = true` | Pinning is an action in §6, not taken |
 | `archived = true` | Archiving is an action in §6, not taken |
 | `task_state = done` / `cancelled`, with `closed_at` set | Both actions are in §6, neither taken |
-| `duration_source = selected` | No duration control exists yet |
+| `duration_source = selected` | The control exists on screen 2 and the example predates it, so nothing in the example taps it |
 | `type_chip_tap` | The chip is shown in §2 and never tapped |
 | `row_action` `done` `cancel` `archive` `pin` `undo` | The buttons are shown in §2 and §6; none of these five is pressed. `edit` **is** exercised in §6. |
 | `row_action` `delete` `push` `undone` | All three arrived with the MVP screens and none is drawn in the example, which predates them |
 | `recurrence`, `spawned_from` | Nothing in the example repeats; the advanced panel arrived after it was written |
+| `duration_tap`, `firmness_tap`, `notes_text` | All three are set in the advanced panel, which arrived after the example was written. Every one of them is a Stage 4 golden case instead |
+| `notes` with any text | The panel is the only way in and the example draws no panel |
 | `push_options` | Nothing in the example is pushed; the example predates the control |
 | `first_due_at` | Set by the first push, and nothing in the example is pushed |
 | `duration_source = learned` | `learning.min_samples` is 5 and no verb has reached it |
@@ -528,7 +535,7 @@ A record can be field-by-field valid and jointly nonsense. These are what stop t
 
 # 6. Config
 
-Thirty-three objects. Each holds one thing that grows, so a change touches one object.
+Thirty-six objects. Each holds one thing that grows, so a change touches one object.
 
 **Vocabulary** is the only part records depend on. Every member carries `active`.
 
@@ -572,7 +579,10 @@ Thirty-three objects. Each holds one thing that grows, so a change touches one o
 | `reason_clauses` | `lead` templates by time, precision then band; `trailing` templates by `decided_by`, each with its own joiner | — |
 | `chip_presets` | the capture chips. Screen vocabulary: the engine reads none of them, and a chip types its label into the box. `Pick date` and `Pick time` open pickers and type what was picked. | — |
 | `significance_buttons` | `{10, Low}` `{30, Normal}` `{70, High}` | points |
-| `limits` | `raw_text_min_chars` 2, `raw_text_chars` 280, `duration_min` 1, `duration_max` 262800 | characters, minutes |
+| `duration_units` | what the chips beside the duration box multiply by: `min` 1, `hour` 60, `day` 1440. Screen vocabulary. A unit is never stored: the box and the chip are read together and one number of minutes is written. | minutes |
+| `duration_suggestions` | minutes offered beside the box: 15, 30, 60, 120. Not a vocabulary and no record holds one; tapping one fills the box. | minutes |
+| `alarm_repeat_options` | intervals offered while `alarm_type` is `repeat`: 5, 10, 15, 30, 60. Reachable nowhere else. | minutes |
+| `limits` | `raw_text_min_chars` 2, `raw_text_chars` 280, `duration_min` 1, `duration_max` 262800, `notes_chars` 2000 | characters, minutes |
 | `alarm_types` | `none` `once` `repeat`. Part A records what was asked for; Part B is what fires it | — |
 | `alarm_lead_by_type` | the suggested lead per `commitment_type`. Every value is the same today, deliberately | minutes |
 | `alarm_defaults` | `lead_min` 15, `repeat_min` 10, `max_lead_min` 10080 | minutes |

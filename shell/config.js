@@ -6,7 +6,7 @@
 // Vocabulary members are never removed or repurposed, only deactivated.
 const active = (id) => ({ id, active: true });
 export const partAConfig = {
-    version: "a.15",
+    version: "a.16",
     // --- Vocabulary: records hold these members ---
     // Drawn only from what the example exercises. Thin on purpose:
     // a missing member falls to `other`, which is free. An extra member is permanent.
@@ -142,31 +142,34 @@ export const partAConfig = {
         month: "[1st day_start_anchor, 1st of next 00:00)",
     },
     deadline_bands: ["overdue", "today", "tomorrow", "this_week", "later", "none"],
-  // The type chip offers these three and hides the other eleven behind the
-  // advanced button. `verb_to_type` maps a verb to exactly one type, so there
-  // are no runners-up to offer: a fixed short list is honest where a guessed
-  // one would not be. The three that cover most captures, in `type_order`.
-  type_suggestions: ["deadline", "action", "appointment"],
-
+    // Ranking factor 5, ordered by how much of the task is yours to do right now.
+    // Three moves from the Stage 2 order, which was fitted to nothing:
+    // `maintenance` above `habit`, because an obligation beats a choice;
+    // `waiting` below `information`, because nothing on it is yours to do;
+    // `project` up one, because it still has a next step you can take.
+    // Still fitted to nothing. A week of real captures is what would settle it.
+    // The type chip offers these three and hides the other eleven behind the
+    // advanced button. `verb_to_type` maps a verb to exactly one type, so there
+    // are no runners-up to offer: a fixed short list is honest where a guessed
+    // one would not be. The three that cover most captures, in `type_order`.
+    type_suggestions: ["deadline", "action", "appointment"],
     type_order: [
-        "appointment", "deadline", "action", "habit", "maintenance", "purchase",
-        "decision", "research", "waiting", "project", "information", "goal",
+        "appointment", "deadline", "action", "maintenance", "habit", "purchase",
+        "decision", "research", "project", "information", "waiting", "goal",
         "wish", "idea",
     ],
     // Ranking reads a fixed set as an order. `deadline_bands` and `type_order`
-  // already sat here; these two were written in the example's direction table
-  // and nowhere a program could reach, which is what kept the ranking a
-  // description rather than a rule.
-  precision_order: [
-    "time", "band", "day", "span", "week", "month", "open", "none",
-    "undetermined",
-  ],
-
-  // `hard` is separated in tier 1 and never reaches factor 3, so it sits last
-  // here rather than first: the list is the order among what is left.
-  firmness_order: ["normal", "soft", "hard"],
-
-  ranking: {
+    // already sat here; these two were written in the example's direction table
+    // and nowhere a program could reach, which is what kept the ranking a
+    // description rather than a rule.
+    precision_order: [
+        "time", "band", "day", "span", "week", "month", "open", "none",
+        "undetermined",
+    ],
+    // `hard` is separated in tier 1 and never reaches factor 3, so it sits last
+    // here rather than first: the list is the order among what is left.
+    firmness_order: ["normal", "soft", "hard"],
+    ranking: {
         // Tier 1. Absolute: no score beats these, under any mode.
         overrides: ["pinned", "is_hard"],
         // Tier 2. "weighted" would replace tier 3 wholesale and leave tier 1 alone.
@@ -204,13 +207,22 @@ export const partAConfig = {
         },
     },
     chip_presets: [
-        "This afternoon", "Tonight", "Tomorrow AM", "Weekend", "Pick date", "Pick time",
+        "This afternoon", "Tonight", "Tomorrow morning", "Weekend", "Pick date", "Pick time",
     ],
     significance_buttons: [
         { value: 10, label: "Low" },
         { value: 30, label: "Normal" },
         { value: 70, label: "High" },
     ],
+    // What the unit chips beside the duration box multiply by. A unit is never
+    // stored: the box and the chip are read together and one number is written.
+    duration_units: { min: 1, hour: 60, day: 1440 },
+    // Suggestions beside the box, in minutes. They are not a vocabulary and no
+    // record depends on them: tapping one fills the box and nothing else.
+    duration_suggestions: [15, 30, 60, 120],
+    // Intervals offered for a repeating alarm, in minutes. Reachable only while
+    // `alarm_type` is `repeat`.
+    alarm_repeat_options: [5, 10, 15, 30, 60],
     limits: {
         // A line is not a capture until it carries something to read. Fitted to
         // nothing: two is a guess, and the only real rule is the letter-or-digit one.
@@ -218,24 +230,26 @@ export const partAConfig = {
         raw_text_chars: 280,
         duration_min: 1,
         duration_max: 262800,
+        // Notes are read, never matched. The cap exists so one task cannot carry a
+        // document, not because anything counts them.
+        notes_chars: 2000,
     },
     // Fitted against eleven hand-made pairs in the example, not derived.
     // Sørensen-Dice both ways; comparison is >= threshold.
     // Live search. Its fuzzy tier is deliberately looser than `duplicate`: a
-  // result is not a question, so a false positive costs nothing, where a false
-  // dialog interrupts. The two numbers are separate for that reason.
-  // How much committed work a day holds, in minutes. One number for every day.
-  // Fitted to nothing, like `duplicate.threshold`: three hours is what he says a
-  // full day feels like, and the first week of real captures is what corrects
-  // it. The load it measures is a sum of `est_duration_min`, which are defaults
-  // per verb rather than measurements, so the note it produces says `roughly`.
-  // The alarm vocabulary. Part B fires them; Part A only records what was asked
-  // for, which is why `alarm_types` is here and no scheduler is.
-  alarm_types: ["none", "once", "repeat"],
-
-  // Defaults for a task that asks for an alarm without saying more, and the
-  // floor and ceiling a lead time may take.
-  // The suggested lead, by what kind of thing the task is. Every value is the
+    // result is not a question, so a false positive costs nothing, where a false
+    // dialog interrupts. The two numbers are separate for that reason.
+    // How much committed work a day holds, in minutes. One number for every day.
+    // Fitted to nothing, like `duplicate.threshold`: three hours is what he says a
+    // full day feels like, and the first week of real captures is what corrects
+    // it. The load it measures is a sum of `est_duration_min`, which are defaults
+    // per verb rather than measurements, so the note it produces says `roughly`.
+    // The alarm vocabulary. Part B fires them; Part A only records what was asked
+    // for, which is why `alarm_types` is here and no scheduler is.
+    alarm_types: ["none", "once", "repeat"],
+    // Defaults for a task that asks for an alarm without saying more, and the
+    // floor and ceiling a lead time may take.
+    // The suggested lead, by what kind of thing the task is. Every value is the
     // same today, deliberately: the shape is here so a correction is a number
     // change rather than a structural one, and no guess is recorded as if it
     // were evidence. While they are all equal this table changes no behaviour,
@@ -246,29 +260,25 @@ export const partAConfig = {
     // about having time to do the thing, and a deadline told with less warning
     // than the job takes is an announcement rather than a warning.
     alarm_lead_by_type: {
-      appointment: 15,
-      deadline: 15,
-      action: 15,
-      maintenance: 15,
-      habit: 15,
-      purchase: 15,
-      decision: 15,
-      research: 15,
-      project: 15,
-      information: 15,
-      waiting: 15,
-      goal: 15,
-      wish: 15,
-      idea: 15,
+        appointment: 15,
+        deadline: 15,
+        action: 15,
+        maintenance: 15,
+        habit: 15,
+        purchase: 15,
+        decision: 15,
+        research: 15,
+        project: 15,
+        information: 15,
+        waiting: 15,
+        goal: 15,
+        wish: 15,
+        idea: 15,
     },
-
-  alarm_defaults: { lead_min: 15, repeat_min: 10, max_lead_min: 10080 },
-
-  capacity_min_per_day: 180,
-
-  search: { fuzzy_threshold: 0.5 },
-
-  duplicate: {
+    alarm_defaults: { lead_min: 15, repeat_min: 10, max_lead_min: 10080 },
+    capacity_min_per_day: 180,
+    search: { fuzzy_threshold: 0.5 },
+    duplicate: {
         threshold: 0.6,
         min_chars: 6,
     },

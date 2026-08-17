@@ -72,6 +72,16 @@ export interface CaptureInput {
   bound_task_id: Uuid | null;
   type_chip_tap: CommitmentType | null;
   significance_tap: number | null;
+  /** Minutes. Non-null makes `duration_source` "selected" and the verb default
+   *  is not consulted. A comma list's sum loses to it too: the person read the
+   *  number the engine gave them and replaced it. */
+  duration_tap: number | null;
+  /** Overrides the firmness the marker words implied. `is_hard` follows it, so
+   *  this is the only way a tap-only capture reaches ranking tier 1. */
+  firmness_tap: DateFirmness | null;
+  /** Written to `notes` verbatim. It never enters `normalised`, so it reaches
+   *  neither search nor duplicate detection: notes are read, not matched. */
+  notes_text: string;
   /** Handed in on every call, never read from a system clock. */
   now: LocalTimestamp;
   new_id: Uuid;
@@ -316,7 +326,7 @@ export interface WorkingValues {
 export type Similarity = number;
 
 // --- Config ---
-// Thirty-three objects. Vocabulary is the only part records depend on.
+// Thirty-six objects. Vocabulary is the only part records depend on.
 
 /** A vocabulary member. Never removed or repurposed, only deactivated. */
 export interface VocabMember {
@@ -390,7 +400,13 @@ export interface Config {
   reason_clauses: ReasonClauses;
   chip_presets: string[];
   significance_buttons: SignificanceButton[];
-  limits: { raw_text_min_chars: number; raw_text_chars: number; duration_min: number; duration_max: number };
+  /** Label to minutes for the chips beside the duration box. Never stored. */
+  duration_units: Record<string, number>;
+  /** Minutes offered beside the box. Not a vocabulary; no record holds one. */
+  duration_suggestions: number[];
+  /** Minutes offered while `alarm_type` is `repeat`. */
+  alarm_repeat_options: number[];
+  limits: { raw_text_min_chars: number; raw_text_chars: number; duration_min: number; duration_max: number; notes_chars: number };
   alarm_types: AlarmType[];
   alarm_lead_by_type: Record<string, number>;
   alarm_defaults: { lead_min: number; repeat_min: number; max_lead_min: number };

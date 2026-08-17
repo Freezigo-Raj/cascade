@@ -10,7 +10,7 @@ import type { Config } from "./types";
 const active = (id: string) => ({ id, active: true });
 
 export const partAConfig: Config = {
-  version: "a.15",
+  version: "a.16",
 
   // --- Vocabulary: records hold these members ---
   // Drawn only from what the example exercises. Thin on purpose:
@@ -234,7 +234,7 @@ export const partAConfig: Config = {
   },
 
   chip_presets: [
-    "This afternoon", "Tonight", "Tomorrow AM", "Weekend", "Pick date", "Pick time",
+    "This afternoon", "Tonight", "Tomorrow morning", "Weekend", "Pick date", "Pick time",
   ],
 
   significance_buttons: [
@@ -243,6 +243,18 @@ export const partAConfig: Config = {
     { value: 70, label: "High" },
   ],
 
+  // What the unit chips beside the duration box multiply by. A unit is never
+  // stored: the box and the chip are read together and one number is written.
+  duration_units: { min: 1, hour: 60, day: 1440 },
+
+  // Suggestions beside the box, in minutes. They are not a vocabulary and no
+  // record depends on them: tapping one fills the box and nothing else.
+  duration_suggestions: [15, 30, 60, 120],
+
+  // Intervals offered for a repeating alarm, in minutes. Reachable only while
+  // `alarm_type` is `repeat`.
+  alarm_repeat_options: [5, 10, 15, 30, 60],
+
   limits: {
     // A line is not a capture until it carries something to read. Fitted to
     // nothing: two is a guess, and the only real rule is the letter-or-digit one.
@@ -250,6 +262,9 @@ export const partAConfig: Config = {
     raw_text_chars: 280,
     duration_min: 1,
     duration_max: 262800,
+    // Notes are read, never matched. The cap exists so one task cannot carry a
+    // document, not because anything counts them.
+    notes_chars: 2000,
   },
 
   // Fitted against eleven hand-made pairs in the example, not derived.

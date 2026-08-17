@@ -13,7 +13,7 @@ Current stage: 5
 Gates passed: **Gate 1**, **Gate 2**, **Gate 3** and **Gate 4**, each on an older file than the one it names. All four signatures are stale and all four are waiting on a hand. See VERSIONS.
 Stage 4 is closed and signed. Stage 5 is open: the rules go in one at a time and the same command is read the other way round, so a case that still fails names a rule not yet written. `gate4.mjs` reads the stage out of the line above and inverts its own verdict on it. Every case in the key agrees with the engine. Section I taps a type, a significance and a bound task, which no case did before, and section B and H state what the card says. `gate4.mjs` reads Stage 5 and passes: 142 run, 142 green, 0 on invariants alone, 0 errored. Nine rules are written and every obligation the contract records is now met except the ranking, which is Stage 6's. Gate 5 is the hand that says Stage 5 is finished.
 
-Status: the contract is written in the protocol's three groups, with Name, Type, Required, Unit, Range, Example and From per item. 10 inputs, 13 working values, the 43-field `Task`, the 4-field `UndoEntry`, 33 rendered outputs, 14 cross-field invariants, and config at 33 objects populated. `tsc --strict` compiles clean and `gate2.py` passes. The Stage 3 shell is built and Gate 3 is signed: the panel drew correctly by hand, and deleting `card_badge` from the placeholder produced a red box naming `resolve.js` and the missing field rather than a blank screen. `resolve()` now returns three keys, `task`, `list` and `capture`, and the contract names that shape. The answer key holds 144 key cases.
+Status: the contract is written in the protocol's three groups, with Name, Type, Required, Unit, Range, Example and From per item. 13 inputs, 13 working values, the 43-field `Task`, the 4-field `UndoEntry`, 33 rendered outputs, 14 cross-field invariants, and config at 36 objects populated. `tsc --strict` compiles clean and `gate2.py` passes. The Stage 3 shell is built and Gate 3 is signed: the panel drew correctly by hand, and deleting `card_badge` from the placeholder produced a red box naming `resolve.js` and the missing field rather than a blank screen. `resolve()` now returns three keys, `task`, `list` and `capture`, and the contract names that shape. The answer key holds 144 key cases.
 
 D-1: **Typing the thought is the whole of the work.**
 
@@ -39,11 +39,11 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 
 ## VERSIONS
 
-  example      38
-  contract     47
-  config       a.15
+  example      39
+  contract     48
+  config       a.16
   answer_key   28
-  shell        21
+  shell        22
   gate1        signed on example 35
   gate2        signed on contract 32
   gate3        signed on shell 1
@@ -63,7 +63,7 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 **Built, and only as verified as the gate above it:**
 - `spec/example.md` — Stage 1 finished example. Gate 1 signed on the current file.
 - `schema/contract.md`, `schema/types.ts` — Stage 2. Gate 2 signed on the current file; `tsc --strict` compiles clean.
-- `config.ts` — the 33 config objects. Every vocabulary member is reachable from the lexicon.
+- `config.ts` — the 36 config objects. Every vocabulary member is reachable from the lexicon.
 - `shell/lemma.js` — wink-nlp and its English web model, MIT, bundled once and committed. 3.6 MB. No build step at run time: the shell serves it as a static file and the gate imports the same one. Read last in the verb chain.
 - The record also carries its four handed-in values, `raw_text`, `id`, `created_at` and `config_version`, which is what makes a case able to be green at all.
 - `tests/answer_key.md` — the hand-written key, Gate 4 signed on the current file. Every case a table row and every case carrying a derivation. 142 run and every one states a value; the two that do not run each name the gate that answers them.
@@ -78,36 +78,54 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 
 ## THIS SESSION'S JOB
 
-The app has its own address and goes on a home screen.
+The four controls a tap-only capture had no way to reach, and the label that stranded a word.
 
-**It lives at the root now.** `shell/mvp.html` is gone and `index.html` is the app; the Stage 3
-harness keeps `/shell/` and everything `check_render` pins. One entry file, not two, because two
-copies of the way in is the shape every duplicate defect here has had.
+**Everything a person can set while capturing is an input.** `duration_tap`, `firmness_tap` and
+`notes_text` join the two taps in `CaptureInput`, so `resolve()` returns one complete record and the
+save patches only what exists because the task already existed. Three more patch lines beside the nine
+the save already carries would have been three more places one value can be written from.
 
-**Network first, cache second, and never the other way round.** The worker exists so the app opens
-with no signal: the store was local-first from session 96, so a running app already survived a lost
-connection, and what it could not survive was being closed. Cache-first is the usual advice and is
-the wrong trade — it serves a version that is no longer in the repository, on someone else's phone,
-with nothing on screen saying so. That is the defect of sessions 96 and 98 made permanent. Every cold
-start waits on the network instead, which is slow and correct.
+**A tapped duration outranks the verb's default and a comma list's sum**, and writes
+`duration_source` `selected`. Until this row existed the duration was a lexicon entry: `call` is
+fifteen minutes because config says so. The clash window, the day load that chooses push targets, and
+the whole order of the Ideas list are sums of that guess.
 
-**It evicts its predecessor.** A dead Cascade sat at this address for three weeks with its own worker
-in it. `skipWaiting` and `clients.claim` take over on first sight, and activation drops every cache
-this file did not make.
+**A tapped firmness reaches ranking tier one**, which no tap-only capture could. `is_hard` follows
+`date_firmness`, and the only way to set it was to type `deadline` or `by Friday`. The row carries an
+`auto` position that clears the tap, because a tap that cannot be untapped makes the marker words
+unreachable for the rest of that task's life.
 
-**`tsc --strict` is inside `gate2.py`.** It was the one artefact with no check under it, which is how
-`AlarmType` was declared twice for five sessions while the spec said it compiled clean. A missing
-compiler FAILS rather than skips: a check that says nothing when its tool is absent reads as a tooling
-problem and hides an untested gate, which has happened four times here.
+**Notes are read and never matched.** `notes_text` does not enter `normalised`, so a note reaches
+neither search nor the duplicate warning. Stored records are never rewritten, so a note feeding
+`normalised` later would leave every task captured before that day unsearchable by its own note for
+ever. That is a permanent split in one field's meaning; not finding a note is the cheaper half.
 
-Files: `index.html`, `sw.js`, `manifest.webmanifest`, the three icons, `icon.svg`, `.nojekyll`,
-`shell/render.js`, `gate2.py`, `spec.md`, `sessions.md`, `log.manifest`.
+**The chip reads `Tomorrow morning` and T15 is closed.** The band-on-a-named-day rule from session 100
+consumes the whole label, so nothing strands. It cost exactly what the 4 August deviation said it
+would: a config bump, four capture panels in `spec/example.md` redrawn, and `check_render` red until
+they were.
+
+**Two defects, both found by making the change rather than by reading it.**
+
+`check_render` pinned five lines by counting down from the typed line. Exact while the chip row was
+two lines, wrong the moment a longer label wrapped it to three: it compared a correct panel against a
+window one row lower and called every line a difference. It reads from the box down to the panel's
+closing rule now.
+
+The `keepDate` block carried the stored firmness back over a tapped one. Every edit of a stored task
+finds no date in the title, so every edit would have landed there and the new control would have read
+as broken on the one screen it lives on.
+
+`mvp.edit.js` crossed the 400-line cap, so the date chip row left as `shell/mvp.chips.js`. That is the
+right seam: every control in it does the one thing, which is put words in the box.
 
 ## NEXT THREE JOBS
 
-1. The `Tomorrow morning` rename, decided and costed: four capture panels redrawn, one of which
-   re-wraps, a config bump and a Gate 1 press.
-2. The answer key's `chip_spans` sentence and `weekend morning`, both answered and neither built.
+1. The workflow migration: `waits_for` with `delay_min`, `condition_label` / `condition_met`,
+   `loop_limit` / `loop_count`, one grouping id. Decided in full and recorded under DECIDED, NOT
+   BUILT; a migration and a readiness reader, no canvas.
+2. An export: every task as JSON, one press, no server. The one failure that gets worse with every day
+   of real use.
 3. Gate 6, and the five gates already owed.
 
 ## TYPED, AND WRONG
@@ -129,7 +147,7 @@ Lines typed into the live shell that came out wrong. Open until each is either f
 | T12 (fixed) | any line, no tap | `significance` 70 | The contract says the untouched default is 30, and the example says so twice. The placeholder carried 70 because the line it was copied from tapped High |
 | T14 (fixed) | any typed line | the capture row's last line was drawn two ways | Section 2's layout is the rule: chips wrap, then three spaces, the type chip, the fill, the significance buttons and one space inside the border. Both panels in the example are redrawn that way and the `· · ·` leader is gone |
 | T13 (fixed) | any line | `type_chip_tap`, `significance_tap`, `bound_task_id`, `row_action` read zero times | Four of the nine inputs were dead. Twelve frozen fields trace back to them |
-| T15 (half fixed) | `call raj Tomorrow AM` | title `call raj AM`, due tomorrow 23:59:59 | The half underneath is fixed: a band touching a named day now narrows it, so `tomorrow morning` is three hours and `20 Aug morning` reads its date. The label is not. `Tomorrow AM` is a chip preset, a chip types its label, and `am` is not a date word, so `AM` still strands. The relabel to `Tomorrow morning` bumps config, and the price is now measured rather than estimated: four capture panels in `spec/example.md` draw the chip row, and the second and fourth have one trailing space, so the row re-wraps and the panel changes shape. `check_render` pins the first of them character for character. That is a real Stage 1 rewrite and a Gate 1 press, which is exactly what the 4 August deviation said it would cost. The alternative is still open and cheaper: `am`/`pm` as band words in `date_lexicon`, which keeps the label and risks the meridiem parser that reads `5 pm` |
+| T15 (closed) | `call raj Tomorrow AM` | title `call raj AM`, due tomorrow 23:59:59 | Closed on the label. The chip is `Tomorrow morning`, which the band-on-a-named-day rule consumes whole, so nothing strands. It cost what the 4 August deviation said it would: a config bump, the four capture panels in `spec/example.md` redrawn, and `check_render` failed until they were. The gate found a second thing while it was there. The check pinned its five lines by counting from the typed line, which was exact while the chip row was two lines and wrong the moment a longer label wrapped it to three: it then compared the panel against a window one row lower and called every line a difference. It reads from the box down to the panel's closing rule now, so a chip row is free to grow. `am`/`pm` as band words was the cheaper alternative and is not needed |
 | T11 (fixed) | any line with a date | `resolved_window` and `clipped_window` frozen at the morning band | The date rule computes both internally and writes neither out. They still hold the hand-copied record's values on every line |
 
 **T10 and T11 were found by asking which fields never move,** rather than by reading any line's output. Across fifteen varied lines, 24 of the 63 returned fields changed and 39 did not; three of the 39 should have. The other 36 sort into fields no rule writes yet, fields the shell cannot move because it has no input for them, and fields that are genuinely constant.
@@ -204,6 +222,66 @@ Lines typed into the live shell that came out wrong. Open until each is either f
 - Earlier records call the answer key an 80-case key; it declares 88. The count is now stated once above, and `gate2.py` reads the real one out of the key.
 
 - Part B carries a constraint from Part A's window rule: it must decide chase behaviour from `date_firmness`, not from `deadline_band`. If it ever chases on band alone, every window-dated task pesters the user from its midpoint. Recorded now so it is not rediscovered later.
+
+## DECIDED, NOT BUILT — Part C's workflow
+
+Every line here was settled on 17 August and none of it is in the schema yet. It is written down
+because a decision that lives only in a conversation reads as finished and is not, which is the third
+thing in this file to say that sentence.
+
+**One table, not two.** No `cascade_edge`. A task's whole readiness condition sits on its own row, so
+joining or leaving a workflow is an edit to one field and deleting a task takes its conditions with it.
+Six columns on `cascade_task`, all defaulted, so existing records are untouched:
+
+| Column | Holds |
+|---|---|
+| `waits_for` | `jsonb` array of `{ task, kind, on, delay_min }`, default `[]` |
+| `condition_label` | the question a branch turns on. Its presence is what makes `if` / `else` legal |
+| `condition_met` | `true` / `false` / null. Null means nobody has answered yet |
+| `loop_limit` | how many times a declared loop may run before it is exhausted |
+| `loop_count` | how many times it has, default 0 |
+| `workflow_id` | one grouping id. Not both this and `project_id`; two ids for one grouping is the shape every duplicate defect here has had |
+
+**`kind` is per dependency, not one mode on the receiver.** `and` / `or` / `if` / `else`. A single
+`gate_mode` cannot express a task that branches, and `if` / `else` are unavoidably per edge. Readiness
+reads: every `and` met, at least one `or` met where any exist, an `if` met when the upstream closed and
+`condition_met` is true, an `else` met when it closed and `condition_met` is false.
+
+**`on` is the trigger:** `done`, `overdue`, `cancelled`. An overdue trigger fires from a clock Part A
+is not running, so it waits for Part B's scheduler rather than being evaluated lazily on render.
+
+**`delay_min` from the start.** One integer, and it is what a TIMER operator would have been. LOOP is
+`recurrence`, which already exists. Two of the six operators disappear into fields already owned.
+
+**A missing upstream counts as satisfied.** Postgres cannot foreign-key inside `jsonb`, so a dangling
+reference is possible. The alternative hides the downstream task for ever with nothing on screen.
+
+**A blocked task disappears from every list** until it is ready. His call, over showing it marked.
+
+**An undeclared cycle is refused at save**, by a walk over the cache from the new dependency's target.
+A declared loop is not a cycle and is legal: a back edge needs an upstream carrying a
+`condition_label`, a `kind` of `if` or `else`, and a `loop_limit` on the loop's entry task. At
+`loop_count == loop_limit` the back edge is unmet for ever and whatever waits on the exhausted loop
+becomes ready. Nothing can enter the store carrying an undeclared cycle, so no task hides behind one.
+
+**Same-project is enforced when the dependency is added**, not when readiness is computed.
+
+**`blocker_ref` stops being the authority.** One `Uuid` cannot hold three upstreams. `blocked`,
+`blocker_reason`, readiness and `workflow_position` become working values recomputed from `waits_for`,
+the way `deadline_band` already is.
+
+**Marking done a task that carries a `condition_label` asks the question first**, two buttons, no way
+past it. Somebody has to answer or both branches stay invisible. That is a third mandatory dialog and
+D-1's closed exception list is currently two: D-1 is scoped to capture and this is a completion, so the
+wording does not reach it, and the list is longer in writing rather than silently.
+
+**A drag onto an hour on the week grid is allowed, and is a push:** it sets the date field, touches no
+words, and sets `has_time` only when the drop lands on an hour rather than a day column.
+
+**What it costs, recorded rather than discovered.** Finding what waits on a task is a scan of every
+row, free at this size and not for ever. Two devices each adding a different upstream to one task
+collide under newest-wins and one addition is dropped silently, where two rows in a table would both
+have landed. That is the price of the single table and it is accepted.
 
 ## LATER LIST
 
@@ -626,6 +704,12 @@ Lines typed into the live shell that came out wrong. Open until each is either f
 - 14 Aug 2026 — The service worker is network first with the cache as fallback, not cache first — cache first is faster and serves a version that is no longer in the repository on a phone that cannot be told so, which is the cache defect of sessions 96 and 98 made permanent — the price is that every cold start waits on the network, and it is the right way round.
 - 14 Aug 2026 — The worker holds no pre-cache list and caches what has actually been fetched — a list of module names here would be a second inventory to keep in step with the first, and the modules change as the app is built — the cost is that the first visit must be online.
 - 14 Aug 2026 — `gate2.py` runs `tsc --strict` and FAILS when the compiler is missing rather than skipping — `types.ts` declared `AlarmType` twice for five sessions while spec.md claimed a clean compile, because the claim lived in prose and nothing could reach it — a check that says nothing when its tool is absent reads as a tooling problem and hides an untested gate, which has happened four times.
+- 17 Aug 2026 — `duration_tap`, `firmness_tap` and `notes_text` are inputs to `resolve()` rather than fields the screen patches on to the record afterwards — whatever a person can set while capturing is an input, so the engine returns one complete record and there is no second place a value can be written from — the alternative was three more patch lines beside the nine the save already carries, and the count of things that can silently disagree grows with each one.
+- 17 Aug 2026 — A tapped duration outranks the per-verb default AND a comma list's sum, and writes `duration_source` `selected` — the sum is a multiple of the same guess the default is, and the person read the number the engine offered before replacing it — `duration_source` `summed` becomes unreachable on any line where the box was touched, which is correct and narrows where that value is ever seen.
+- 17 Aug 2026 — `firmness_tap` carries an `auto` position that clears it rather than a third state meaning normal — a tap that cannot be untapped makes the marker words unreachable for the rest of that task's life — `normal` and `auto` look identical on screen today, because the words most often say normal anyway.
+- 17 Aug 2026 — `notes` is read and never matched: `notes_text` does not enter `normalised`, so it reaches neither search nor duplicate detection — stored records are never rewritten, so notes feeding `normalised` later would leave every task captured before that day unsearchable by its own note for ever, which is a permanent split in one field's meaning — the cost is that a note cannot be found by searching for what is in it, and that is the cheaper half to change later.
+- 17 Aug 2026 — `check_render` finds its window from the box to the panel's closing rule instead of counting five lines down from the typed line — the count was exact while the chip row was two lines and became wrong the moment a longer label wrapped it to three, reporting every line of a correct panel as a difference — a chip row is now free to grow without the check having to be told.
+- 17 Aug 2026 — Cancel and Archive stay members of `row_action` with no control on any screen, and `MVP.md` says so — a row carries Done, Pin, Delete and its push targets, and adding two more presses to it costs the row the two-line reading the whole screen is built on — an archived or cancelled task is unreachable from the UI until a screen is built that wants them, which is stated rather than left to be discovered.
 
 
 ## DELIBERATE DEVIATIONS FROM PROTOCOL

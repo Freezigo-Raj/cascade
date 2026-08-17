@@ -2300,3 +2300,32 @@ Session 1 closed.
 **Next job:** the `Tomorrow morning` rename.
 
 ---
+## Session 102 — 17 August 2026
+
+**Job: the four controls a tap-only capture could not reach, and the label that stranded a word.**
+
+**Whatever a person can set while capturing is an input.** `duration_tap`, `firmness_tap` and `notes_text` go into `CaptureInput` beside the two taps that were already there, so `resolve()` returns one complete record. The alternative was three more lines in the save's patch beside the nine it already carries, and every one of those is another place a value can be written from and another pair that can silently disagree. The rule is in the contract now rather than in a habit: if a person can set it while capturing it is an input; if it exists only because the task already existed, the save patches it.
+
+**A tapped duration outranks the verb's default and a comma list's sum.** `call` was fifteen minutes because the lexicon says so, and nothing had ever measured it. The clash window, the day load that chooses which push targets are offered, and the whole order of the Ideas list are sums of that guess. `duration_source` reads `selected` when the box was touched, which makes `summed` unreachable on any such line — correct, and it narrows where that value is ever seen.
+
+**A tapped firmness reaches ranking tier one, which no tap-only capture could.** `is_hard` follows `date_firmness` and the only way to set it was to type `deadline`, `by Friday`, `no later than`. Six chips and a picker could not make a task hard. The row carries an `auto` position that clears the tap, because a tap with no way back makes the marker words unreachable for the rest of that task's life. `auto` and `normal` look identical on screen today, since the words usually say normal anyway.
+
+**Notes are read and never matched.** `notes_text` does not enter `normalised`, so a note reaches neither search nor the duplicate warning. This is the one decision in the session that gets more expensive the longer it waits: stored records are never rewritten, so notes feeding `normalised` in some later session would leave every task captured before that day unsearchable by its own note for ever, which is a permanent split in what one field means. Not being able to find a note by its contents is the cheaper half to change later, so that is the half left open.
+
+**`Tomorrow morning` and the end of T15.** The band-on-a-named-day rule built in session 100 consumes the whole label, so nothing strands in the title. It cost precisely what the 4 August deviation predicted: a config bump, four capture panels in `spec/example.md` redrawn by hand, and `check_render` red until they were. `am`/`pm` as band words was the cheaper alternative and is not needed.
+
+**Two defects, both found by making the change rather than by reading it.**
+
+**`check_render` was counting.** It took five lines from one below the typed line, which was exact while the chip row was two lines and wrong the moment a longer label wrapped it to three: it then compared a correct panel against a window one row lower and reported every line as a difference. That reads as five defects in the renderer. It finds its window now, from the box down to the panel's closing rule, so a chip row is free to grow. This is the fifth time a check has been pinned to a number that later moved.
+
+**`keepDate` carried the stored firmness back over a tapped one.** A title carries no date words, so every edit of every stored task lands in that branch. The new control would have worked once and then been quietly undone on save, on the one screen it lives on.
+
+**`mvp.edit.js` crossed the 400-line cap and the date chip row left as `shell/mvp.chips.js`.** The right seam rather than the convenient one: every control in that file does the same single thing, which is put words in the box. `mvp.panel.js` grew from 86 lines to 188 and now holds everything that corrects what the typing said — type, duration, firmness, repeat, alarm, lead, ring-again, notes — in the order a person reads them.
+
+**Recorded and not built: the whole of the workflow.** Settled this session in full and written into `spec.md` under DECIDED, NOT BUILT, because a decision that lives only in a conversation reads as finished and is not. One table and no `cascade_edge`; `waits_for` as `jsonb` with `kind` per dependency so `if` and `else` are expressible; `delay_min` from the start, which is what a TIMER operator would have been; LOOP is `recurrence`, which already existed. An undeclared cycle is refused at save and a declared loop is legal, which is what separates a broken graph from a chase that runs three times. A blocked task disappears. `blocker_ref` stops being the authority, because one `Uuid` cannot hold three upstreams.
+
+**Save point:** `duration, firmness, notes and the alarm interval on screen 2; T15 closed; gates 1, 2, 3, 4, 5 and 6 waiting on a hand`
+
+**Next job:** the workflow migration, or the export.
+
+---

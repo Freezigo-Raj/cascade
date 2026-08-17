@@ -116,12 +116,27 @@ function readCompareKey(normalised) {
 function readTaps(input, derivedType) {
   const tapped = input.type_chip_tap;
   const sig = input.significance_tap;
+  const dur = input.duration_tap;
   return {
     commitment_type: tapped || derivedType,
     type_source: tapped ? "user" : "derived",
     // 30 is the untouched default, not 70. The placeholder carried 70 because
     // the line it was copied from had tapped High.
     significance: sig === null || sig === undefined ? 30 : Number(sig),
+    // A tapped duration is the person's measurement of their own work, and it
+    // outranks both the per-verb default and a comma list's sum. Null leaves
+    // both alone, which is what every line typed before the control existed did.
+    duration_tap: dur === null || dur === undefined ? null : Number(dur),
+    // A tapped firmness outranks the marker words. Without this a tap-only
+    // capture can never be hard, and `is_hard` is the first ranking factor
+    // below a pin.
+    firmness_tap: input.firmness_tap || null,
+    // Read verbatim and written to `notes`. It is deliberately not fed to
+    // `readNormalised`, so a note changes neither a search result nor a
+    // duplicate warning: stored records are never rewritten, and a note that
+    // reached `normalised` later would leave every earlier task unsearchable
+    // by its own note for ever.
+    notes_text: typeof input.notes_text === "string" ? input.notes_text : "",
   };
 }
 
@@ -974,7 +989,10 @@ export function resolve(input) {
   const taps = readTaps(input, derived.commitment_type);
   const nowAt = readInstant(input.now);
   const deadline_band = readBand(dates.due_at, nowAt);
-  const due_phrase = readDuePhrase(dates, deadline_band, nowAt) || readFromPhrase(dates, nowAt);
+  // The phrase reads the firmness the record will carry, not the one the words
+  // implied, or a tapped `soft` would lose the `around` the record says it has.
+  const said = taps.firmness_tap ? { ...dates, date_firmness: taps.firmness_tap } : dates;
+  const due_phrase = readDuePhrase(said, deadline_band, nowAt) || readFromPhrase(said, nowAt);
 
   const task = {
       id: input.new_id,
@@ -985,7 +1003,7 @@ export function resolve(input) {
       chip_spans: (input.chip_spans ?? []).map((r) => ({ start: r.start, end: r.end })),
       title: dates.title,
       normalised: normalised,
-      notes: "",
+      notes: taps.notes_text,
       verb_phrase,
       action_verb,
       commitment_type: taps.commitment_type,
@@ -997,13 +1015,17 @@ export function resolve(input) {
       date_hedge: dates.date_hedge,
       date_marker: dates.date_marker,
       date_precision: dates.date_precision,
-      date_firmness: dates.date_firmness,
+      date_firmness: taps.firmness_tap || dates.date_firmness,
       date_anchor: dates.date_anchor,
       earliest_start: dates.earliest_start,
       due_at: dates.due_at,
       has_time: dates.has_time,
-      est_duration_min: summed ? summed.est_duration_min : derived.est_duration_min,
-      duration_source: summed ? summed.duration_source : "default",
+      est_duration_min: taps.duration_tap !== null
+        ? taps.duration_tap
+        : (summed ? summed.est_duration_min : derived.est_duration_min),
+      duration_source: taps.duration_tap !== null
+        ? "selected"
+        : (summed ? summed.duration_source : "default"),
       recurrence: null,
       // Part A records what alarm was asked for and fires nothing. A capture
       // asks for none; the advanced panel is what changes it.
