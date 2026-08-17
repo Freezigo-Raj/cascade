@@ -16,6 +16,11 @@
 // screen rather than only in `MVP.md` because a gap nobody can see is a gap that
 // gets rediscovered, and this project has rediscovered four of them.
 //
+// It is also the only place in the app that says which version is running. That
+// mattered the moment a design change landed and the browser went on serving the
+// previous stylesheet: there was no way to tell a build that had not arrived from
+// a build that had arrived and looked wrong.
+//
 // The export is the answer to the one failure that gets worse every day: the
 // tasks live in one account and one browser cache and there is no other copy.
 // It writes what the store holds, unchanged, so a restore later reads records
@@ -24,6 +29,8 @@
 const v = new URL(import.meta.url).search;
 const { tasks, undo, mode } = await import(`./store.select.js${v}`);
 const { account } = await import(`./auth.js${v}`);
+const { partAConfig } = await import(`./config.js${v}`);
+const { SHELL_VERSION } = await import(`./render.js${v}`);
 const { el, button } = await import(`./mvp.paint.js${v}`);
 
 const open = (t) => t.task_state === "ready" && !t.archived;
@@ -119,6 +126,24 @@ export function mountAccount(root, { onBack, onSignedOut } = {}) {
     out.appendChild(el("div", "said",
       "Every task as it is stored, in one file. Alarms are recorded and ring nothing until Part B."));
     root.appendChild(out);
+
+    // What is running. `shell` is the number `index.html` loads the stylesheet
+    // under and `gate2.py` holds those two together, so a mismatch on screen is
+    // a browser serving something old rather than a repository disagreeing with
+    // itself. `config` is the version every task captured now is stamped with.
+    const build = el("div", "group");
+    build.appendChild(el("div", "label", "This build"));
+    const shell = el("div", "stat");
+    shell.appendChild(el("span", "stat-label", "Shell"));
+    shell.appendChild(el("span", "stat-value", String(SHELL_VERSION)));
+    build.appendChild(shell);
+    const conf = el("div", "stat");
+    conf.appendChild(el("span", "stat-label", "Config"));
+    conf.appendChild(el("span", "stat-value", partAConfig.version));
+    build.appendChild(conf);
+    build.appendChild(el("div", "said",
+      "If the app looks like the last version, this number is how you tell. A phone can hold on to an old copy; closing the app fully and opening it again fetches this one."));
+    root.appendChild(build);
 
     const later = el("div", "group");
     later.appendChild(el("div", "label", "Not built yet"));

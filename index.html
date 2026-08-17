@@ -22,7 +22,18 @@
 { "imports": { "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2" } }
 </script>
 
-<link rel="stylesheet" href="./shell/mvp.edit.css">
+<!-- THE STYLESHEET CARRIES THE SHELL VERSION, and it has to.
+     Every module is loaded under `?v=${Date.now()}` below, and this link was the
+     one thing in the app without a query on it: the document is never cached and
+     its stylesheet was, so a whole session's design landed on a browser that
+     went on serving the previous one. That is the cache defect of sessions 96
+     and 98 for the third time, in the one file type nobody had added the query
+     to. A date cannot be written into a static file, so the number is the shell
+     version, and `gate2.py` fails when it disagrees with `SHELL_VERSION` — the
+     query on the two `@import` lines inside these files included, because an
+     imported sheet is fetched under its own address and would go stale one level
+     down otherwise. -->
+<link rel="stylesheet" href="./shell/mvp.edit.css?v=24">
 
 <div id="gate" style="display:none"></div>
 <div id="screen"></div>

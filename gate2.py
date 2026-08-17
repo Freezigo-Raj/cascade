@@ -303,6 +303,26 @@ try:
     if sv is None: bad('shell/render.js states no SHELL_VERSION; Gate 3 has nothing to be stale against')
 except IOError:
     sv=None; bad('shell/render.js is missing')
+# The stylesheet is loaded from a static link, so it cannot carry a date the way
+# every module does. It carries the shell version instead, in three places: the
+# link in index.html and the two @import lines inside mvp.edit.css. A number a
+# person has to remember to bump is a number that goes stale, and this one going
+# stale means a whole session's design never reaching a browser. So it is read
+# rather than trusted.
+if sv:
+    _css_refs=[]
+    try:
+        _H=io.open('index.html',encoding='utf-8').read()
+        _css_refs+= [('index.html',m) for m in re.findall(r'mvp\.edit\.css(?:\?v=(\d+))?', _H)]
+    except IOError: bad('index.html is missing')
+    try:
+        _EC=io.open('shell/mvp.edit.css',encoding='utf-8').read()
+        _css_refs+= [('shell/mvp.edit.css',m) for m in re.findall(r'@import url\("\./[a-z.]+\.css(?:\?v=(\d+))?"\)', _EC)]
+    except IOError: bad('shell/mvp.edit.css is missing')
+    for where,got in _css_refs:
+        if not got: bad('%s loads a stylesheet with no ?v= query; a cached copy of it is a whole session that never arrived'%where)
+        elif got!=sv: bad('%s loads a stylesheet at v=%s, SHELL_VERSION is %s'%(where,got,sv))
+
 for key,real in [('example',ev),('contract',cv),('config',gv),('answer_key',kv)]+([('shell',sv)] if sv else []):
     m=re.search(r'^\s*%s\s+(\S+)\s*$'%key,vb.group(1),re.M) if vb else None
     if not m: bad('VERSIONS block does not state %s'%key)

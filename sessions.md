@@ -2385,3 +2385,22 @@ Colour meant one thing and now means three. Accent is pressable, `#c0492b` is ov
 **Next job:** use it for a few days, then the workflow migration.
 
 ---
+## Session 105 — 17 August 2026
+
+**Job: the design did not arrive, and there was no way to tell.**
+
+**The stylesheet was the one file in the app with no cache-buster.** Every module is loaded under `?v=${Date.now()}`, and the query is carried on to everything a module imports — that was the session 96 fix and again the session 98 fix. The `<link rel="stylesheet">` in `index.html` had nothing. The document is never cached and its stylesheet was, so the whole of session 104's design landed in the repository and never reached the phone. Reported as "it still shows everything black and white", which is exactly right: the previous stylesheet was still being served and the previous stylesheet is cool and flat.
+
+**Third time for the same defect, in the file type nobody thought to bust.** Twice it was a module; this time it was CSS. Both earlier times it read as a fix that had failed rather than a file that had never been fetched, and so did this one.
+
+**A static file cannot carry a date, so it carries the shell version** — and that is the kind of number that goes stale, because it depends on somebody remembering. So `gate2.py` reads it: the query in `index.html` and the query on both `@import` lines inside `mvp.edit.css` must all equal `SHELL_VERSION`, and a missing query fails as loudly as a wrong one. Proved by setting it to 19 and watching the gate name the file and both numbers, and again by removing it entirely.
+
+**The `@import` lines needed it too, which is the part that would have been missed.** An imported sheet is fetched under its own address. Busting the outer file alone leaves `mvp.css` and `mvp.account.css` stale one level down — the same defect one layer in, arriving as a design that is half applied, which is harder to read than one that is not applied at all. Three literals now hold one number and the gate is what holds them together.
+
+**The account screen states the running shell and config versions.** He asked where the version number is and the answer was nowhere: the app has never shown one. That is what made this defect cost a round trip — there was no way on screen to tell a build that had not arrived from a build that had arrived and looked wrong. Two numbers and one sentence about closing the app fully, which is what a phone needs to let go of an old copy.
+
+**Save point:** `stylesheet busted and gate-checked; build version on screen; gates 1, 2, 3, 4, 5 and 6 waiting on a hand`
+
+**Next job:** use it for a few days, then the workflow migration.
+
+---
