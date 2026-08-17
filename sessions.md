@@ -2279,3 +2279,24 @@ Session 1 closed.
 **Next job:** the `Tomorrow AM` label, or Gate 6.
 
 ---
+## Session 101 — 14 August 2026
+
+**Job: the app has its own address and goes on a home screen.**
+
+**It lives at the root.** `shell/mvp.html` is gone; `index.html` is the app. The Stage 3 harness keeps `/shell/` and everything `check_render` pins, which was the point of building the screen beside it rather than instead of it. Two copies of the way in is the shape every duplicate defect in this project has had, and there is one now.
+
+**The worker is network first, and that is the decision worth writing down.** The usual advice is cache first, because it is faster. It is the wrong trade here. A cache-first worker keeps serving a version of the app that is no longer in the repository, on someone else's phone, with nothing on screen saying so. That is exactly the defect of sessions 96 and 98 — a browser serving a module from cache, which read as a fix that did not work rather than a file that was never fetched — made permanent and put out of reach. Every cold start waits on the network instead. Slow and correct beats fast and lying.
+
+**It is written to evict its predecessor, because there was one.** A dead Cascade sat at this address for three weeks with its own cache-first worker installed, including on his phone. `skipWaiting` and `clients.claim` take over on first sight rather than waiting for every tab to close, and activation drops every cache this file did not make. The dead worker was also deleted from the repository first, on its own commit, so that a browser checking for an update got a 404 and discarded it. Order mattered more than content there.
+
+**No pre-cache list.** The app is a few dozen small modules whose names change as it is built, and a list of them in the worker would be a second inventory to keep in step with the first. What is cached is what has been fetched. The cost is that the very first visit must be online, which it always was going to be.
+
+**Supabase is not cached.** The store has its own answer for being offline, a local cache and an outbox, and a stale reply served from the worker would be a second answer disagreeing with it. Proved by taking the network away and cold-starting: the app opened, the list was right, and a task typed with no connection landed.
+
+**`tsc --strict` runs inside `gate2.py` now.** It was the one artefact in the project with no check under it, which is how `AlarmType` came to be declared twice and stay that way for five sessions while `spec.md` said the contract compiled clean. A missing compiler fails the gate rather than skipping: a check that says nothing when its tool is absent reads as a tooling problem and hides an untested gate, and that has happened here four times. Proved by putting the second declaration back and watching the gate name both lines.
+
+**Save point:** `live at its own address, installable; gates 1, 2, 3, 4, 5 and 6 waiting on a hand`
+
+**Next job:** the `Tomorrow morning` rename.
+
+---

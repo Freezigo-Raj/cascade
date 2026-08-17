@@ -392,6 +392,30 @@ for _f,_txt in _COMPANIONS:
         if not _cfg or _ln.lstrip().startswith('|'): continue
         for _m in re.finditer(r'\b(?:at|against|under|written for|ships)\s+`?a\.\d+`?',_ln):
             bad('%s names a config version (%s); VERSIONS in spec.md is the only place'%(_f,_m.group(0).strip()))
+# ---------- 4b. the machine contract compiles ----------
+#
+# `types.ts` and `config.ts` are the machine half of the contract, and nothing
+# was ever running the compiler over them. `AlarmType` was declared twice from
+# session 93, `tsc --strict` failed with two errors for five sessions, and
+# spec.md said it compiled clean the whole time, because the claim lived in prose
+# and nothing could reach it.
+#
+# A missing compiler FAILS rather than skips. A check that quietly says nothing
+# when its tool is absent reads as a tooling problem and hides an untested gate,
+# which has happened here four times.
+import subprocess
+try:
+    _tsc=subprocess.run(['npx','tsc','--noEmit','--strict','types.ts','config.ts'],
+                        capture_output=True,text=True,timeout=180)
+    if _tsc.returncode!=0:
+        bad('the contract does not compile under tsc --strict')
+        for _l in (_tsc.stdout+_tsc.stderr).strip().split('\n')[:6]:
+            if _l.strip(): bad('  %s'%_l.strip())
+except FileNotFoundError:
+    bad('tsc is not installed; the machine contract is the one artefact with no check under it')
+except subprocess.TimeoutExpired:
+    bad('tsc did not finish; the machine contract is unchecked this run')
+
 # ---------- 4c. the example's config stamp ----------
 #
 # The 4 August deviation licensed `spec/example.md` to stamp an older config

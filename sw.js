@@ -1,0 +1,80 @@
+// Cascade — the service worker.
+//
+// It exists for one thing: opening with no signal. The store was local-first
+// from session 96, so a running app already survives a lost connection; what it
+// could not survive was being closed and opened again, because the files
+// themselves came off the network.
+//
+// **Network first, cache second, and never the other way round.** The usual
+// advice is cache-first, which is faster and is the wrong trade here. A
+// cache-first worker keeps serving a version of the app that is no longer in the
+// repository, on someone else's phone, with nothing on screen saying so. This
+// project has already been bitten twice by the soft version of that — a browser
+// serving a module from cache, which read as a fix that did not work rather than
+// a file that was never fetched — and a service worker is that made permanent.
+// The cost is that every cold start waits on the network. That is the right way
+// round: slow and correct beats fast and lying.
+//
+// **It is also written to evict its own predecessor.** A dead Cascade lived at
+// this address for three weeks with a cache-first worker in it. `skipWaiting`
+// and `clients.claim` mean this one takes over on first sight rather than
+// waiting for every tab to close, and activation drops every cache it did not
+// make itself.
+
+const STORE = "cascade-shell";
+
+self.addEventListener("install", (e) => {
+  // No pre-cache list. The app is a few dozen small modules whose names change
+  // as it is built, and a list of them here would be a second inventory to keep
+  // in step with the first. What is cached is what has actually been fetched.
+  e.waitUntil(self.skipWaiting());
+});
+
+self.addEventListener("activate", (e) => {
+  e.waitUntil((async () => {
+    for (const name of await caches.keys()) {
+      if (name !== STORE) await caches.delete(name);
+    }
+    await self.clients.claim();
+  })());
+});
+
+/**
+ * The app loads every module under a fresh `?v=` so the browser cannot serve a
+ * stale one. That makes every request a unique URL, which would fill the cache
+ * with one entry per page load and match nothing on the way back out. The query
+ * is dropped on the way in and ignored on the way out.
+ */
+const key = (url) => {
+  const u = new URL(url);
+  u.search = "";
+  return u.href;
+};
+
+self.addEventListener("fetch", (e) => {
+  const req = e.request;
+  if (req.method !== "GET") return;
+
+  const url = new URL(req.url);
+  // Supabase is data, not files. The store has its own answer for being offline
+  // — a local cache and an outbox — and a stale reply served from here would be
+  // a second answer disagreeing with it.
+  if (url.hostname.endsWith(".supabase.co")) return;
+
+  e.respondWith((async () => {
+    try {
+      const fresh = await fetch(req);
+      // Only a real answer is worth keeping. A 404 cached here would outlive the
+      // deploy that fixed it.
+      if (fresh && fresh.ok) {
+        const store = await caches.open(STORE);
+        await store.put(key(req.url), fresh.clone());
+      }
+      return fresh;
+    } catch (err) {
+      const hit = await caches.match(key(req.url));
+      if (hit) return hit;
+      throw err;
+    }
+  })());
+});

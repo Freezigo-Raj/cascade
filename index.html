@@ -1,0 +1,41 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Edited between sessions and served from a fixed address, so a cached copy is
+     a wrong answer that looks like a defect. -->
+<meta http-equiv="Cache-Control" content="no-store">
+<title>Cascade</title>
+
+<!-- What a phone reads to put an icon on a home screen and open without a
+     browser around it. `theme_color` and this tag have to agree or the bar
+     above the app is a different colour from the app. -->
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#eef0f3">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Cascade">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<link rel="icon" href="./icon-192.png">
+
+<!-- No build step, so the one bare specifier in the shell is resolved here. -->
+<script type="importmap">
+{ "imports": { "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2" } }
+</script>
+
+<link rel="stylesheet" href="./shell/mvp.edit.css">
+
+<div id="gate" style="display:none"></div>
+<div id="screen"></div>
+
+<!-- The document is never cached, but a module it names is. Loading it under a
+     fresh query each time is the only thing that reliably stops that, and the
+     query is carried on to everything the module imports. -->
+<script type="module">import(`./shell/mvp.js?v=${Date.now()}`);</script>
+
+<!-- Registered after the app, never before it. A worker that installs first can
+     answer the very requests that are loading the page it came from. -->
+<script>
+  if ("serviceWorker" in navigator) {
+    addEventListener("load", () => navigator.serviceWorker.register("./sw.js"));
+  }
+</script>

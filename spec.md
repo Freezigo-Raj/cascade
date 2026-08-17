@@ -28,8 +28,9 @@ Last contract change: Session 20, 1 August 2026. Ranking tiers, `card_reason` co
 
 ## HOW TO RUN
 
-Run app:   py -m http.server 8000, then http://localhost:8000/shell/mvp.html  (both screens,
-           what a person sees). The Stage 3 harness is still at /shell/ and still draws every field
+Run app:   py -m http.server 8000, then http://localhost:8000/  (both screens, what a person
+           sees; the same address the phone installs). The Stage 3 harness is still at
+           /shell/ and still draws every field
            (live: every keystroke
            re-resolves; no build step, shell/config.js is checked against config.ts by gate2.py)
 Run tests: python3 gate2.py && python3 selftest.py && node shell/check_render.mjs && node shell/check_loud.mjs
@@ -42,7 +43,7 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
   contract     47
   config       a.15
   answer_key   28
-  shell        20
+  shell        21
   gate1        signed on example 35
   gate2        signed on contract 32
   gate3        signed on shell 1
@@ -77,34 +78,37 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 
 ## THIS SESSION'S JOB
 
-A band word touching a named day narrows it.
+The app has its own address and goes on a home screen.
 
-**`tomorrow morning` was two hits and one answer.** The day won on position, the band's word left the
-title having changed no field, and the record was identical to a bare `tomorrow`: a whole day, 09:00
-to midnight. The same for `tomorrow evening`, `friday morning` and every other pair. `this morning`
-worked, because the band was alone.
+**It lives at the root now.** `shell/mvp.html` is gone and `index.html` is the app; the Stage 3
+harness keeps `/shell/` and everything `check_render` pins. One entry file, not two, because two
+copies of the way in is the shape every duplicate defect here has had.
 
-**Adjacency decides, as it does between two markers.** Only a band that starts where the day ends
-belongs to it, so `tomorrow call about the evening slot` is still one date. A named day carrying a
-band does not roll: `today morning` at 14:00 is overdue, not tomorrow, which is what the day rule
-already said without the band.
+**Network first, cache second, and never the other way round.** The worker exists so the app opens
+with no signal: the store was local-first from session 96, so a running app already survived a lost
+connection, and what it could not survive was being closed. Cache-first is the usual advice and is
+the wrong trade — it serves a version that is no longer in the repository, on someone else's phone,
+with nothing on screen saying so. That is the defect of sessions 96 and 98 made permanent. Every cold
+start waits on the network instead, which is slow and correct.
 
-**A calendar date can take a band over from the lexicon.** `20 Aug morning` had `morning` winning on
-position, so the date was never read at all and `20 Aug` stayed in the title of a task due this
-morning. A band is the one kind a date can displace, because the band is what the date is narrowed
-by, and only where the two are touching.
+**It evicts its predecessor.** A dead Cascade sat at this address for three weeks with its own worker
+in it. `skipWaiting` and `clients.claim` take over on first sight, and activation drops every cache
+this file did not make.
 
-**The sentence says the band only where the day was named.** A bare band that rolled still reads
-`Due tomorrow`, because nobody said tomorrow: the roll is the engine's answer, and B25 pins it.
+**`tsc --strict` is inside `gate2.py`.** It was the one artefact with no check under it, which is how
+`AlarmType` was declared twice for five sessions while the spec said it compiled clean. A missing
+compiler FAILS rather than skips: a check that says nothing when its tool is absent reads as a tooling
+problem and hides an untested gate, which has happened four times here.
 
-Files: `shell/resolve.js`, `gate2.py`, `example.md`, `spec.md`, `sessions.md`, `log.manifest`.
+Files: `index.html`, `sw.js`, `manifest.webmanifest`, the three icons, `icon.svg`, `.nojekyll`,
+`shell/render.js`, `gate2.py`, `spec.md`, `sessions.md`, `log.manifest`.
 
 ## NEXT THREE JOBS
 
-1. The `Tomorrow AM` label, which is now the only half of T15 left and costs a Stage 1 rewrite. The
-   price is measured below.
-2. Gate 6, on both screens against `MVP.md`, and the four gates already owed.
-3. Whether `tsc --strict` joins the run-before-and-after command.
+1. The `Tomorrow morning` rename, decided and costed: four capture panels redrawn, one of which
+   re-wraps, a config bump and a Gate 1 press.
+2. The answer key's `chip_spans` sentence and `weekend morning`, both answered and neither built.
+3. Gate 6, and the five gates already owed.
 
 ## TYPED, AND WRONG
 
@@ -617,6 +621,11 @@ Lines typed into the live shell that came out wrong. Open until each is either f
 - 14 Aug 2026 — A spelled-out calendar date takes a band over from the lexicon where the two are touching — the date branch ran only when the lexicon found nothing, so `20 Aug morning` was a task for this morning with `20 Aug` left in its title — a band is the only kind a date may displace, since the band is what the date is being narrowed by.
 - 14 Aug 2026 — The card says the band only where the day was named — the first version read the finest true granularity and made a bare `morning` typed at two in the afternoon say `Due tomorrow morning`, which claims a word nobody typed; B25 in the key is what caught it — the discriminator is the phrase with `this`, `on` and `next` taken off.
 - 14 Aug 2026 — `gate2.py` reads `spec/example.md`'s `config_version` stamp by name and compares it to `config.ts` — the 4 August deviation expired in `spec.md` on 14 August and never in the gate, so the stamp sat at a.13 through two bumps, exempted by name and hidden inside a table cell the gate skips as illustrative — a price nothing can charge is not a price, and this is the third rule found living somewhere only a person could reach.
+
+- 14 Aug 2026 — The app moves to `index.html` at the root and `shell/mvp.html` is deleted — a phone installs an address and that address should be the app rather than a file three folders in, and keeping both would have been two ways in to one screen — the Stage 3 harness keeps `/shell/`, so `check_render` and `check_loud` are untouched.
+- 14 Aug 2026 — The service worker is network first with the cache as fallback, not cache first — cache first is faster and serves a version that is no longer in the repository on a phone that cannot be told so, which is the cache defect of sessions 96 and 98 made permanent — the price is that every cold start waits on the network, and it is the right way round.
+- 14 Aug 2026 — The worker holds no pre-cache list and caches what has actually been fetched — a list of module names here would be a second inventory to keep in step with the first, and the modules change as the app is built — the cost is that the first visit must be online.
+- 14 Aug 2026 — `gate2.py` runs `tsc --strict` and FAILS when the compiler is missing rather than skipping — `types.ts` declared `AlarmType` twice for five sessions while spec.md claimed a clean compile, because the claim lived in prose and nothing could reach it — a check that says nothing when its tool is absent reads as a tooling problem and hides an untested gate, which has happened four times.
 
 
 ## DELIBERATE DEVIATIONS FROM PROTOCOL
