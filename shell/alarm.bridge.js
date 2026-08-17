@@ -32,6 +32,7 @@ const v = new URL(import.meta.url).search;
 const { partAConfig } = await import(`./config.js${v}`);
 const { tasks } = await import(`./store.select.js${v}`);
 const { canAlarm, alarmAt, ringAt, snoozed, unanswered } = await import(`./alarm.js${v}`);
+const { pushed } = await import(`./push.js${v}`);
 const { listOnly } = await import(`./resolve.js${v}`);
 
 const DEBOUNCE_MS = 2000;
@@ -76,10 +77,17 @@ const offsetMs = (iso) => {
  */
 export function desiredAlarms(all, now) {
   const cards = new Map();
+  const targets = new Map();
   try {
     // The same call the list screen makes, so the lock screen and the row
-    // cannot end up saying two different things about one task.
-    for (const c of listOnly(all, partAConfig, now).cards) cards.set(c.card_id, c.card_reason_short);
+    // cannot end up saying two different things about one task. It also carries
+    // the push targets, which are load-aware and therefore need every task.
+    for (const c of listOnly(all, partAConfig, now).cards) {
+      cards.set(c.card_id, c.card_reason_short);
+      // Two, not three. A lock screen already holds Done and four snooze
+      // buttons, and a seventh control is one more thing to aim past.
+      targets.set(c.card_id, (c.push_options ?? []).slice(0, 2));
+    }
   } catch (e) {
     // A sentence is decoration. A missing one must not stop an alarm ringing.
     console.warn("alarm: no sentence —", e?.message ?? e);
@@ -95,6 +103,12 @@ export function desiredAlarms(all, now) {
         armedFor: ms(armed),
         title: t.title,
         reason: cards.get(t.id) ?? "",
+        // Computed now, pressed later. The load behind them is as old as the
+        // gap between arming and ringing, refreshed every time the app opens.
+        pushTargets: (targets.get(t.id) ?? []).map((o) => ({
+          label: o.push_label,
+          iso: o.push_to,
+        })),
         snoozeOptions: partAConfig.alarm_snooze_options,
         ringSec: partAConfig.alarm_defaults.ring_sec,
         autoSnoozeMin: partAConfig.alarm_defaults.auto_snooze_min,
@@ -131,6 +145,9 @@ export function syncAlarms(all) {
         // snooze and an auto-snooze chain survive the app being opened. An alarm
         // already armed against the same derived instant is LEFT ALONE whatever
         // its `at` says, because a moved `at` is exactly what a snooze is.
+        // Push targets are deliberately NOT compared. They go stale by design
+        // and a re-arm on a changed label would rewrite an alarm every time a
+        // day filled up, which is a lot of writes to change two words.
         if (c && c.armedFor === a.armedFor && c.title === a.title && c.reason === a.reason) continue;
         // Nothing armed and the ring time has gone: not fired late. A phone that
         // was off is not owed the noise, and the task is on the overdue list
@@ -178,6 +195,13 @@ async function apply(id, verb, tsMs) {
       alarm_unanswered_at: null,
       updated_at: stamp,
     });
+    return;
+  }
+  if (verb.startsWith("PUSH:")) {
+    // The target travels whole, offset included, because a due date is a local
+    // instant and rebuilding one from epoch milliseconds would drop the zone.
+    const to = verb.slice("PUSH:".length);
+    await tasks.update(pushed(task, to, now));
     return;
   }
   if (verb.startsWith("SNOOZE")) {

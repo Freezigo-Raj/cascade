@@ -180,6 +180,8 @@ The box is at the top. The tap buttons are with it. The matching tasks are below
 
 **Everything re-reads on every keystroke.** The date, the type, the duration, the matches.
 
+**Going back is the phone's own gesture.** The swipe or the system button leaves the editor and the account screen, and from the list it closes the app. A drawn Back sits at the top of a screen, which is where a thumb cannot reach and where a long screen scrolls it out of sight; the gesture works from anywhere and is the same on every app on the phone. The drawn button stays as well and does the same single thing.
+
 **A date arrives one way: through the words in the box.** Every chip types words. A tapped date beats a typed one. A second tap replaces the first.
 
 **Editing a title with no date words in it leaves the date alone.** The date words left the line when the task was created, so there are none to re-read. The date chip is what shows the date and what clears it.
@@ -280,7 +282,9 @@ It fires at the due time less the lead. The lead is read three ways in order: th
 
 **An alarm needs a stated time.** A task due `Friday` resolves to 23:59:59, so a lead from it would ring at a quarter to midnight. The toggle is drawn only while the line carries a time, and one sentence replaces it when there is none.
 
-**On the lock screen:** the title, the mobile sentence, `Done`, and one button per `alarm_snooze_options` member. No `Push`: choosing a push target reads the day's load off every other task, so it needs the app and therefore an unlock.
+**Done and a push bring the app forward; a snooze does not.** Every press is queued, so the unlock is what makes a change visible rather than what makes it happen: an un-unlocked press still lands the next time the app is opened. A snooze changes nothing about the task and has nothing to show, so the phone stays locked. Nothing could apply a press at unlock with the app closed without a second copy of the write path living in Kotlin.
+
+**On the lock screen:** the title, the mobile sentence, `Done`, one button per `alarm_snooze_options` member, and up to two push targets. The targets are computed when the alarm is armed, since choosing one reads the day's load off every stored task, so they are as old as the gap between arming and ringing. No targets means no push row.
 
 **Unattended** it rings two minutes, snoozes itself five, and repeats up to five times. Then it stops, `alarm_unanswered_at` is written, and the task rises to the top under `pinned` and `is_hard` with `Its alarm rang unanswered` on the row.
 

@@ -71,9 +71,17 @@ say(
 
 console.log("\nwhat it offers");
 const view = readAlarmView(task(), "Due at 5:00pm.", config, NOW);
-say(view.alarm_actions.length === 5, "Done and four snooze buttons");
+say(view.alarm_actions.length === 5, "Done and four snooze buttons when no target was handed in");
 say(view.alarm_actions[0] === "[Done]", "Done first");
-say(!view.alarm_actions.some((a) => a.includes("Push")), "no Push on the lock screen: moving a date needs the app");
+say(view.alarm_push_targets.length === 0, "no target handed in means no push button, never an invented date");
+const withPush = readAlarmView(task(), "Due at 5:00pm.", config, NOW, [
+  { push_label: "+1 hour", push_to: "2026-08-17T18:00:00+05:30" },
+  { push_label: "Tomorrow", push_to: "2026-08-18T17:00:00+05:30" },
+]);
+say(withPush.alarm_actions.length === 7, "Done, four snoozes and two push targets");
+say(withPush.alarm_actions[5] === "[+1 hour]", "the target keeps the label the row would have used");
+say(withPush.alarm_push_targets[1].push_to === "2026-08-18T17:00:00+05:30",
+  "the whole local-with-offset instant travels, not an epoch");
 say(view.alarm_ring_sec === 120 && view.alarm_auto_max === 5, "the ring length and the auto limit travel with it");
 say(view.alarm_armed_for === view.alarm_at, "armed_for is the derived instant, so a diff can tell a snooze from a stale alarm");
 

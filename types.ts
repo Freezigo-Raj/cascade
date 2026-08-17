@@ -228,9 +228,13 @@ export interface AlarmView {
   alarm_title: string;
   /** The mobile sentence: no trailing clause, no minutes. */
   alarm_reason: string;
-  /** "[Done]" "[Snooze 5m]" "[Snooze 10m]" "[Snooze 30m]" "[Snooze 60m]".
-   *  Push is not here: moving a due date needs the app, so it needs an unlock. */
+  /** "[Done]", one "[Snooze <n>m]" per `alarm_snooze_options` member, then one
+   *  per push target. */
   alarm_actions: string[];
+  /** Where a push from the alarm can land. The same targets a row offers, read
+   *  when the alarm is ARMED rather than when it rings: the day's load behind
+   *  them needs every stored task, and the shell has none. */
+  alarm_push_targets: PushOption[];
   /** Seconds of ringing before it snoozes itself. */
   alarm_ring_sec: number;
   /** Minutes it snoozes itself for, and how many times it may. */

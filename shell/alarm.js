@@ -33,11 +33,15 @@
 // derived instant the shell armed against, so a diff can tell a snoozed alarm
 // from a stale one. Without it, opening the app during a snooze cancels it.
 //
-// SNOOZE MOVES THE TELLING, PUSH MOVES THE TASK. That has been the rule since
-// the alarm was first written down and it is why Push is not on the lock
-// screen: moving a due date reads the day's load off every other task, which a
-// dead WebView cannot do, so it needs the app and therefore an unlock. What is
-// on the lock screen is Done and the four snooze buttons.
+// SNOOZE MOVES THE TELLING, PUSH MOVES THE TASK. Both are on the lock screen
+// now, and the cost of that is worth naming once. Choosing a push target reads
+// the day's load off every stored task, which the shell does not have, so the
+// targets are computed when the alarm is ARMED and carried in the payload. A
+// task armed on Monday for Friday offers Friday's targets as Monday saw them.
+// They are refreshed every time the app opens, because the diff re-reads them.
+//
+// The first design had no push here at all and made moving a date an unlock.
+// This reverses that, on his instruction, and the staleness is what was bought.
 
 const MIN = 60 * 1000;
 
@@ -99,7 +103,7 @@ export function ringAt(task, config, now) {
  * carrying its own number, because a snooze is the one action whose effect the
  * person cannot otherwise see.
  */
-export function readAlarmView(task, shortReason, config, now) {
+export function readAlarmView(task, shortReason, config, now, pushTargets = []) {
   if (!canAlarm(task) || task.alarm_type === "none") return null;
   const derived = alarmAt(task, config);
   return {
@@ -108,7 +112,12 @@ export function readAlarmView(task, shortReason, config, now) {
     alarm_armed_for: derived,
     alarm_title: task.title,
     alarm_reason: shortReason,
-    alarm_actions: ["[Done]", ...config.alarm_snooze_options.map((m) => `[Snooze ${m}m]`)],
+    alarm_actions: [
+      "[Done]",
+      ...config.alarm_snooze_options.map((m) => `[Snooze ${m}m]`),
+      ...pushTargets.map((t) => `[${t.push_label}]`),
+    ],
+    alarm_push_targets: pushTargets,
     alarm_ring_sec: config.alarm_defaults.ring_sec,
     alarm_auto_snooze_min: config.alarm_defaults.auto_snooze_min,
     alarm_auto_max: config.alarm_defaults.auto_max,

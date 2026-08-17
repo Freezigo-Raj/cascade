@@ -13,7 +13,7 @@ Current stage: 5
 Gates passed: **Gate 1**, **Gate 2**, **Gate 3** and **Gate 4**, each on an older file than the one it names. All four signatures are stale and all four are waiting on a hand. See VERSIONS.
 Stage 4 is closed and signed. Stage 5 is open: the rules go in one at a time and the same command is read the other way round, so a case that still fails names a rule not yet written. `gate4.mjs` reads the stage out of the line above and inverts its own verdict on it. Every case in the key agrees with the engine. Section I taps a type, a significance and a bound task, which no case did before, and section B and H state what the card says. `gate4.mjs` reads Stage 5 and passes: 142 run, 142 green, 0 on invariants alone, 0 errored. Nine rules are written and every obligation the contract records is now met except the ranking, which is Stage 6's. Gate 5 is the hand that says Stage 5 is finished.
 
-Status: the contract is written in the protocol's three groups, with Name, Type, Required, Unit, Range, Example and From per item. 13 inputs, 13 working values, the 44-field `Task`, the 4-field `UndoEntry`, 39 rendered outputs, 14 cross-field invariants, and config at 36 objects populated. `tsc --strict` compiles clean and `gate2.py` passes. The Stage 3 shell is built and Gate 3 is signed: the panel drew correctly by hand, and deleting `card_badge` from the placeholder produced a red box naming `resolve.js` and the missing field rather than a blank screen. `resolve()` now returns three keys, `task`, `list` and `capture`, and the contract names that shape. The answer key holds 144 key cases.
+Status: the contract is written in the protocol's three groups, with Name, Type, Required, Unit, Range, Example and From per item. 13 inputs, 13 working values, the 44-field `Task`, the 4-field `UndoEntry`, 40 rendered outputs, 14 cross-field invariants, and config at 36 objects populated. `tsc --strict` compiles clean and `gate2.py` passes. The Stage 3 shell is built and Gate 3 is signed: the panel drew correctly by hand, and deleting `card_badge` from the placeholder produced a red box naming `resolve.js` and the missing field rather than a blank screen. `resolve()` now returns three keys, `task`, `list` and `capture`, and the contract names that shape. The answer key holds 144 key cases.
 
 D-1: **Typing the thought is the whole of the work.**
 
@@ -40,10 +40,10 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 ## VERSIONS
 
   example      40
-  contract     51
+  contract     52
   config       a.17
   answer_key   28
-  shell        30
+  shell        31
   gate1        signed on example 35
   gate2        signed on contract 32
   gate3        signed on shell 1
@@ -818,3 +818,10 @@ have landed. That is the price of the single table and it is accepted.
 - 17 Aug 2026 — A saved edit returns to the list on the narrow layout, and the editor header is sticky — an edit is finished when it is saved, and a Back button you have to scroll up to find is not a way out — the wide layout is untouched because its `onBack` is null by design.
 - 17 Aug 2026 — The account screen states whether the alarm shell is present and offers the permission request — a browser copy and the Android build look identical on a phone, so a silent alarm had three causes and no evidence — and it is the first caller `requestAlarmPermissions()` has had: session 111 wrote it and `isNativeShell()` and called neither, which nothing in six checks would have found.
 - 17 Aug 2026 — The `selftest.py` rule-count fixture reads the number live instead of pinning it — it reported SETUP BROKEN the moment a rule was added, which is the fifth time a fixture pinning a moving value has read as a tooling fault and hidden an untested gate — the config-object fixture two lines above it had already been written the right way.
+- 17 Aug 2026 — Going back is the phone's own gesture: the list is the base history entry, every navigation pushes one, and a back from the list closes the app — a drawn Back sits at the top of the screen, which is both out of a thumb's reach on a tall phone and the first thing to scroll away, and making it sticky did not fix either — the drawn button stays and calls `history.back()`, so the two cannot end up one entry apart.
+- 17 Aug 2026 — Push targets are back on the alarm, REVERSING his own decision that moving a due date needs an unlock — his instruction — the reason the first design refused them is unchanged, so they are computed when the alarm is ARMED and carried in the payload, and the day's load behind them is as old as the gap between arming and ringing.
+- 17 Aug 2026 — An alarm carrying no push targets draws no push row, rather than a disabled button or a default — a button with no target would have to invent a due date, which is refused everywhere else in this project.
+- 17 Aug 2026 — Push targets are excluded from the arming diff — a label changes whenever a day fills up, and re-arming every alarm to change two words is a lot of writes for nothing that rings differently.
+- 17 Aug 2026 — Done and a push from the alarm bring the app forward and a snooze does not, his call — all three are queued either way, so the unlock makes a change VISIBLE rather than making it happen, and being asked to unlock at six in the morning to acknowledge a snooze is the app taking more than it gave.
+- 17 Aug 2026 — A press cannot be applied at unlock with the app closed, and this is refused rather than deferred — it would need Supabase writes from Kotlin: a second copy of the auth token, newest-wins, the offset split and the outbox, in a second language — every duplicated rule in this project has drifted eventually, and this would buy a few seconds of earliness.
+- 17 Aug 2026 — Done in the notification shade routes through `AlarmActivity` carrying a `verb` extra, drawing nothing — a broadcast receiver cannot reliably start an activity from the background on Android 10 and later, and an app that comes forward for one Done and not the other is worse than one that never comes forward.

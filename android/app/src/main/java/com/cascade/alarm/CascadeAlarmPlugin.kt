@@ -15,8 +15,8 @@ import com.getcapacitor.annotation.CapacitorPlugin
 /**
  * The JS surface. `shell/alarm.bridge.js` is the only caller.
  *
- *   CascadeAlarm.set({ id, at, armedFor, title, reason,
- *                      snoozeOptions, ringSec, autoSnoozeMin, autoMax })
+ *   CascadeAlarm.set({ id, at, armedFor, title, reason, snoozeOptions,
+ *                      pushTargets, ringSec, autoSnoozeMin, autoMax })
  *   CascadeAlarm.cancel({ id })
  *   CascadeAlarm.list()                    -> { alarms: [{ id, at, armedFor, title, reason }] }
  *   CascadeAlarm.permissions()             -> { exactAlarm, batteryExempt }
@@ -38,6 +38,9 @@ class CascadeAlarmPlugin : Plugin() {
 
     companion object {
         private var live: CascadeAlarmPlugin? = null
+        /** Whether a WebView is alive to hear an outcome. */
+        fun isLive(): Boolean = live != null
+
         fun emit(id: String, verb: String) {
             live?.notifyListeners("alarmOutcome", JSObject().put("id", id).put("verb", verb))
         }
@@ -65,6 +68,13 @@ class CascadeAlarmPlugin : Plugin() {
         call.getArray("snoozeOptions")?.let { arr ->
             for (i in 0 until arr.length()) runCatching { opts.add(arr.getInt(i)) }
         }
+        val pushes = mutableListOf<Pair<String, String>>()
+        call.getArray("pushTargets")?.let { arr ->
+            for (i in 0 until arr.length()) runCatching {
+                val t = arr.getJSONObject(i)
+                pushes.add(t.getString("label") to t.getString("iso"))
+            }
+        }
         // An existing entry's `autoCount` is kept when the arming instant has not
         // changed, so a payload refresh mid-chain does not hand the task five more
         // autos. A new instant is a new chain and starts at zero.
@@ -79,6 +89,7 @@ class CascadeAlarmPlugin : Plugin() {
                 title = call.getString("title") ?: "Reminder",
                 reason = call.getString("reason") ?: "",
                 snoozeOptions = if (opts.isEmpty()) listOf(5, 10, 30, 60) else opts,
+                pushTargets = pushes,
                 ringSec = call.getInt("ringSec") ?: 120,
                 autoSnoozeMin = call.getInt("autoSnoozeMin") ?: 5,
                 autoMax = call.getInt("autoMax") ?: 5,

@@ -40,6 +40,8 @@ object AlarmStore {
         val title: String,
         val reason: String,
         val snoozeOptions: List<Int>,
+        /** Where a push can land: label and the whole local-with-offset ISO. */
+        val pushTargets: List<Pair<String, String>>,
         val ringSec: Int,
         val autoSnoozeMin: Int,
         val autoMax: Int,
@@ -54,6 +56,12 @@ object AlarmStore {
         val opts = mutableListOf<Int>()
         val arr = o.optJSONArray("snoozeOptions") ?: JSONArray()
         for (i in 0 until arr.length()) opts.add(arr.getInt(i))
+        val pushes = mutableListOf<Pair<String, String>>()
+        val parr = o.optJSONArray("pushTargets") ?: JSONArray()
+        for (i in 0 until parr.length()) {
+            val t = parr.getJSONObject(i)
+            pushes.add(t.getString("label") to t.getString("iso"))
+        }
         Alarm(
             id = id,
             atMs = o.getLong("at"),
@@ -63,6 +71,10 @@ object AlarmStore {
             // A payload that somehow arrived without buttons still gets buttons.
             // An alarm with nothing to press is a phone that has to be rebooted.
             snoozeOptions = if (opts.isEmpty()) listOf(5, 10, 30, 60) else opts,
+            // No fallback. A push target the app did not send is a date this
+            // code would have to invent, and inventing a due date is the one
+            // thing the whole project refuses. No targets means no buttons.
+            pushTargets = pushes,
             ringSec = o.optInt("ringSec", 120),
             autoSnoozeMin = o.optInt("autoSnoozeMin", 5),
             autoMax = o.optInt("autoMax", 5),
@@ -79,6 +91,10 @@ object AlarmStore {
     fun set(ctx: Context, alarm: Alarm) {
         val opts = JSONArray()
         alarm.snoozeOptions.forEach { opts.put(it) }
+        val pushes = JSONArray()
+        alarm.pushTargets.forEach {
+            pushes.put(JSONObject().put("label", it.first).put("iso", it.second))
+        }
         prefs(ctx).edit().putString(
             alarm.id,
             JSONObject()
@@ -87,6 +103,7 @@ object AlarmStore {
                 .put("title", alarm.title)
                 .put("reason", alarm.reason)
                 .put("snoozeOptions", opts)
+                .put("pushTargets", pushes)
                 .put("ringSec", alarm.ringSec)
                 .put("autoSnoozeMin", alarm.autoSnoozeMin)
                 .put("autoMax", alarm.autoMax)

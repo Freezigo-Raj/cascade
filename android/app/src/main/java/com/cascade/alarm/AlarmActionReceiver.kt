@@ -10,6 +10,8 @@ import android.content.Intent
  * FOUR VERBS AND ONLY THREE REACH THE APP.
  *   DONE            — the task is finished. The alarm is gone.
  *   SNOOZE:<min>    — a person pressed a number. The chain resets to zero autos.
+ *   PUSH:<iso>      — a person moved the due date. The alarm is gone; the app
+ *                     re-arms it against the new date on the next sync.
  *   AUTO            — nobody pressed anything and the ringing timed out. Internal.
  *   UNANSWERED      — the last auto rang out. The task escalates.
  *
@@ -19,9 +21,27 @@ import android.content.Intent
  * move, so an app opened mid-chain leaves the chain alone without being told
  * anything. Only the end of the chain is a fact about the task.
  *
- * PUSH IS NOT HERE. Moving a due date reads the day's load off every other task,
- * which is the app's job and needs the app running, so it needs an unlock. What
- * is on the lock screen is Done and the snooze buttons.
+ * DONE AND PUSH BRING THE APP FORWARD. SNOOZE DOES NOT.
+ *
+ * Every press is queued either way, so nothing is lost whatever the person does
+ * next. What differs is whether the phone asks to be unlocked.
+ *
+ * A snooze is an answer about the alarm and nothing else: the task has not
+ * changed, there is nothing to look at, and being asked to unlock at six in the
+ * morning to acknowledge a snooze is the app taking more than it gave. Done and
+ * a push change the record, and a change you cannot see is a change you cannot
+ * trust, so those two open the app and the queue drains while you watch.
+ *
+ * The unlock is not what applies the press. The queue is. If the phone is never
+ * unlocked the press still lands the next time the app is opened, hours later or
+ * the following day; opening it is what makes the landing visible rather than
+ * what makes it happen. Nothing could make it happen at unlock without a second
+ * copy of the whole write path living in Kotlin.
+ *
+ * PUSH CARRIES ITS WHOLE TARGET. The app computed the targets when it armed the
+ * alarm, because choosing one reads the day's load off every stored task and
+ * this process has none of them. So the ISO instant travels in the verb, offset
+ * included, and this file decides nothing about when the task should land.
  */
 class AlarmActionReceiver : BroadcastReceiver() {
 
@@ -35,6 +55,14 @@ class AlarmActionReceiver : BroadcastReceiver() {
                 verb == "DONE" -> {
                     AlarmStore.cancel(ctx, id)
                     report(ctx, id, "DONE")
+                }
+
+                verb.startsWith("PUSH:") -> {
+                    // The alarm is finished with: the task's date has moved, so
+                    // the derived instant behind this alarm no longer exists.
+                    // The app re-arms against the new date on its next sync.
+                    AlarmStore.cancel(ctx, id)
+                    report(ctx, id, verb)
                 }
 
                 verb.startsWith("SNOOZE") -> {
@@ -73,6 +101,21 @@ class AlarmActionReceiver : BroadcastReceiver() {
         private fun report(ctx: Context, id: String, verb: String) {
             CascadeAlarmPlugin.emit(id, verb)
             PendingOutcomes.add(ctx, id, verb)
+        }
+
+        /**
+         * Open the app so the queue drains where it can be seen. Called for Done
+         * and for a push, never for a snooze.
+         *
+         * Nothing happens when the WebView is already alive: it heard the live
+         * event and has applied the press already, and pulling a running app to
+         * the front would take the screen off whatever was on it.
+         */
+        fun surface(ctx: Context) {
+            if (CascadeAlarmPlugin.isLive()) return
+            val open = ctx.packageManager.getLaunchIntentForPackage(ctx.packageName) ?: return
+            open.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            runCatching { ctx.startActivity(open) }
         }
     }
 

@@ -2577,3 +2577,51 @@ Colour meant one thing and now means three. Accent is pressable, `#c0492b` is ov
 **Save point:** `four field defects fixed, the app now states whether it can ring`
 
 **Next job:** read the Alarms block on the account screen, then the nine alarm tests.
+
+---
+## Session 113 — 17 August 2026
+
+**Job: going back is the phone's own gesture, and a push can be made from the alarm.**
+
+**THE DRAWN BACK WAS IN THE WRONG PLACE AND THE FIX WAS NOT A BETTER PLACE FOR IT.** Session 112 made the editor header sticky so Back stopped scrolling away, and he reported it still unreachable. That is because the top of a tall phone is where a thumb cannot get to at all, and no amount of stickiness changes that. The system gesture has neither problem: it works from anywhere on the screen, it is the same swipe as every other app on the phone, and it is already what a hand reaches for. The list is the base history entry and every navigation away pushes one, so a back from the list has nothing left and Android closes the app, which is right. The drawn button stays and now calls `history.back()` rather than jumping to the list, so the two cannot end up one entry apart.
+
+**Push moved onto the alarm, which reverses his own earlier decision, and the cost is stated rather than absorbed.** Three turns before the first build he settled that moving a due date needs an unlock, and that removed the precomputed-target design along with the `PUSH:<iso>` verb. Both are back. The reason the first design refused them has not changed: choosing a push target reads the day's load off every stored task, and the shell has none, so the two targets the row would offer are computed when the alarm is ARMED and carried in the payload. A task armed on Monday for Friday offers Friday's targets as Monday saw them. They refresh whenever the app opens, because the diff re-reads them, and they are deliberately NOT part of the diff's comparison: re-arming an alarm because a label changed would be a lot of writes to change two words.
+
+**An alarm with no targets draws no push row.** Not a disabled button, not a default. A button with no target would have to invent a due date, and inventing a date is what this project refuses in every other place it has come up.
+
+**A push from the lock screen cancels the alarm rather than re-arming it.** The derived instant behind it no longer exists once the date moves, and the app re-arms against the new date on its next sync. `pushed()` already clears the snooze and the unanswered marker, so nothing extra was needed there.
+
+**Files changed:** `types.ts`, `shell/config.js`, `shell/alarm.js`, `shell/alarm.bridge.js`, `shell/mvp.js`, `shell/check_alarm.mjs`, `shell/render.js`, `shell/mvp.css`, `shell/mvp.edit.css`, `index.html`, `contract.md`, `MVP.md`, `spec.md`, `sessions.md`, `log.manifest`, and `AlarmStore.kt`, `AlarmActivity.kt`, `AlarmActionReceiver.kt`, `CascadeAlarmPlugin.kt` under `android/`
+
+**Tests:** all six green. `gate2.py` passes at 40 shown outputs. `selftest.py` catches 28 of 28. `gate4.mjs` runs 142 of 144 and every one agrees. `check_render.mjs` exact. `check_loud.mjs` 6 of 6. `check_alarm.mjs` at 50 assertions, adding the push targets and the empty-target case.
+
+**Not tested:** the back gesture and the push buttons have not been run on a device. The Kotlin changed, so this one needs a new APK rather than only a push.
+
+**Save point:** `back is the system gesture, push is on the alarm, shell 31`
+
+**Next job:** rebuild the APK, then the nine alarm tests.
+
+---
+## Session 114 — 17 August 2026
+
+**Job: what an unlock is for.**
+
+**Applying a press at unlock with the app closed is refused, not deferred.** He asked for the queue to land on unlock alone. It cannot: the WebView is dead while the phone is locked and unlocking starts no process of ours. Making it happen means Kotlin writing to Supabase directly, which is a second copy of the auth token, the newest-wins rule, the offset split and the outbox, in a second language. Every duplicated rule in this project has drifted eventually, and this one would buy a few seconds of earliness.
+
+**So Done and a push bring the app forward and a snooze does not, which is what he asked for as the fallback.** The important part is what the unlock is doing: every press is queued in the shell whatever happens next, so an un-unlocked Done still lands the next time the app is opened, hours later or the following day. Coming forward makes the change visible rather than making it happen. Done and a push change the record and a change nobody can see is a change nobody can trust. A snooze changes nothing about the task, so being asked to unlock at six in the morning to acknowledge one is the app taking more than it gave.
+
+**`surface()` does nothing when the WebView is already alive.** It heard the live event and applied the press before the queue was read, and pulling a running app to the front would take the screen off whatever was on it.
+
+**Done in the notification shade routes through `AlarmActivity` now, drawing nothing.** A broadcast receiver cannot reliably start an activity from the background on Android 10 and later, so leaving the shade's Done as a broadcast would have given one Done that comes forward and one that does not. The activity answers a `verb` extra and finishes without drawing, so both presses take one path. Snooze in the shade stays a broadcast, because it must not start anything.
+
+**Files changed:** `AlarmActivity.kt`, `AlarmActionReceiver.kt`, `AlarmService.kt`, `CascadeAlarmPlugin.kt`, `contract.md`, `MVP.md`, `spec.md`, `sessions.md`, `log.manifest`
+
+**Nothing in the web app changed**, so `SHELL_VERSION` stays 31 and the header will still read 31. This session is an APK rebuild and nothing else.
+
+**Tests:** all six green, unchanged from 113: `gate2.py` passes, `selftest.py` 28 of 28, `gate4.mjs` 142 of 142, `check_render.mjs` exact, `check_loud.mjs` 6 of 6, `check_alarm.mjs` 50 assertions.
+
+**Not tested:** none of the Kotlin has been run. The three paths that need a device are Done from the lock screen, Done from the shade, and a snooze leaving the phone locked.
+
+**Save point:** `done and push surface, snooze stays locked, shell 31 unchanged`
+
+**Next job:** rebuild the APK and run the nine alarm tests.

@@ -1,6 +1,6 @@
 # Cascade Part A — Contract
 
-Stage 2 deliverable, version 51. Companion to `spec/example.md`; see VERSIONS in spec.md.
+Stage 2 deliverable, version 52. Companion to `spec/example.md`; see VERSIONS in spec.md.
 
 This file says what every piece of information **is**. `spec/example.md` says what one session **was**. Where they disagree, one of them is wrong and the disagreement is a defect.
 
@@ -271,7 +271,8 @@ Every rendered string, with its template. Part 4 applies here too: these spellin
 | `alarm_armed_for` | date-and-time | The derived instant the shell armed against, so a diff can tell a snoozed alarm from a stale one. Equal to `alarm_at` | — |
 | `alarm_title` | text | `title` | — |
 | `alarm_reason` | text | `card_reason_short`, because a notification is the smallest screen there is | — |
-| `alarm_actions` | list of | `[Done]` then one `[Snooze <n>m]` per `alarm_snooze_options` member. No `[Push]`: a push reads the day's load, which needs the app | — |
+| `alarm_actions` | list of | `[Done]`, one `[Snooze <n>m]` per `alarm_snooze_options` member, then one per push target | — |
+| `alarm_push_targets` | list of | `PushOption`s, computed when the alarm is ARMED. Empty draws no push row rather than an invented date | — |
 | `alarm_ring_sec` | whole number | `alarm_defaults.ring_sec`, carried so the shell states no policy of its own | seconds |
 | `alarm_auto_snooze_min` | whole number | `alarm_defaults.auto_snooze_min` | minutes |
 | `alarm_auto_max` | whole number | `alarm_defaults.auto_max`. At the last one the chain stops and the task escalates | — |
@@ -381,7 +382,11 @@ Every rendered string, with its template. Part 4 applies here too: these spellin
 
 **The web app still fires nothing, and the Android shell does.** `alarm_at` stays derived and unstored. What the shell arms is `alarm_snoozed_until` when that is still ahead of the clock and `alarm_at` otherwise.
 
-**SNOOZE MOVES THE TELLING, PUSH MOVES THE TASK.** A snooze writes `alarm_snoozed_until` and touches no date. A push writes `due_at` and clears both alarm markers, because it is the later and more considered statement about when to be told. Push is not on the lock screen: choosing a target reads the day's load off every other task, so it needs the app and therefore an unlock.
+**SNOOZE MOVES THE TELLING, PUSH MOVES THE TASK.** A snooze writes `alarm_snoozed_until` and touches no date. A push writes `due_at` and clears both alarm markers, because it is the later and more considered statement about when to be told.
+
+**Done and a push open the app; a snooze does not.** All three are queued in the shell and applied by the app, so the difference is only whether the phone asks to be unlocked. Done and a push change the record and a change nobody can see is a change nobody can trust; a snooze changes nothing about the task. An un-unlocked press is not lost: it lands whenever the app is next opened.
+
+**Both are on the lock screen, and the push targets are computed when the alarm is armed.** Choosing a target reads the day's load off every stored task, which the shell does not have, so the two the row would offer are carried in the payload. They are as old as the gap between arming and ringing, refreshed whenever the app opens and the diff re-reads them. An alarm carrying no targets draws no push row: a button with no target would have to invent a due date, which is the thing refused everywhere else. This reverses the first design, where a push needed an unlock, and the staleness is what was bought.
 
 **A snooze has two homes and they are allowed to disagree.** `alarm_snoozed_until` on the task is the truth and reaches the other devices. The shell keeps its own copy so it can re-ring with the WebView dead, which is the normal case rather than the exception. What keeps them from fighting is `alarm_armed_for`: the shell records the derived instant it armed against, and the app's diff compares that rather than the ring time, so a snoozed alarm and a stale one stop looking alike.
 

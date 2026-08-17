@@ -59,9 +59,39 @@ async function put(into, mod, name, args) {
   return handle;
 }
 
+/**
+ * THE PHONE'S OWN BACK, and it is the only back that is always in reach.
+ *
+ * A drawn Back button lives at the top of a screen, which is the one place a
+ * thumb cannot get to on a tall phone, and it scrolls away the moment a screen
+ * is longer than the window. The system gesture has neither problem: it is the
+ * same swipe on every app on the phone, it works from anywhere on the screen,
+ * and it is what a person already reaches for.
+ *
+ * The list is the base state and every navigation away pushes one entry, so a
+ * back from the list has nothing left and Android closes the app, which is the
+ * right answer there. The drawn Back stays as well: two ways out is not two
+ * controls disagreeing, because both do the same single thing.
+ */
+function mark(name, push) {
+  const state = { screen: name };
+  if (push) history.pushState(state, "");
+  else history.replaceState(state, "");
+}
+
+window.addEventListener("popstate", (e) => {
+  // Whatever the phone went back to. An unknown state is the list, because an
+  // entry this app did not write is one it cannot restore.
+  const name = e.state?.screen ?? "list";
+  if (name === "list") { showList(); return; }
+  if (name === "account") { showAccount(); return; }
+  showList();
+});
+
 async function showList() {
   const { mountList } = await import(`./mvp.list.js${v}`);
   route = "list";
+  mark("list", false);
   await put(screen, mountList, "list", {
     openEdit: openTask,
     openAccount: showAccount,
@@ -121,7 +151,10 @@ async function openTask(taskId) {
   if (ROOMY.matches) return openPanel(taskId);
   const { mountEdit } = await import(`./mvp.edit.js${v}`);
   route = "edit";
-  await put(screen, mountEdit, "edit", { taskId, onBack: () => showList() });
+  mark("edit", true);
+  // `onBack` unwinds through the phone's own history rather than jumping to the
+  // list, so the drawn button and the gesture cannot end up one entry apart.
+  await put(screen, mountEdit, "edit", { taskId, onBack: () => history.back() });
 }
 
 /**
@@ -148,12 +181,13 @@ function closeWide() {
 async function showAccount() {
   const { mountAccount } = await import(`./mvp.account.js${v}`);
   route = "account";
+  mark("account", true);
   // The account screen takes the whole window in both layouts. It is a place you
   // go rather than a thing you work beside, and leaving the capture box open next
   // to a Sign out button offers to type into an account you are leaving.
   closeWide();
   await put(screen, mountAccount, "account", {
-    onBack: () => showList(),
+    onBack: () => history.back(),
     onSignedOut: () => { started = false; gate(); },
   });
 }

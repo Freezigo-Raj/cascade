@@ -82,11 +82,26 @@ class AlarmService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        // A snooze is a broadcast: it changes nothing a person needs to see, so
+        // it must not start anything.
         fun action(verb: String): PendingIntent = PendingIntent.getBroadcast(
             this, verb.hashCode(),
             Intent(this, AlarmActionReceiver::class.java)
                 .setAction("com.cascade.alarm.$verb")
                 .putExtra("id", alarm.id),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // Done goes through the activity, which draws nothing and brings the app
+        // forward. A broadcast receiver cannot reliably start an activity from
+        // the background on Android 10 and later, so routing it this way is what
+        // makes Done in the shade behave like Done on the lock screen.
+        fun activityAction(verb: String): PendingIntent = PendingIntent.getActivity(
+            this, ("a" + verb).hashCode(),
+            Intent(this, AlarmActivity::class.java)
+                .putExtra("id", alarm.id)
+                .putExtra("verb", verb)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
@@ -103,7 +118,7 @@ class AlarmService : Service() {
             .setContentIntent(full)
             .setFullScreenIntent(full, true)
             .addAction(Notification.Action.Builder(null, "Snooze ${first}m", action("SNOOZE:$first")).build())
-            .addAction(Notification.Action.Builder(null, "Done", action("DONE")).build())
+            .addAction(Notification.Action.Builder(null, "Done", activityAction("DONE")).build())
             .build()
     }
 

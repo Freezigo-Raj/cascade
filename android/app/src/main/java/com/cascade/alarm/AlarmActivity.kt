@@ -16,10 +16,21 @@ import android.widget.TextView
  * The lock screen. Built in code rather than XML so the module drops into any
  * Capacitor project without resource merging.
  *
- * FIVE BUTTONS: Done, and one per snooze interval, all four arriving in the
- * payload. No Push. Moving a due date reads the day's load off every other task,
- * which needs the app running, so pushing needs an unlock and the app is where it
- * is done. Offering it here would mean either a fake button or a stale one.
+ * THREE ROWS: Done, the snooze intervals, and the push targets. All of them
+ * arrive in the payload; nothing here decides a number or a date.
+ *
+ * DONE AND A PUSH BRING THE APP FORWARD, which means the phone asks to be
+ * unlocked. A snooze does not. Both are queued either way, so the unlock is what
+ * makes the change visible rather than what makes it happen. A snooze changes
+ * nothing about the task and has nothing to show.
+ *
+ * It also answers a `verb` extra without drawing anything, so a Done pressed in
+ * the notification shade takes exactly the same path as one pressed here.
+ *
+ * The push targets were computed when the alarm was armed, because choosing one
+ * reads the day's load off every stored task and this process has none. They are
+ * therefore as old as the gap between arming and ringing. That is the cost of
+ * having them here at all, and the alternative was making a push need an unlock.
  *
  * Done sits at the top because it is the only press that ends the task rather
  * than delaying it, and because a thumb reaching a lock screen at 6am aims high.
@@ -43,6 +54,20 @@ class AlarmActivity : Activity() {
         }
 
         val id = intent.getStringExtra("id") ?: run { finish(); return }
+
+        // A notification button lands here too, carrying its verb, so Done from
+        // the shade and Done from the lock screen do the same thing. A broadcast
+        // receiver cannot reliably start an activity from the background on
+        // Android 10 and later, and an app that comes forward for one Done and
+        // not the other is worse than one that never comes forward at all.
+        val straight = intent.getStringExtra("verb")
+        if (straight != null) {
+            AlarmActionReceiver.handle(this, id, straight)
+            if (straight == "DONE" || straight.startsWith("PUSH:")) AlarmActionReceiver.surface(this)
+            finish()
+            return
+        }
+
         val alarm = AlarmStore.get(this, id)
 
         val root = LinearLayout(this).apply {
@@ -87,6 +112,9 @@ class AlarmActivity : Activity() {
             ).apply { topMargin = top }
             setOnClickListener {
                 AlarmActionReceiver.handle(this@AlarmActivity, id, verb)
+                // Done changes the record, so the app comes forward and the
+                // person watches the queue drain rather than trusting it.
+                AlarmActionReceiver.surface(this@AlarmActivity)
                 finish()
             }
         }
@@ -112,6 +140,9 @@ class AlarmActivity : Activity() {
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
                     .apply { marginEnd = 12 }
                 setOnClickListener {
+                    // No `surface`. A snooze says something about the alarm and
+                    // nothing about the task, so there is nothing to look at and
+                    // the phone stays locked.
                     AlarmActionReceiver.handle(this@AlarmActivity, id, "SNOOZE:$m")
                     finish()
                 }
@@ -124,6 +155,42 @@ class AlarmActivity : Activity() {
             setPadding(0, 32, 0, 0)
         })
         root.addView(row)
+
+        // The push targets, when the payload carried any. A task with no date to
+        // move, or one armed before the app could compute them, draws no row at
+        // all rather than a button that would have to invent a date.
+        val pushes = alarm?.pushTargets ?: emptyList()
+        if (pushes.isNotEmpty()) {
+            root.addView(TextView(this).apply {
+                text = "Move it to"
+                textSize = 13f
+                setTextColor(Color.parseColor("#eee7db"))
+                setPadding(0, 28, 0, 0)
+            })
+            val prow = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply { topMargin = 12 }
+            }
+            for ((label, iso) in pushes) {
+                prow.addView(Button(this).apply {
+                    text = label
+                    textSize = 16f
+                    setTextColor(Color.WHITE)
+                    setBackgroundColor(Color.parseColor("#4a4643"))
+                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                        .apply { marginEnd = 12 }
+                    setOnClickListener {
+                        AlarmActionReceiver.handle(this@AlarmActivity, id, "PUSH:$iso")
+                        AlarmActionReceiver.surface(this@AlarmActivity)
+                        finish()
+                    }
+                })
+            }
+            root.addView(prow)
+        }
 
         setContentView(root)
     }
