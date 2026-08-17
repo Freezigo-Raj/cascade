@@ -233,6 +233,17 @@ async function start() {
   whoEmail = (await account.current())?.email ?? "";
   await showList();
   tellTheTruth();
+  // The alarms, last. Off the Android shell every call in here is a no-op, so
+  // this line is the whole of what the web app knows about ringing. It runs
+  // after the list because the first thing it does is drain presses that
+  // happened while the WebView was dead, and those are writes to the store.
+  try {
+    const { initAlarms } = await import(`./alarm.bridge.js${v}`);
+    await initAlarms();
+  } catch (e) {
+    // An alarm that cannot arm is not a reason for a blank screen.
+    console.warn("alarm: not started —", e?.message ?? e);
+  }
 }
 
 let whoEmail = "";

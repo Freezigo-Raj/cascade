@@ -16,9 +16,17 @@
 // three alarm fields are the second, because a typed line asks for none of them
 // and the engine writes them empty on every capture.
 //
-// Part A records what alarm was asked for and fires nothing. A browser cannot
-// wake itself, so the scheduler and the push that would make one sound are
-// Part B's. That is said once, on the Lead row, where it is set.
+// THE ALARM ROW IS NOT ALWAYS DRAWN. An alarm needs a stated time: a task due
+// "Friday" resolves to 23:59:59 and a lead off that rings at a quarter to
+// midnight, which is not a reminder about Friday. So the toggle appears with a
+// time and disappears with it, rather than being drawn dead. A control that
+// cannot work is worse than an absent one, because its absence reads as a
+// decision and its presence reads as a promise.
+//
+// The web app still fires nothing. The Android shell is what rings, and the
+// snooze intervals are pressed there rather than chosen here: nobody knows at
+// capture how long they will want, and the number is only wanted with the thing
+// in front of them.
 
 const v = new URL(import.meta.url).search;
 const { el, button } = await import(`./mvp.paint.js${v}`);
@@ -40,13 +48,13 @@ export function splitDuration(minutes, config) {
 /**
  * @param {HTMLElement} panel  emptied and refilled
  * @param {object} config      partAConfig
- * @param {object} state       { chosen, repeat, alarmType, leadMin, repeatMin,
+ * @param {object} state       { chosen, repeat, alarmType, leadMin, hasTime,
  *                               durationMin, durationTapped, firmness, notes }
- * @param {object} on          { setType, setRepeat, setAlarm, setLead, setRepeatMin,
+ * @param {object} on          { setType, setRepeat, setAlarm, setLead,
  *                               setDuration, setFirmness, setNotes }
  */
 export function drawPanel(panel, config, state, on) {
-  const { chosen, repeat, alarmType, leadMin, repeatMin } = state;
+  const { chosen, repeat, alarmType, leadMin, hasTime } = state;
   const { durationMin, durationTapped, firmness, notes } = state;
   const three = config.type_suggestions;
   const rest = config.commitment_types.map((m) => m.id).filter((id) => !three.includes(id));
@@ -140,14 +148,27 @@ export function drawPanel(panel, config, state, on) {
   group("Repeat every", rep);
 
   // --------------------------------------------------------------------- alarm
-  const alarm = el("div", "taps");
-  for (const kind of config.alarm_types) {
-    const on_ = alarmType === kind;
-    alarm.appendChild(button("chip" + (on_ ? " on" : ""), kind, () => on.setAlarm(kind)));
+  //
+  // Two members, drawn only while the line carries a time. `once` and `repeat`
+  // became one `on`: every alarm rings for two minutes, snoozes itself for five
+  // and does that up to five times, so "ring again every" was a second way of
+  // asking for what the alarm already does, and a task that should come back
+  // another day has `Repeat every` above.
+  if (hasTime) {
+    const alarm = el("div", "taps");
+    for (const kind of config.alarm_types) {
+      const on_ = alarmType === kind;
+      alarm.appendChild(button("chip" + (on_ ? " on" : ""), kind, () => on.setAlarm(kind)));
+    }
+    group("Alarm", alarm);
+  } else {
+    // Said rather than left blank: the row is missing for a reason and the
+    // reason is fixable by typing a time.
+    group("Alarm", el("div", "note",
+      "Add a time to the line and the alarm can be set. A date with no time is due at midnight, and an alarm before midnight is not a reminder about that day."));
   }
-  group("Alarm", alarm);
 
-  if (alarmType !== "none") {
+  if (hasTime && alarmType !== "none") {
     const lead = el("div", "taps");
     const mins = el("input", "num");
     mins.type = "number";
@@ -157,19 +178,8 @@ export function drawPanel(panel, config, state, on) {
     mins.addEventListener("input", () => on.setLead(Math.max(0, Number(mins.value) || 0)));
     lead.appendChild(mins);
     lead.appendChild(el("span", "note",
-      "minutes before. An alarm needs a stated time, and nothing rings until Part B."));
+      `minutes before. It rings for ${Math.round(config.alarm_defaults.ring_sec / 60)} min, then snoozes itself ${config.alarm_defaults.auto_snooze_min} min at a time, up to ${config.alarm_defaults.auto_max} times.`));
     group("Lead", lead);
-  }
-
-  // Reachable only while the alarm repeats. It was the config default and
-  // nothing could change it, which made a visible choice out of a hidden number.
-  if (alarmType === "repeat") {
-    const again = el("div", "taps");
-    for (const m of config.alarm_repeat_options) {
-      const on_ = (repeatMin ?? config.alarm_defaults.repeat_min) === m;
-      again.appendChild(button("chip" + (on_ ? " on" : ""), `${m}m`, () => on.setRepeatMin(m)));
-    }
-    group("Ring again every", again);
   }
 
   // --------------------------------------------------------------------- notes

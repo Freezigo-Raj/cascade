@@ -17,8 +17,9 @@ const v = new URL(import.meta.url).search;
 const { client } = await import(`./supabase.js${v}`);
 const { account } = await import(`./auth.js${v}`);
 
-/** The six instant fields, each stored as a `timestamptz` and an offset. */
-const INSTANTS = ["due_at", "earliest_start", "first_due_at", "created_at", "updated_at", "closed_at"];
+/** The eight instant fields, each stored as a `timestamptz` and an offset. */
+const INSTANTS = ["due_at", "earliest_start", "first_due_at", "created_at", "updated_at", "closed_at",
+                  "alarm_snoozed_until", "alarm_unanswered_at"];
 
 export const offsetOf = (iso) => (iso ? iso.slice(-6) : null);
 

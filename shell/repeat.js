@@ -93,6 +93,12 @@ export function spawn(closed, newId, now) {
     closed_at: null,
     push_count: 0,
     first_due_at: null,
+    // The next occurrence inherits the schedule and not the history. Without
+    // these three, a Tuesday whose alarm was slept through would hold every
+    // Wednesday after it at the top of the list for ever.
+    alarm_snoozed_until: null,
+    alarm_unanswered_at: null,
+    reminder_fatigue: 0,
     spawned_from: closed.id,
     created_at: now,
     updated_at: now,

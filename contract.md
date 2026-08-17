@@ -1,6 +1,6 @@
 # Cascade Part A — Contract
 
-Stage 2 deliverable, version 49. Companion to `spec/example.md`; see VERSIONS in spec.md.
+Stage 2 deliverable, version 50. Companion to `spec/example.md`; see VERSIONS in spec.md.
 
 This file says what every piece of information **is**. `spec/example.md` says what one session **was**. Where they disagree, one of them is wrong and the disagreement is a defect.
 
@@ -97,13 +97,15 @@ Computed in between. **None of these is saved.** A stored copy of any of them go
 | `deadline_band` | one-of-a-fixed-set | — | `overdue` `today` `tomorrow` `this_week` `later` `none`. Read in the user's zone. `today` is the same calendar day, `this_week` runs to the end of Sunday, and anything past Sunday is `later`. | `today` | `due_at`, `now`, `deadline_bands` |
 | `is_hard` | true/false | — | | `true` | `date_firmness` |
 | `workflow_position` | whole number | — | 0 in Part A | `0` | `workflow_edges`, a Part C structure |
-| `reminder_fatigue` | whole number | — | 0 in Part A | `0` | `notification_history`, a Part B structure |
+| `alarm_unanswered` | true/false | — | True while `alarm_unanswered_at` is set. The third tier-1 override. | `false` | `alarm_unanswered_at` |
 | `rank_key` | list of | — | `ranking.overrides` then the nine `ranking.factors`, in order. Never rendered; it produces the list order and `decided_by`. | — | overrides and factors |
 | `decided_by` | text | — | The override or factor separating this task from its neighbour: the row below, or for the last row, the row above. Never empty in a list of two or more. | `is_hard` | `rank_key` of two adjacent tasks |
 
 **`numeric_variant` is why `file form 8` and `file form 9` do not interrupt each other.** Both reduce to `file form`, so `similarity` is 1.00, the highest possible. Stripping the digits cannot suppress the dialog by itself; it has to be a separate test, checked before the score.
 
-**`workflow_edges` and `notification_history` are not Part A items.** They are named here so the working value has a stated source rather than an invented one, and they arrive with Parts C and B.
+**`workflow_edges` is not a Part A item.** It is named here so `workflow_position` has a stated source rather than an invented one, and it arrives with Part C.
+
+**`reminder_fatigue` was a working value and is a stored field now.** It counted notifications Part B had not sent yet, so it was zero in every record and read by nothing. It counts unanswered alarms, which Part A writes, and a count that lives only in memory is gone at the next refresh. Part B's `notification_history` will add to it and does not own it. Named here because this is where it used to be.
 
 ---
 
@@ -168,9 +170,11 @@ Typed now so the record shape is fixed, as Part 3 Stage 2 requires. Part A write
 | Name | Type | Required | Unit | Range | Part A writes | Part |
 |---|---|---|---|---|---|---|
 | `recurrence` | object | optional | — | `{every, unit}` with `unit` one of `day` `week` `month`. Empty when the task does not repeat. | *(none)* | the advanced panel |
-| `alarm_type` | one-of-a-fixed-set | yes | — | an `alarm_types` member. `none` on capture. | `none` | the advanced panel |
+| `alarm_type` | one-of-a-fixed-set | yes | — | an `alarm_types` member. `none` on capture. Set only while `has_time`. | `none` | the advanced panel |
 | `alarm_lead_min` | whole number | optional | minutes | Before `due_at`, up to `alarm_defaults.max_lead_min`. Empty when `alarm_type` is `none`. | *(none)* | the advanced panel |
-| `alarm_repeat_min` | whole number | optional | minutes | Between repeats while `alarm_type` is `repeat`. Empty otherwise. | *(none)* | the advanced panel |
+| `alarm_snoozed_until` | instant | optional | — | When it rings instead of `alarm_at`. Empty until a snooze. May sit past `due_at`. | *(none)* | the alarm shell |
+| `alarm_unanswered_at` | instant | optional | — | When an alarm rang its whole chain out with nothing pressed. Cleared by a push, a Done, or an edit that moves the date. | *(none)* | the alarm shell |
+| `reminder_fatigue` | whole number | yes | — | How many alarms on this task have gone unanswered. Never cleared. | `0` | the alarm shell |
 | `blocked` | true/false | yes | — | Always `false` in Part A | `false` | C |
 | `blocker_reason` | one-of-a-fixed-set | yes | — | `none` in Part A; Part C widens | `none` | C |
 | `blocker_ref` | text | optional | — | UUID of another task. Always empty in Part A. | *(none)* | C |
@@ -263,9 +267,14 @@ Every rendered string, with its template. Part 4 applies here too: these spellin
 | `chip_row` | list of | the parsed-date chip if any, then `chip_presets` | `[✓ this morning][This afternoon]` |
 | `undo_toast` | text | `Added "<title>" · <date_phrase>` with `[Undo]`, held `config.undo_ui_timeout_sec` | `Added "Call markan" · this morning` |
 | `alarm_at` | date-and-time | `due_at` less the lead. Derived, never stored | — |
+| `alarm_ring_at` | date-and-time | What the shell arms: `alarm_snoozed_until` while that is ahead of `now`, otherwise `alarm_at` | — |
+| `alarm_armed_for` | date-and-time | The derived instant the shell armed against, so a diff can tell a snoozed alarm from a stale one. Equal to `alarm_at` | — |
 | `alarm_title` | text | `title` | — |
 | `alarm_reason` | text | `card_reason_short`, because a notification is the smallest screen there is | — |
-| `alarm_actions` | list of | `[Done]` `[Push]` `[Snooze <n>m]` | — |
+| `alarm_actions` | list of | `[Done]` then one `[Snooze <n>m]` per `alarm_snooze_options` member. No `[Push]`: a push reads the day's load, which needs the app | — |
+| `alarm_ring_sec` | whole number | `alarm_defaults.ring_sec`, carried so the shell states no policy of its own | seconds |
+| `alarm_auto_snooze_min` | whole number | `alarm_defaults.auto_snooze_min` | minutes |
+| `alarm_auto_max` | whole number | `alarm_defaults.auto_max`. At the last one the chain stops and the task escalates | — |
 | `clash_dialog` | text | `"<title>" [and <n> others] is at <time>.` with `[Add anyway] [Cancel]`. Absent when nothing overlaps. | — |
 | `deadline_dialog` | text | `"<title>" [and <n> others] is also due <day>.` with `[Add anyway] [Cancel]`. Fires when this task and a stored one are both `date_firmness` `hard` and fall on the same local calendar day; times are not read. Absent otherwise. | — |
 | `duplicate_dialog` | text | `"<title>" already exists, <due_phrase_short>.` with `[Add anyway] [Cancel]`. The clause is dropped when the open task has no due date. Shown only when steps 2 and 3 both pass. | `"check sensor" already exists, due today.` |
@@ -320,7 +329,7 @@ Every rendered string, with its template. Part 4 applies here too: these spellin
 
 **The `Default` list is unfiltered.** Every dated task appears, so a hard deadline four months out sits near the top. Filtering by what is actionable today arrives with Part C, and until it does the ranking is the only thing shaping the list.
 
-**Ordering runs in three tiers, and a tier is reached only when the one above it ties.** Tier 1 is `pinned` then `is_hard`, true before false, and no score beats either under any mode. Tier 2 is the mode: `lexicographic` runs tier 3 in order and the first factor separating two tasks decides. Tier 3 is the nine factors, in this order and these directions: `deadline_band` by `deadline_bands`; `significance` descending; `date_firmness` by `firmness_order`, where `hard` sits last because tier 1 has already separated it; `date_precision` by `precision_order`; `commitment_type` by `type_order`; `est_duration_min` ascending, because a shorter thing fits first; `workflow_position` and `reminder_fatigue`, both zero until Parts C and B fill them; then `updated_at` descending as the final tie-break, on the absolute instant so two offsets order correctly against each other. A value a list does not hold sorts last: unknown is not urgent.
+**Ordering runs in three tiers, and a tier is reached only when the one above it ties.** Tier 1 is `pinned`, then `is_hard`, then `alarm_unanswered`, true before false, and no score beats any of them under any mode. `alarm_unanswered` sits third because a soft task with a missed alarm must not jump a hard task without one: the alarm says the interrupt failed, and the firmness says what the task is. Tier 2 is the mode: `lexicographic` runs tier 3 in order and the first factor separating two tasks decides. Tier 3 is the nine factors, in this order and these directions: `deadline_band` by `deadline_bands`; `significance` descending; `date_firmness` by `firmness_order`, where `hard` sits last because tier 1 has already separated it; `date_precision` by `precision_order`; `commitment_type` by `type_order`; `est_duration_min` ascending, because a shorter thing fits first; `workflow_position`, zero until Part C fills it; `reminder_fatigue` **descending**, so a task whose alarms have been missed before sorts above one whose have not, and it is a weak signal here on purpose because tier 1 has already lifted the task whose marker is still live; then `updated_at` descending as the final tie-break, on the absolute instant so two offsets order correctly against each other. A value a list does not hold sorts last: unknown is not urgent.
 
 **`deadline_band` is recomputed when a stored task is ranked.** It is a working value rather than a stored field, so a task read back out of storage carries none, and reading the absent one would put every task in the same band the first time the page was refreshed. It comes from `due_at`, which is stored.
 
@@ -364,7 +373,17 @@ Every rendered string, with its template. Part 4 applies here too: these spellin
 
 **It fires where the duplicate dialog fires: on Add, on save, and on a push.** Never while typing, and never on the list. A push is included because pushing into an occupied slot is the same mistake arriving by a different door.
 
-**Part A records what alarm was asked for and fires nothing.** `alarm_type`, `alarm_lead_min` and `alarm_repeat_min` are set in the advanced panel; a browser cannot wake itself, so what makes an alarm sound belongs to Part B along with the scheduler that would send it. The fields moving out of "always empty in Part A" is the whole change.
+**An alarm needs a stated time, and the toggle is drawn only when there is one.** A task due "Friday" resolves to 23:59:59, so a lead from that instant rings at a quarter to midnight, which is not a reminder about Friday. The alternative was a second rule inventing a time of day the person never gave. So the row appears with a time and disappears with it: a control that cannot work is not drawn.
+
+**`alarm_type` is `none` or `on`. There is no `repeat`.** Every alarm rings for `ring_sec`, snoozes itself for `auto_snooze_min` and does that up to `auto_max` times, so "ring again every" was a second way of asking for what an alarm already does. A task that should come back another day has `recurrence`.
+
+**The web app still fires nothing, and the Android shell does.** `alarm_at` stays derived and unstored. What the shell arms is `alarm_snoozed_until` when that is still ahead of the clock and `alarm_at` otherwise.
+
+**SNOOZE MOVES THE TELLING, PUSH MOVES THE TASK.** A snooze writes `alarm_snoozed_until` and touches no date. A push writes `due_at` and clears both alarm markers, because it is the later and more considered statement about when to be told. Push is not on the lock screen: choosing a target reads the day's load off every other task, so it needs the app and therefore an unlock.
+
+**A snooze has two homes and they are allowed to disagree.** `alarm_snoozed_until` on the task is the truth and reaches the other devices. The shell keeps its own copy so it can re-ring with the WebView dead, which is the normal case rather than the exception. What keeps them from fighting is `alarm_armed_for`: the shell records the derived instant it armed against, and the app's diff compares that rather than the ring time, so a snoozed alarm and a stale one stop looking alike.
+
+**An unanswered chain escalates the task and does not touch importance.** `alarm_unanswered_at` is the live marker and joins `pinned` and `is_hard` as the third tier-1 override, third so a soft task cannot jump a hard one on the strength of a missed alarm. `reminder_fatigue` is the count and nothing clears it. The same pair as `first_due_at` and `push_count`: one marker that can be cleared, one number that cannot.
 
 **Personal numbers belong to an account, not to config.** `capacity_min_per_day` and `duplicate.threshold` are what a full day feels like and how alike is too alike *to one person*. They stay in config as the default an account starts from, and an account row overrides them. An account with no row uses the default rather than nothing.
 
@@ -578,17 +597,17 @@ Thirty-six objects. Each holds one thing that grows, so a change touches one obj
 | `type_order` | ranking factor 5's order | — |
 | `precision_order` | ranking factor 4's order | — |
 | `firmness_order` | ranking factor 3's order. `hard` sits last because tier 1 separates it before this factor is reached | — |
-| `ranking` | `overrides` `pinned` `is_hard`; `mode` `lexicographic`; `factors` the nine, in order; `weights` absent while lexicographic | — |
+| `ranking` | `overrides` `pinned` `is_hard` `alarm_unanswered`; `mode` `lexicographic`; `factors` the nine, in order; `weights` absent while lexicographic | — |
 | `reason_clauses` | `lead` templates by time, precision then band; `trailing` templates by `decided_by`, each with its own joiner | — |
 | `chip_presets` | the capture chips. Screen vocabulary: the engine reads none of them, and a chip types its label into the box. `Pick date` and `Pick time` open pickers and type what was picked. | — |
 | `significance_buttons` | `{10, Low}` `{30, Normal}` `{70, High}` | points |
 | `duration_units` | what the chips beside the duration box multiply by: `min` 1, `hour` 60, `day` 1440. Screen vocabulary. A unit is never stored: the box and the chip are read together and one number of minutes is written. | minutes |
 | `duration_suggestions` | minutes offered beside the box: 15, 30, 60, 120. Not a vocabulary and no record holds one; tapping one fills the box. | minutes |
-| `alarm_repeat_options` | intervals offered while `alarm_type` is `repeat`: 5, 10, 15, 30, 60. Reachable nowhere else. | minutes |
+| `alarm_snooze_options` | the snooze buttons on a ringing alarm: 5, 10, 30, 60. Pressed when it rings, never chosen in advance. | minutes |
 | `limits` | `raw_text_min_chars` 2, `raw_text_chars` 280, `duration_min` 1, `duration_max` 262800, `notes_chars` 2000 | characters, minutes |
-| `alarm_types` | `none` `once` `repeat`. Part A records what was asked for; Part B is what fires it | — |
+| `alarm_types` | `none` `on`. The web app records what was asked for; the Android shell fires it | — |
 | `alarm_lead_by_type` | the suggested lead per `commitment_type`. Every value is the same today, deliberately | minutes |
-| `alarm_defaults` | `lead_min` 15, `repeat_min` 10, `max_lead_min` 10080 | minutes |
+| `alarm_defaults` | `lead_min` 15, `max_lead_min` 10080, `ring_sec` 120, `auto_snooze_min` 5, `auto_max` 5 | minutes, seconds |
 | `capacity_min_per_day` | `180`. Fitted to nothing: what a full day feels like, corrected by real use | minutes |
 | `search` | `fuzzy_threshold` 0.5. Looser than `duplicate` on purpose: a result is not a question | ratio |
 | `duplicate` | `threshold` 0.6, `min_chars` 6 | ratio, characters |

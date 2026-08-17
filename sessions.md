@@ -2519,3 +2519,36 @@ Colour meant one thing and now means three. Accent is pressable, `#c0492b` is ov
 **Next job:** confirm build 28, then the workflow migration.
 
 ---
+
+---
+## Session 111 — 17 August 2026
+
+**Job: the alarm, integrated. It rings, it can be snoozed without unlocking, and a task whose alarm was slept through escalates.**
+
+**An alarm needs a stated time, and now the screen says so.** `canAlarm()` has required `has_time` since session 94, for a reason worth restating: a task due "Friday" resolves to 23:59:59, so a lead off that instant rings at a quarter to midnight, which is not a reminder about Friday. The engine has refused that all along and the panel drew the toggle anyway, so setting an alarm on a timeless task looked like it worked and silently did nothing. The row is drawn only while the line carries a time, and in its place sits one sentence naming the time as what is missing. A control that cannot work is worse than an absent one: absence reads as a decision, presence reads as a promise.
+
+**`alarm_type` lost `repeat` and became a toggle.** Every alarm rings for two minutes, snoozes itself for five, and does that up to five times, so "ring again every" was a second way of asking for what an alarm already does. A task that should come back another day has `recurrence`, which predates this by twenty sessions. `alarm_repeat_min` is deleted rather than deprecated: nothing is live, and a field kept for a data set that does not exist is a field nobody can delete later.
+
+**The snooze intervals moved from capture to the ring.** 5 / 10 / 30 / 60, one button each on the lock screen. Nobody knows at capture how long they will want a thing pushed back by, and the number is only ever wanted with the thing in front of them. 15 came off the list because four buttons is already the most a thumb should have to aim at on a lock screen at six in the morning.
+
+**Push is not on the lock screen, and that is what made the rest of the design simple.** Choosing a push target reads the day's load off every other task, which the app does and a dead WebView cannot. So a push needs an unlock. The version that shipped precomputed targets into the alarm payload and added a `PUSH:<iso>` outcome verb; his call removed both, and with them the question of how stale a load computed hours before ringing is allowed to be.
+
+**THE DEFECT THAT MATTERED, and it was in the bridge rather than the app.** `syncAlarms()` diffed desired alarms against armed ones on the ring instant. A snoozed alarm's ring instant is not its derived instant, so it either fell out of the desired set for being in the past and got cancelled, or looked stale and got re-armed back to a time that had already gone. Opening the app during a snooze ended the snooze. The fix is `armedFor`: the shell records the derived instant it armed against, the diff compares that, and an alarm already armed for the right instant is left alone whatever its ring time says. The same field is what lets the auto-snooze chain run without reporting each step to the store, which saves five writes and five sync round trips per unanswered alarm.
+
+**Two homes for a snooze, and neither is redundant.** `alarm_snoozed_until` on the task is the truth and reaches the other devices. The shell holds its own copy because the WebView is usually dead when an alarm rings, and something has to be able to re-ring without it. They are allowed to disagree for as long as an outcome takes to drain.
+
+**A slept-through alarm escalates the task without touching importance.** Importance is user-set only and has been since July, so the escalation needed its own term. `alarm_unanswered_at` is the live marker and joins `pinned` and `is_hard` as the third tier-1 override, third so a soft task with a missed alarm cannot jump a hard task without one. `reminder_fatigue` is the count, nothing clears it, and it stops being a working value: it was sourced from a Part B structure, which meant zero in every record and read by nothing, and a count that lives only in memory is gone at the next refresh. A push, a Done or an edit that moves the date clears the marker and leaves the count. The same pair as `first_due_at` and `push_count`.
+
+**The row says why it jumped.** Colour cannot say it: three states is the limit and pressable, overdue and synced are all three. So it is a trailing clause on `card_reason`, spoken only when true, and absent from `card_reason_short` where no trailing clause goes.
+
+**`check_alarm.mjs`, the sixth check, is the first thing in 110 sessions to assert an order out of `rank_key`.** No key case names `cards`, `rank_key` or `decided_by`, and that is a shape mismatch rather than an oversight: the key runs `resolve()` over a typed line, and cards are built from `existing_tasks`. A third override reorders every list in the app with all five other checks green, which is precisely the surface every defect found by running the app has been in.
+
+**Files changed:** `types.ts`, `config.ts`, `shell/config.js`, `shell/alarm.js`, `shell/alarm.bridge.js` (new), `shell/check_alarm.mjs` (new), `shell/cards.js`, `shell/push.js`, `shell/repeat.js`, `shell/resolve.js`, `shell/resolve.stage3.js`, `shell/app.js`, `shell/mvp.js`, `shell/mvp.panel.js`, `shell/mvp.edit.js`, `shell/mvp.detail.js`, `shell/store.supabase.js`, `shell/render.js`, `shell/mvp.css`, `shell/mvp.edit.css`, `index.html`, `schema.sql`, `contract.md`, `example.md`, `MVP.md`, `spec.md`, `sessions.md`, `log.manifest`, and six Kotlin files plus the manifest additions under `android/`
+
+**Tests:** `gate2.py` passes at 13 inputs, 13 working values, a 44-field `Task`, 39 shown outputs and 36 config objects. `selftest.py` catches 28 of 28. `gate4.mjs` runs 142 of 144 and every one agrees. `check_render.mjs` still matches example section 1 exactly. `check_loud.mjs` proves 6 of 6 breaks loud. `check_alarm.mjs`, new, passes 38 assertions covering the gate, the ring instant, the snooze and unanswered records, push and spawn clearing, and three ordering cases. `tsc --strict` clean.
+
+**Not tested:** nothing has been run on a phone. The eight alarm tests that passed on the Nothing Phone (2) were against the standalone test app, not this build, and the auto-snooze chain reaching its limit is a ninth test that never existed.
+
+**Save point:** `alarm integrated, six checks green, nothing run on a device`
+
+**Next job:** build the Capacitor shell and run the nine alarm tests against this build.

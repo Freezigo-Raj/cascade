@@ -106,7 +106,17 @@ export function mountDetail(root, on) {
     fact("How firm", task.date_firmness);
     const weight = partAConfig.significance_buttons.find((b) => b.value === task.significance);
     fact("Weight", weight ? weight.label : String(task.significance));
-    fact("Alarm", task.alarm_type === "none" ? "none" : `${task.alarm_type}, ${task.alarm_lead_min ?? 15}m before`);
+    fact("Alarm", task.alarm_type === "none"
+      ? "none"
+      : `on, ${task.alarm_lead_min ?? partAConfig.alarm_defaults.lead_min}m before`);
+    // A snooze is the one thing on this panel that moves on its own, so it is
+    // read out. `push_count` next to it is history; this one is pending.
+    if (task.alarm_snoozed_until) fact("Snoozed to", task.alarm_snoozed_until.slice(11, 16));
+    // The reason a row jumped. Tier 1 lifted it and the sentence on the row says
+    // so; this says how many times it has happened, which the row never does.
+    if (task.reminder_fatigue) {
+      fact("Alarms unanswered", `${task.reminder_fatigue}${task.alarm_unanswered_at ? " (still)" : ""}`);
+    }
     fact("Repeats", task.recurrence ? `every ${task.recurrence.every} ${task.recurrence.unit}` : "never");
     if (task.push_count) fact("Pushed", `${task.push_count} time${task.push_count === 1 ? "" : "s"}`);
     root.appendChild(row("What it carries", facts));

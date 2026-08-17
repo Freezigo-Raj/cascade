@@ -34,6 +34,11 @@ function termsFor(task, config) {
     // Tier 1. True before false, so the boolean is negated into a sort key.
     pinned: task.pinned ? 0 : 1,
     is_hard: task.date_firmness === "hard" ? 0 : 1,
+    // Third override. An alarm that rang its whole chain out and was never
+    // answered means the one mechanism built to interrupt a person has already
+    // failed on this task. It sits below `is_hard` so a soft task cannot jump a
+    // hard one on the strength of a missed alarm.
+    alarm_unanswered: task.alarm_unanswered_at ? 0 : 1,
     // Tier 3, in the order config states.
     deadline_band: band(task),
     significance: -(task.significance ?? 0),
@@ -41,11 +46,15 @@ function termsFor(task, config) {
     date_precision: rank(config.precision_order, task.date_precision),
     commitment_type: rank(config.type_order, task.commitment_type),
     est_duration_min: task.est_duration_min ?? 0,
-    // Both are zero for every task Part A produces. They are here so the
-    // comparison is the nine the contract names rather than the seven that
-    // happen to move, and so Parts B and C fill a slot rather than add one.
+    // `workflow_position` is zero for every task Part A produces, and is here
+    // so the comparison is the nine the contract names rather than the eight
+    // that happen to move, and so Part C fills a slot rather than adds one.
     workflow_position: task.workflow_position ?? 0,
-    reminder_fatigue: task.reminder_fatigue ?? 0,
+    // `reminder_fatigue` moves now: an unanswered alarm increments it. It is a
+    // weak signal here on purpose, because tier 1 has already lifted the task
+    // whose marker is still live; this factor is what is left of the history
+    // once that marker is cleared.
+    reminder_fatigue: -(task.reminder_fatigue ?? 0),
     // Last touch, not creation, and descending: editing a task means you are
     // thinking about it. Compared as an instant so two offsets order correctly.
     updated_at: -Date.parse(task.updated_at ?? task.created_at ?? 0),
@@ -201,6 +210,7 @@ export function readCards(existing, config, phraseFor, bandOf, pushFor) {
 function speaks(name, task) {
   if (name === "pinned") return Boolean(task.pinned);
   if (name === "is_hard") return task.date_firmness === "hard";
+  if (name === "alarm_unanswered") return Boolean(task.alarm_unanswered_at);
   if (name === "significance") return task.significance !== 30;
   return false;
 }

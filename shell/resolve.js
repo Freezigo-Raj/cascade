@@ -1035,7 +1035,9 @@ export function resolve(input) {
       // asks for none; the advanced panel is what changes it.
       alarm_type: "none",
       alarm_lead_min: null,
-      alarm_repeat_min: null,
+      alarm_snoozed_until: null,
+      alarm_unanswered_at: null,
+      reminder_fatigue: 0,
       blocked: false,
       blocker_reason: "none",
       blocker_ref: null,

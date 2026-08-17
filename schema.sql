@@ -101,7 +101,20 @@ create table if not exists cascade_task (
   recurrence         jsonb,
   alarm_type         text,
   alarm_lead_min     integer,
-  alarm_repeat_min   integer,
+  -- Two homes for a snooze and this is the one that syncs. The shell keeps its
+  -- own copy so it can re-ring with the WebView dead; this one survives a
+  -- reinstall and reaches the other devices. Stored twice like every instant,
+  -- because a local calendar day cannot be read back out of a timestamptz.
+  alarm_snoozed_until      timestamptz,
+  alarm_snoozed_until_offset text,
+  -- The live escalation marker: an alarm rang its whole chain out and nothing
+  -- was pressed. Cleared by a push, a Done, or an edit that moves the date.
+  alarm_unanswered_at      timestamptz,
+  alarm_unanswered_at_offset text,
+  -- The count that is never cleared. It was a working value reserved for Part
+  -- B's notification_history and is a stored column now, because a count that
+  -- lives only in memory is gone at the next refresh.
+  reminder_fatigue         integer not null default 0,
   blocked            boolean not null default false,
   blocker_reason     text,
   blocker_ref        text,

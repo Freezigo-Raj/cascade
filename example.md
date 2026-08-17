@@ -1,6 +1,6 @@
 # spec/example.md — Cascade Part A
 
-Stage 1 deliverable, version 39. Written by hand. No code anywhere in this file.
+Stage 1 deliverable, version 40. Written by hand. No code anywhere in this file.
 Scope: **Part A only.** Parts B, C and D each get their own example at their turn.
 
 ---
@@ -219,16 +219,18 @@ One task. Every field, every origin. **This is the Gate 1 table.**
 | `est_duration_min` | `15` | Config: `duration_defaults.call`. Fewer than 5 samples exist. |
 | `duration_source` | `default` | Rule: follows from the line above. Members: `default`, `selected`, `learned`, `summed`. |
 | `recurrence` | *(none)* | Nothing recurring in the text |
-| `alarm_type` | `none` | Default. Never inferred. Part B. |
-| `alarm_lead_min` | *(none)* | Default. Part B. |
-| `alarm_repeat_min` | *(none)* | Default. Part B. |
+| `alarm_type` | `none` | Default. Never inferred. The advanced panel sets it, and only while `has_time`. Members: `none`, `on`. |
+| `alarm_lead_min` | *(none)* | Default. The panel sets it; the chain is `alarm_lead_min`, `alarm_lead_by_type`, `alarm_defaults.lead_min`. |
+| `alarm_snoozed_until` | *(none)* | Default. Written when a ringing alarm is snoozed, never at capture. |
+| `alarm_unanswered_at` | *(none)* | Default. Written when an alarm rings its whole chain out unpressed. |
+| `reminder_fatigue` | `0` | Default. Counts unanswered alarms and is never cleared. |
 | `blocked` | `false` | Default. Part C. |
 | `blocker_reason` | `none` | Default. Part C. |
 | `blocker_ref` | *(none)* | Default. Part C. |
 | `task_state` | `ready` | Rule: capture succeeded, no gates. Members: `ready`, `done`, `cancelled`. |
 | `pinned` | `false` | Default |
 | `project_id` | *(none)* | Default. Manual only, Part C. |
-| `config_version` | `a.16` | System. The config in force at capture. Records are written to storage now, so the stamp is evidence again and the deviation that let it lag has expired. |
+| `config_version` | `a.17` | System. The config in force at capture. Records are written to storage now, so the stamp is evidence again and the deviation that let it lag has expired. |
 | `created_at` | `2026-08-03T10:40:00+05:30` | Clock, handed in |
 | `updated_at` | `2026-08-03T10:40:00+05:30` | Clock. Equal to `created_at` until the first change. |
 | `archived` | `false` | Default |

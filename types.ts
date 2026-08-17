@@ -41,9 +41,10 @@ export type CommitmentType = string & { readonly __brand: "CommitmentType" };
 /** A member of config.contexts, or "undetermined". */
 export type Context = string & { readonly __brand: "Context" };
 
-/** Set in the advanced panel. Part A records the request and fires nothing:
- *  a browser cannot wake itself, so the scheduler is Part B's. */
-export type AlarmType = "none" | "once" | "repeat";
+/** Set in the advanced panel, and only while the task carries a stated time.
+ *  `repeat` is gone: every alarm now auto-snoozes on its own, and a task that
+ *  should come back tomorrow has `recurrence` for that. */
+export type AlarmType = "none" | "on";
 
 /** Part A writes only "none". Part C widens this. */
 export type BlockerReason = "none";
@@ -141,12 +142,22 @@ export interface Task {
   // Deferred: Part B
   /** `{every, unit}` while the task repeats, empty when it does not. */
   recurrence: { every: number; unit: "day" | "week" | "month" } | null;
-  /** What the person asked for. Part B is what fires it. */
+  /** What the person asked for. The shell is what fires it. */
   alarm_type: AlarmType;
   /** Minutes before `due_at`. Empty when there is no alarm. */
   alarm_lead_min: number | null;
-  /** Minutes between repeats while `alarm_type` is `repeat`. */
-  alarm_repeat_min: number | null;
+  /** When it will ring instead of `alarm_at`, after a snooze. Empty otherwise.
+   *  The task holds this so a snooze survives a reinstall and reaches the other
+   *  devices; the shell holds its own copy so it can re-ring with the WebView
+   *  dead. Two homes, and this one is the truth. */
+  alarm_snoozed_until: LocalTimestamp | null;
+  /** When an alarm rang its whole chain out and nothing was pressed. The live
+   *  escalation marker: cleared by a push, a Done, or an edit that moves the
+   *  date. `reminder_fatigue` is the count that is never cleared. */
+  alarm_unanswered_at: LocalTimestamp | null;
+  /** How many alarms on this task have gone unanswered. History, never reset.
+   *  Part B's `notification_history` will add to it and does not own it. */
+  reminder_fatigue: number;
 
   // Deferred: Part C
   blocked: boolean;
@@ -208,11 +219,23 @@ export interface CardView {
 export interface AlarmView {
   /** When it fires: `due_at` less the lead. Derived, never stored. */
   alarm_at: LocalTimestamp;
+  /** When it will actually ring: `alarm_snoozed_until` if that is still ahead,
+   *  otherwise `alarm_at`. What the shell arms. */
+  alarm_ring_at: LocalTimestamp;
+  /** The derived instant the shell armed against, so a diff can tell a snoozed
+   *  alarm from a stale one. Without it, opening the app mid-snooze cancels it. */
+  alarm_armed_for: LocalTimestamp;
   alarm_title: string;
   /** The mobile sentence: no trailing clause, no minutes. */
   alarm_reason: string;
-  /** "[Done]" "[Push]" "[Snooze 10m]" */
+  /** "[Done]" "[Snooze 5m]" "[Snooze 10m]" "[Snooze 30m]" "[Snooze 60m]".
+   *  Push is not here: moving a due date needs the app, so it needs an unlock. */
   alarm_actions: string[];
+  /** Seconds of ringing before it snoozes itself. */
+  alarm_ring_sec: number;
+  /** Minutes it snoozes itself for, and how many times it may. */
+  alarm_auto_snooze_min: number;
+  alarm_auto_max: number;
 }
 
 export interface PushOption {
@@ -322,8 +345,8 @@ export interface WorkingValues {
   is_hard: boolean;
   /** 0 in Part A. From workflow_edges, a Part C structure. */
   workflow_position: number;
-  /** 0 in Part A. From notification_history, a Part B structure. */
-  reminder_fatigue: number;
+  /** True while `alarm_unanswered_at` is set: the third tier-1 override. */
+  alarm_unanswered: boolean;
 }
 
 /** max(trigram, word_match) over two compare_keys, both Sørensen-Dice. 0 to 1. */
@@ -408,12 +431,12 @@ export interface Config {
   duration_units: Record<string, number>;
   /** Minutes offered beside the box. Not a vocabulary; no record holds one. */
   duration_suggestions: number[];
-  /** Minutes offered while `alarm_type` is `repeat`. */
-  alarm_repeat_options: number[];
+  /** Minutes offered on the ringing alarm, one button each. */
+  alarm_snooze_options: number[];
   limits: { raw_text_min_chars: number; raw_text_chars: number; duration_min: number; duration_max: number; notes_chars: number };
   alarm_types: AlarmType[];
   alarm_lead_by_type: Record<string, number>;
-  alarm_defaults: { lead_min: number; repeat_min: number; max_lead_min: number };
+  alarm_defaults: { lead_min: number; max_lead_min: number; ring_sec: number; auto_snooze_min: number; auto_max: number };
   capacity_min_per_day: number;
   search: { fuzzy_threshold: number };
   duplicate: { threshold: number; min_chars: number };

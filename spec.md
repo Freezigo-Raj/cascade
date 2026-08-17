@@ -13,7 +13,7 @@ Current stage: 5
 Gates passed: **Gate 1**, **Gate 2**, **Gate 3** and **Gate 4**, each on an older file than the one it names. All four signatures are stale and all four are waiting on a hand. See VERSIONS.
 Stage 4 is closed and signed. Stage 5 is open: the rules go in one at a time and the same command is read the other way round, so a case that still fails names a rule not yet written. `gate4.mjs` reads the stage out of the line above and inverts its own verdict on it. Every case in the key agrees with the engine. Section I taps a type, a significance and a bound task, which no case did before, and section B and H state what the card says. `gate4.mjs` reads Stage 5 and passes: 142 run, 142 green, 0 on invariants alone, 0 errored. Nine rules are written and every obligation the contract records is now met except the ranking, which is Stage 6's. Gate 5 is the hand that says Stage 5 is finished.
 
-Status: the contract is written in the protocol's three groups, with Name, Type, Required, Unit, Range, Example and From per item. 13 inputs, 13 working values, the 43-field `Task`, the 4-field `UndoEntry`, 34 rendered outputs, 14 cross-field invariants, and config at 36 objects populated. `tsc --strict` compiles clean and `gate2.py` passes. The Stage 3 shell is built and Gate 3 is signed: the panel drew correctly by hand, and deleting `card_badge` from the placeholder produced a red box naming `resolve.js` and the missing field rather than a blank screen. `resolve()` now returns three keys, `task`, `list` and `capture`, and the contract names that shape. The answer key holds 144 key cases.
+Status: the contract is written in the protocol's three groups, with Name, Type, Required, Unit, Range, Example and From per item. 13 inputs, 13 working values, the 44-field `Task`, the 4-field `UndoEntry`, 39 rendered outputs, 14 cross-field invariants, and config at 36 objects populated. `tsc --strict` compiles clean and `gate2.py` passes. The Stage 3 shell is built and Gate 3 is signed: the panel drew correctly by hand, and deleting `card_badge` from the placeholder produced a red box naming `resolve.js` and the missing field rather than a blank screen. `resolve()` now returns three keys, `task`, `list` and `capture`, and the contract names that shape. The answer key holds 144 key cases.
 
 D-1: **Typing the thought is the whole of the work.**
 
@@ -33,17 +33,17 @@ Run app:   py -m http.server 8000, then http://localhost:8000/  (both screens, w
            /shell/ and still draws every field
            (live: every keystroke
            re-resolves; no build step, shell/config.js is checked against config.ts by gate2.py)
-Run tests: python3 gate2.py && python3 selftest.py && node shell/check_render.mjs && node shell/check_loud.mjs
+Run tests: python3 gate2.py && python3 selftest.py && node gate4.mjs && node shell/check_render.mjs && node shell/check_loud.mjs && node shell/check_alarm.mjs
 Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section B for one section,
            --placeholder to run the current key against the frozen Stage 3 file under the Stage 4 reading)
 
 ## VERSIONS
 
-  example      39
-  contract     49
-  config       a.16
+  example      40
+  contract     50
+  config       a.17
   answer_key   28
-  shell        28
+  shell        29
   gate1        signed on example 35
   gate2        signed on contract 32
   gate3        signed on shell 1
@@ -57,7 +57,8 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 **Working and verified:**
 - `gate2.py` — the gate, run as a script. Reads every count rather than trusting prose.
 - `selftest.py` — 28 deliberately broken copies, each breaking one file in one way. The gate catches every one of them, and a gate that dies on a traceback is counted as a miss rather than a catch. One fixture is read by `gate4.mjs` rather than `gate2.py`, because a weekday that contradicts its date is a defect only the key runner can see.
-- `shell/` — the Stage 3 shell. `check_render.mjs` reproduces example section 1 character for character from the placeholder; `check_loud.mjs` proves six deliberate breaks are loud.
+- `shell/` — the Stage 3 shell. `check_render.mjs` reproduces example section 1 character for character from the placeholder; `check_loud.mjs` proves six deliberate breaks are loud; `check_alarm.mjs` covers the alarm records and the three tier-1 overrides, which is the first check ever to reach `rank_key`.
+- `android/` — the alarm shell: six Kotlin files and the manifest additions. `shell/alarm.bridge.js` is the only thing that talks to it, and every timing number travels in the payload so nothing in Kotlin states a policy.
 - `gate4.mjs` — the runner. Reads every expected value out of the answer key at run time and holds none of its own. A case that fails on a contract invariant and on nothing the key states fails the gate rather than being counted. `--placeholder` runs the current key against `shell/resolve.stage3.js` under the Stage 4 reading, so a key edit can still be checked the Stage 4 way after the engine has rules.
 
 **Built, and only as verified as the gate above it:**
@@ -78,39 +79,70 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 
 ## THIS SESSION'S JOB
 
-The pickers, and the rule that has now been learned three times.
+The alarm, integrated: it rings, it can be snoozed from the lock screen, and a task whose alarm was
+slept through escalates.
 
-**The words were never the problem.** `dateWords` and `timeWords` produce `20 Aug` and `5:30pm`, and the
-engine reads both correctly; checked first. What failed was reaching the native control at all.
+**An alarm needs a stated time, and the toggle now appears and disappears with one.** A task due
+"Friday" resolves to 23:59:59, so a lead off that instant rings at a quarter to midnight, which is not
+a reminder about Friday. `canAlarm()` has refused that since session 94; what was missing was the
+screen saying so. The Alarm row is drawn only while `has_time`, and in its place is one sentence
+naming the time as what is missing. A control that cannot work is worse than an absent one: its
+absence reads as a decision and its presence reads as a promise.
 
-**Two causes, and the second is the one that matters.**
+**`alarm_type` lost `repeat` and became a toggle.** Every alarm rings for two minutes, snoozes itself
+for five, and does that up to five times. So "ring again every" was a second way of asking for what
+an alarm already does, and a task that should come back another day has `recurrence`. `alarm_repeat_min`
+is deleted rather than deprecated, because nothing is live yet and a field kept for a data set that
+does not exist is a field nobody can delete later.
 
-The chip was a `<label>` with an invisible `<input type="date">` stretched over it, so opening the
-control depended on the press landing on the browser's own calendar indicator — which sits at the right
-edge of the field, under a chip of a different width. Hit sometimes for time, never for date. It is a
-button calling `showPicker()` now, and the field takes no clicks at all.
+**The snooze intervals moved from capture to the ring.** 5 / 10 / 30 / 60, one button each on the lock
+screen. Nobody knows at capture how long they will want, and the number is only ever wanted with the
+thing in front of them. 15 left the list because four buttons is already the most a thumb should have
+to aim at on a lock screen.
 
-**And the row was rebuilt on every keystroke.** A picker that is rebuilt while it is open closes without
-returning anything. Opening a calendar takes several clicks and a few seconds, and every repaint in that
-window — a keystroke, a sync arriving from the phone — destroyed the input the calendar was attached to.
-So the row is built once and only the tick chip is repainted, which is the third place this rule has been
-needed: the capture box had it from session 99, the search box got it in session 107, and this row was
-still being thrown away and remade.
+**SNOOZE MOVES THE TELLING, PUSH MOVES THE TASK**, and that is why Push is not on the lock screen.
+Choosing a push target reads the day's load off every other task, which the app does and a dead
+WebView cannot. So a push needs an unlock, and the alarm offers Done and four numbers.
 
-**Four things proved rather than argued:** the chip press calls `showPicker`; the input is the same object
-after a repaint; picking a date types `20 Aug` into the box; and picking a time afterwards types
-`5:30pm` beside it rather than after the sentence.
+**Two homes for a snooze, and `alarm_armed_for` is what stops them fighting.** `alarm_snoozed_until`
+on the task is the truth and reaches the other devices; the shell keeps its own copy so it can re-ring
+with the WebView dead, which is the normal case rather than the exception. The bridge as written before
+this session cancelled a live snooze the moment the app was opened: it diffed on the ring time, and a
+snoozed alarm's ring time is not its derived instant, so the task either dropped out of the desired set
+for being in the past or looked stale and got re-armed. The shell now records the derived instant it
+armed against, the diff compares that, and an alarm already armed for the right instant is left alone
+whatever its ring time says. The same rule is what lets the auto-snooze chain run without reporting
+each step.
 
-**The gate now holds `--css-version` to `SHELL_VERSION`.** The app reads that token to decide whether to
-accuse the browser of serving an old stylesheet, so a token left behind by a bump would have the app
-blaming the browser for the repository's mistake.
+**A slept-through alarm escalates the task, and not by touching importance.** Importance is user-set
+only and has been since July. `alarm_unanswered_at` is the live marker and joins `pinned` and `is_hard`
+as the third tier-1 override, third so a soft task with a missed alarm cannot jump a hard task without
+one. `reminder_fatigue` is the count, it is never cleared, and Part A writes it now: it was a working
+value sourced from a Part B structure, which meant zero in every record and read by nothing. A push, a
+Done or an edit that moves the date clears the marker and leaves the count. The same pair as
+`first_due_at` and `push_count`.
+
+**The row says why it jumped.** Colour cannot: three states is the limit and pressable, overdue and
+synced are all three. So it is a trailing clause on `card_reason`, and absent from `card_reason_short`,
+where no trailing clause goes.
+
+**`check_alarm.mjs` is the sixth check and the first to reach `rank_key`.** Nothing in the 144-case
+answer key names `cards`, `rank_key` or `decided_by`, and that is a shape mismatch rather than an
+oversight: the key runs `resolve()` over a typed line, and cards are built from `existing_tasks`. A
+third override reorders every list in the app with all five other checks green, which is exactly the
+surface every defect found by running the app has been in. Three of its cases are the ordering: a
+slept-through hard task above an answered one, a hard task above a soft one with a missed alarm, and a
+pin above both.
 
 ## NEXT THREE JOBS
 
-1. Use it for a few days on the phone. The design is new, the row grammar changed, and every defect
-   worth having in this project was found this way.
-2. The workflow migration, recorded in full under DECIDED, NOT BUILT.
-3. Gate 6 against `MVP.md`, and the five gates already owed.
+1. Build the Capacitor shell and run the eight alarm tests against THIS build rather than the
+   standalone test app: ring, lock-screen ring, ring with the app killed, snooze re-ring, reboot
+   survival, closed-app outcome drain, ringing through silent and DND, and the auto chain reaching
+   its limit and writing `alarm_unanswered_at`.
+2. Use it for a few days on the phone. Every defect worth having in this project was found that way.
+3. The workflow migration, recorded in full under DECIDED, NOT BUILT, then Gate 6 and the five gates
+   already owed.
 
 ## TYPED, AND WRONG
 
@@ -206,6 +238,29 @@ Lines typed into the live shell that came out wrong. Open until each is either f
 - Earlier records call the answer key an 80-case key; it declares 88. The count is now stated once above, and `gate2.py` reads the real one out of the key.
 
 - Part B carries a constraint from Part A's window rule: it must decide chase behaviour from `date_firmness`, not from `deadline_band`. If it ever chases on band alone, every window-dated task pesters the user from its midpoint. Recorded now so it is not rediscovered later.
+
+- **A reboot mid-chain restarts the five autos, and a phone that reboots every chain never escalates.**
+  His decision: the spent autos do not survive. So a reboot at 17:00 during a chain that started at
+  16:45 rings again until about 17:35, which is the harmless half. The other half is that a phone
+  rebooting during every chain never reaches the end of one, so `alarm_unanswered_at` is never written
+  and the task never rises. That failure is silent, which is the worst kind, and it is recorded rather
+  than guarded against.
+
+- **`reminder_fatigue` now has two writers with opposite meanings.** Part A writes it as "alarms that
+  went unanswered", ranked descending: more failures, higher. Part B reserved it as notification
+  history, where the intent was to back off from a person who has been told too often, which ranks the
+  other way. Both cannot be true of one column. This is the one field in the alarm design that must be
+  re-read when Part B arrives, and it is named here so that re-reading is not a discovery.
+
+- **The R2 palette is stated a second time, in Kotlin.** `AlarmActivity` cannot read a stylesheet, so
+  ink, paper, signal and signal-deep are colour literals in it. Every other duplicated constant in this
+  project has drifted eventually. Nothing checks these two against each other.
+
+- **An alarm set on a task whose time is later removed stays set.** `alarm_type` remains `on` while
+  `has_time` goes false, and `canAlarm()` is what stops it ringing. So the record holds a request that
+  cannot be honoured. Reading the gate rather than clearing the field is deliberate, because an edit
+  that finds no date leaves the date alone and clearing the alarm would make a save reset something the
+  person set.
 
 ## DECIDED, NOT BUILT — Part C's workflow
 
@@ -745,3 +800,16 @@ have landed. That is the price of the single table and it is accepted.
 
 - 1 Aug 2026 — This session ran several jobs (two decks, a PDF, a spec, then the Stage 1 example) instead of one — the protocol was not in play until partway through — repaid by starting the numbered session log here; from Session 2 onward, one job each.
 - 1 Aug 2026 — `CASCADE_PART_A_SPEC.md` exists and spans Stages 2 to 6 while Gate 1 is unpassed — kept as raw material for Stage 2 rather than deleted — the risk is treating it as approved; it is marked stale in FOUND, NOT FIXED and must be rebuilt from the contract, not the other way round.
+- 17 Aug 2026 — An alarm is offered ONLY while the line carries a time, and the row disappears with the time — a task due "Friday" resolves to 23:59:59 and a lead off that rings at a quarter to midnight, and the alternative was a second rule inventing a time of day nobody gave — a control that cannot work is worse than an absent one, because its absence reads as a decision and its presence reads as a promise.
+- 17 Aug 2026 — `alarm_type` is `none` or `on`; `repeat` and `alarm_repeat_min` are DELETED, not deprecated — every alarm rings two minutes then snoozes itself five, up to five times, so "ring again every" asked for what an alarm already does, and a task that should return another day has `recurrence` — nothing is live, so a field kept for a data set that does not exist would be a field nobody could delete later.
+- 17 Aug 2026 — The snooze intervals moved from capture to the ringing alarm: 5 / 10 / 30 / 60, one button each — nobody knows at capture how long they will want, and the number is only wanted with the thing in front of them — 15 was dropped because four buttons is the most a thumb should aim at on a lock screen.
+- 17 Aug 2026 — Push is NOT on the lock screen; Done and the four snooze buttons are — choosing a push target reads the day's load off every other task, which the app does and a dead WebView cannot, so moving a due date needs an unlock — his call, and it removed the precomputed-target design and the `PUSH:<iso>` outcome verb with it.
+- 17 Aug 2026 — A snooze has TWO HOMES, his call: `alarm_snoozed_until` on the task is the truth and syncs, and the shell keeps its own copy so it can re-ring with the WebView dead — the WebView being dead when an alarm rings is the normal case, not the exception — they are allowed to disagree for as long as an outcome takes to drain.
+- 17 Aug 2026 — `alarm_armed_for` is recorded by the shell and is what the diff compares, never the ring time — a snoozed alarm's ring time is not its derived instant, so a diff on ring time either dropped it for being in the past or read it as stale and re-armed it, and opening the app during a snooze ended the snooze — it is also what lets the auto chain run without reporting each step.
+- 17 Aug 2026 — An unanswered chain writes `alarm_unanswered_at` and increments `reminder_fatigue`, and `alarm_unanswered` joins `pinned` and `is_hard` as the THIRD tier-1 override — importance is user-set only and must not move, so the escalation needed its own term — third rather than second, so a soft task with a missed alarm cannot jump a hard task without one.
+- 17 Aug 2026 — `reminder_fatigue` stops being a working value and becomes a stored column that Part A writes — it was sourced from a Part B structure, so it was zero in every record and read by nothing, and a count that lives only in memory is gone at the next refresh — the cost is two writers with opposite meanings, recorded under FOUND, NOT FIXED as the one thing to re-read when Part B arrives.
+- 17 Aug 2026 — The unanswered marker is cleared by a push, a Done, or an edit that MOVES the date, and never by a save that leaves the date alone — his call, and it is the same rule as an edit that finds no date leaving the date alone — `reminder_fatigue` is cleared by none of them, which is the whole point of there being two fields.
+- 17 Aug 2026 — Every alarm timing number travels in the `Alarm.set()` payload and none is stated in Kotlin — the interval was written in three places before this session, in two languages, which is the drift pattern this project has paid for five times — changing the ring length or the snooze buttons is a config edit and nothing else.
+- 17 Aug 2026 — The auto-snooze steps are NOT reported to the app; only the end of the chain is — five autos would mean five store writes and five sync round trips for one unanswered alarm, and the `armedFor` diff already protects a running chain from an app that opens mid-way — only the chain running out is a fact about the task.
+- 17 Aug 2026 — Spent autos do NOT survive a reboot; the chain restarts at five, his call — the alternative was persisting a counter whose whole purpose is to expire — the cost is that a phone rebooting during every chain never reaches the end of one, so the task never escalates, and that failure is silent.
+- 17 Aug 2026 — `check_alarm.mjs` is the sixth check, and the first thing in 110 sessions to assert an order out of `rank_key` — no key case names `cards`, `rank_key` or `decided_by`, because the key runs `resolve()` over a typed line and cards are built from `existing_tasks`, so it is a shape mismatch rather than an oversight — a third override reorders every list in the app with the other five checks green, which is the surface every defect found by running the app has been in.

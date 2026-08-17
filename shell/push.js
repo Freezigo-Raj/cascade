@@ -166,6 +166,13 @@ export function pushed(task, to, now) {
     due_at: to,
     first_due_at: task.first_due_at || task.due_at,
     push_count: (task.push_count ?? 0) + 1,
+    // A push is the later and more considered statement about when to be told,
+    // so it clears what the alarm left behind: a snooze that would otherwise
+    // ring tonight about a task now due tomorrow, and the unanswered marker
+    // holding it at the top of the list. `reminder_fatigue` is untouched,
+    // because that one is history rather than a live marker.
+    alarm_snoozed_until: null,
+    alarm_unanswered_at: null,
     updated_at: now,
   };
 }

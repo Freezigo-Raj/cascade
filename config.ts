@@ -10,7 +10,7 @@ import type { Config } from "./types";
 const active = (id: string) => ({ id, active: true });
 
 export const partAConfig: Config = {
-  version: "a.16",
+  version: "a.17",
 
   // --- Vocabulary: records hold these members ---
   // Drawn only from what the example exercises. Thin on purpose:
@@ -196,7 +196,11 @@ export const partAConfig: Config = {
 
   ranking: {
     // Tier 1. Absolute: no score beats these, under any mode.
-    overrides: ["pinned", "is_hard"],
+    // Three now. An alarm that rang its whole chain out unanswered means the
+    // one mechanism built to interrupt a person has already failed on this
+    // task, and no score below should be able to bury it. It sits third so a
+    // soft task cannot jump a hard one on the strength of a missed alarm.
+    overrides: ["pinned", "is_hard", "alarm_unanswered"],
     // Tier 2. "weighted" would replace tier 3 wholesale and leave tier 1 alone.
     mode: "lexicographic",
     // Tier 3. Nine factors, in order.
@@ -230,6 +234,10 @@ export const partAConfig: Config = {
       pinned: { join: ". ", text: "You pinned this" },
       is_hard: { join: ". ", text: "You called this a deadline" },
       significance: { join: ", and ", text: "you marked it <significance_label>" },
+      // A row that jumps for a reason nothing states is the invisible-number
+      // problem again. Colour cannot say it: three states is the limit and all
+      // three are spent. So it is a sentence, and only on the wide sentence.
+      alarm_unanswered: { join: ". ", text: "Its alarm rang unanswered" },
     },
   },
 
@@ -251,9 +259,12 @@ export const partAConfig: Config = {
   // record depends on them: tapping one fills the box and nothing else.
   duration_suggestions: [15, 30, 60, 120],
 
-  // Intervals offered for a repeating alarm, in minutes. Reachable only while
-  // `alarm_type` is `repeat`.
-  alarm_repeat_options: [5, 10, 15, 30, 60],
+  // The snooze buttons on a ringing alarm, in minutes. Pressed when it rings
+  // rather than chosen in advance: nobody knows at capture how long they will
+  // want, and the number is only ever wanted with the thing in front of you.
+  // 15 left the list because four buttons on a lock screen is already the most
+  // a thumb should have to aim at.
+  alarm_snooze_options: [5, 10, 30, 60],
 
   limits: {
     // A line is not a capture until it carries something to read. Fitted to
@@ -277,9 +288,12 @@ export const partAConfig: Config = {
   // full day feels like, and the first week of real captures is what corrects
   // it. The load it measures is a sum of `est_duration_min`, which are defaults
   // per verb rather than measurements, so the note it produces says `roughly`.
-  // The alarm vocabulary. Part B fires them; Part A only records what was asked
-  // for, which is why `alarm_types` is here and no scheduler is.
-  alarm_types: ["none", "once", "repeat"],
+  // The alarm vocabulary. The Android shell fires them; Part A records what was
+  // asked for and derives when, which is why there is still no scheduler here.
+  // Two members. `repeat` is gone: every alarm auto-snoozes on its own now, so
+  // "ring again" was a second way to say what the alarm already does, and a
+  // task that should come back another day has `recurrence`.
+  alarm_types: ["none", "on"],
 
   // Defaults for a task that asks for an alarm without saying more, and the
   // floor and ceiling a lead time may take.
@@ -310,7 +324,12 @@ export const partAConfig: Config = {
     idea: 15,
   },
 
-  alarm_defaults: { lead_min: 15, repeat_min: 10, max_lead_min: 10080 },
+  // `ring_sec` 120: two minutes of noise is enough to wake someone and short
+  // enough not to be the reason the phone gets silenced for ever.
+  // `auto_snooze_min` 5 with `auto_max` 5 spans about 35 minutes from the first
+  // ring. After the fifth it stops and the task escalates instead: an alarm
+  // that rings all morning trains a person to stop hearing alarms.
+  alarm_defaults: { lead_min: 15, max_lead_min: 10080, ring_sec: 120, auto_snooze_min: 5, auto_max: 5 },
 
   capacity_min_per_day: 180,
 

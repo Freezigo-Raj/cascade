@@ -171,9 +171,8 @@ The box is at the top. The tap buttons are with it. The matching tasks are below
 | Takes about | 1 + 3 + 4 | In the advanced panel. A number box and `min` / `hour` / `day`, plus four suggestions. Sets `duration_tap`; the label says whether the number is the person's or the verb's |
 | How firm | 4 | In the advanced panel. `auto` / `normal` / `soft` / `hard`. `auto` gives the marker words their say back, so the tap is undoable |
 | Repeat | 1 | In the advanced panel. An interval: every N days, weeks or months |
-| Alarm | 1 | In the advanced panel. None, once, or repeating |
-| Lead | 1 | Minutes before the task. 15 by default, changed per task |
-| Ring again every | 5 | In the advanced panel, and only while the alarm repeats. 5 / 10 / 15 / 30 / 60 minutes |
+| Alarm | 1 | In the advanced panel, and ONLY while the line carries a time. `none` / `on`. Without a time the row is replaced by one sentence saying a time is what is missing |
+| Lead | 1 | Minutes before the task. 15 by default, changed per task. The note under it states the ring length, the auto-snooze interval and the limit |
 | Notes | 1 | In the advanced panel, at the foot of it. Read, never matched: a note reaches neither search nor the duplicate warning |
 | Low / Normal / High | 3 | Normal is the default and is marked |
 | `⟨ task ✕ ⟩` | 1 | Only while editing. The ✕ leaves without saving |

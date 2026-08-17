@@ -166,11 +166,12 @@ function run() {
     // rather than derived, and both are wrong the moment a rule lands, which is
     // what the `broken` label below is for: a field in NO_RULE that moves.
     const NO_RULE = new Set([
-      "recurrence", "alarm_type", "alarm_lead_min", "alarm_repeat_min",
+      "recurrence", "alarm_type", "alarm_lead_min", "alarm_snoozed_until",
+      "alarm_unanswered_at",
       "blocked", "blocker_reason", "blocker_ref", "project_id", "task_state",
       "archived", "pinned", "closed_at", "significance", "notes", "type_source",
       "rank_key", "decided_by", "workflow_position", "reminder_fatigue",
-      "is_hard", "resolved_window", "clipped_window",
+      "alarm_unanswered", "is_hard", "resolved_window", "clipped_window",
       "sort_header", "action_row", "cards",
       "significance_row", "chip_row", "add_button",
     ]);

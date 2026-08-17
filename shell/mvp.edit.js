@@ -36,7 +36,6 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
   let repeat = null;        // { every, unit } | null
   let alarmType = "none";
   let leadMin = null;
-  let repeatMin = null;     // minutes between rings while the alarm repeats
   let durTap = null;        // minutes the person chose, or null for the verb's default
   let firmTap = null;       // "hard" | "normal" | "soft" | null for what the words said
   let notesText = "";
@@ -153,7 +152,6 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
     repeat = task.recurrence ?? null;
     alarmType = task.alarm_type ?? "none";
     leadMin = task.alarm_lead_min ?? null;
-    repeatMin = task.alarm_repeat_min ?? null;
     // The same reason the type and the significance are loaded back: a title
     // carries no evidence of either, so re-deriving would reset both on save.
     // A duration is seeded only when the person chose it. Seeding the verb's
@@ -176,7 +174,6 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
     repeat = null;
     alarmType = "none";
     leadMin = null;
-    repeatMin = null;
     durTap = null;
     firmTap = null;
     notesText = "";
@@ -197,9 +194,6 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
     recurrence: repeat,
     alarm_type: alarmType,
     alarm_lead_min: alarmType === "none" ? null : leadMin,
-    alarm_repeat_min: alarmType === "repeat"
-      ? (repeatMin ?? partAConfig.alarm_defaults.repeat_min)
-      : null,
   });
 
   // ----------------------------------------------------------------- the press
@@ -327,7 +321,10 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
     typeRow.appendChild(more);
     if (advanced) {
       drawPanel(panel, partAConfig, {
-        chosen, repeat, alarmType, leadMin, repeatMin,
+        chosen, repeat, alarmType, leadMin,
+        // The toggle exists only while the line carries a time, and this is the
+        // engine's answer to that rather than the screen's guess at it.
+        hasTime: Boolean(out.task.has_time),
         durationMin: durTap ?? out.task.est_duration_min,
         durationTapped: durTap !== null,
         firmness: firmTap,
@@ -341,7 +338,6 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
           paint();
         },
         setLead: (n) => { leadMin = n; },
-        setRepeatMin: (n) => { repeatMin = n; paint(); },
         setDuration: (n) => { durTap = n; paint(); },
         setFirmness: (f) => { firmTap = f; paint(); },
         // No repaint: the same reason the box itself is built once. Replacing a
