@@ -26,6 +26,7 @@ const { readClashes, readClashDialog, readDeadlineClashes, readDeadlineDialog } 
 const { ask } = await import(`./mvp.dialog.js${v}`);
 const { el } = await import(`./mvp.paint.js${v}`);
 const { rowOf, blockOf } = await import(`./mvp.row.js${v}`);
+const { SHELL_VERSION } = await import(`./render.js${v}`);
 
 const TABS = ["Tasks", "Ideas", "Done"];
 const SLOTS = ["Today", "Tomorrow", "Upcoming"];
@@ -202,7 +203,8 @@ export function mountList(root, { openEdit, openAccount } = {}) {
   acct.addEventListener("click", () => openAccount && openAccount());
   tools.appendChild(acct);
   const syncSlot = el("div", "sync-slot");
-  headRight.append(tools, syncSlot);
+  // Always on screen. Asking "did my push arrive" should not need a second press.
+  headRight.append(tools, syncSlot, el("div", "build", `build ${SHELL_VERSION}`));
   headBlock.appendChild(headRight);
 
   const bar = el("div", "bar");

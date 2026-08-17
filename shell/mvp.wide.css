@@ -11,6 +11,11 @@
  */
 
 @media (min-width: 940px) {
+  /* Set so `mvp.js` can ask whether this file arrived. Without it, a wide window
+     missing this stylesheet looks exactly like a phone, which is the worst kind
+     of failure: it looks like a decision. */
+  :root { --wide: 1; }
+
   #app {
     max-width: 1180px;
     display: grid;

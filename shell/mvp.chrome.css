@@ -1,0 +1,37 @@
+/* Cascade Part A — the toast, and the line the app draws when it cannot trust
+ * what it is running on.
+ *
+ * Its own file because `mvp.css` crossed the 400-line cap again. Both of these
+ * are chrome that belongs to no single screen: the toast is fixed to the window
+ * and the truth strip is about the build rather than about the list.
+ */
+
+/* -------------------------------------------------------------------- toast */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--step) * 6);
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: calc(var(--step) * 4);
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: var(--r-pill);
+  padding: calc(var(--step) * 3) calc(var(--step) * 5);
+  font-size: 13px;
+  box-shadow: var(--lift);
+  max-width: calc(100vw - 32px);
+}
+.toast button {
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--signal);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}

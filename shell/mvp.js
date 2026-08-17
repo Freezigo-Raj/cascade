@@ -20,6 +20,7 @@ const v = new URL(import.meta.url).search;
 const { configured } = await import(`./env.js${v}`);
 const { account, recoveryInUrl } = await import(`./auth.js${v}`);
 const { mountGate } = await import(`./gate.js${v}`);
+const { SHELL_VERSION } = await import(`./render.js${v}`);
 
 const app = document.getElementById("app");
 const screen = document.getElementById("screen");
@@ -126,12 +127,42 @@ window.addEventListener("keydown", (e) => {
   else if (e.key === "/") { e.preventDefault(); here?.focusSearch?.(); }
 });
 
+/**
+ * WHAT ARRIVED, SAID OUT LOUD.
+ *
+ * Three sessions have now been spent working out whether a change had reached the
+ * browser or reached it and looked wrong. The stylesheet states its own version
+ * in `--css-version` and the wide layout sets `--wide`; this reads both and puts
+ * a line at the top of the screen when either disagrees with what the modules
+ * think. A stale stylesheet used to be invisible. Now it names itself.
+ *
+ * It draws nothing when everything agrees, which is the normal case.
+ */
+function tellTheTruth() {
+  const style = getComputedStyle(document.documentElement);
+  const css = Number(style.getPropertyValue("--css-version").trim() || 0);
+  const wide = style.getPropertyValue("--wide").trim() === "1";
+  const say = [];
+  if (!css) say.push("No stylesheet loaded at all.");
+  else if (css !== SHELL_VERSION) say.push(`Stylesheet is v${css}, app is v${SHELL_VERSION}. Your browser is serving an old copy — close the app fully and reopen it.`);
+  if (css === SHELL_VERSION && WIDE.matches && !wide) say.push("The wide layout stylesheet did not load, so this is the phone layout in a large window.");
+  const old = document.getElementById("truth");
+  if (old) old.remove();
+  if (!say.length) return;
+  const strip = document.createElement("div");
+  strip.id = "truth";
+  strip.className = "truth";
+  strip.textContent = say.join(" ");
+  app.prepend(strip);
+}
+
 async function start() {
   if (started) return;
   started = true;
   gateEl.style.display = "none";
   app.style.display = "";
   await showList();
+  tellTheTruth();
 }
 
 function gate() {

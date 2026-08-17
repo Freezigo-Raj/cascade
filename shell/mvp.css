@@ -41,6 +41,13 @@
   --face-display: "Fraunces", Georgia, "Times New Roman", serif;
   --face-body: "Figtree", "Segoe UI", system-ui, sans-serif;
 
+  /* THE STYLESHEET STATES ITS OWN VERSION. `mvp.js` compares it to
+     `SHELL_VERSION` and says so on screen when they disagree, because a browser
+     serving an old stylesheet has now cost three sessions of guessing at what
+     had and had not arrived. A number that can be read is worth more than a
+     number that has to be trusted. */
+  --css-version: 27;
+
   --step: 4px;
   --r-card: 18px;
   --r-block: 24px;
@@ -137,6 +144,30 @@ html, body {
 .sync .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--good-ink); }
 .sync.local { background: var(--sunk); color: var(--quiet); }
 .sync.local .dot { background: var(--quiet); }
+
+/* A line that only appears when the app cannot trust what it is running on. It
+   is the loudest thing on the screen on purpose: it means the screen is lying. */
+.truth {
+  background: var(--warn);
+  color: #fff8f2;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+  border-radius: var(--r-card);
+  padding: calc(var(--step) * 3) calc(var(--step) * 4);
+  margin-bottom: calc(var(--step) * 4);
+}
+
+/* The running build, in the header, always visible. It was on the account screen
+   only, which is one press too far away when the question is whether a push
+   arrived at all. */
+.build {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--quiet);
+}
 
 /* --------------------------------------------------------------------- tabs */
 
@@ -340,36 +371,6 @@ html, body {
   outline: 2px solid var(--signal);
   outline-offset: 2px;
   border-radius: 4px;
-}
-
-/* -------------------------------------------------------------------- toast */
-
-.toast {
-  position: fixed;
-  left: 50%;
-  bottom: calc(var(--step) * 6);
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: calc(var(--step) * 4);
-  background: var(--ink);
-  color: var(--paper);
-  border-radius: var(--r-pill);
-  padding: calc(var(--step) * 3) calc(var(--step) * 5);
-  font-size: 13px;
-  box-shadow: var(--lift);
-  max-width: calc(100vw - 32px);
-}
-.toast button {
-  font-family: inherit;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--signal);
-  background: none;
-  border: 0;
-  cursor: pointer;
 }
 
 @media (max-width: 600px) {

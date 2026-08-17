@@ -2450,3 +2450,26 @@ Colour meant one thing and now means three. Accent is pressable, `#c0492b` is ov
 **Next job:** use it, then the workflow migration.
 
 ---
+## Session 108 — 17 August 2026
+
+**Job: say what arrived, and stop shipping half of it.**
+
+**The report was that the web layout did not work and no version was shown, and the code was not at fault.** The capture panel mounts correctly under a wide window — proved headlessly before touching anything. What was wrong was the delivery. The session 107 `changed` zip held session 106's files and 107's files and not 105's, so `mvp.account.js` never reached him and the version block he had specifically asked for was missing from a build that otherwise looked correct. I told him the bundle included the previous session, which was true of one previous session and not the one that mattered.
+
+**A half-applied set of files across three sessions is indistinguishable from a bug in the code.** That is the whole lesson, and it cost an hour of telling one from the other. The zip is cumulative from the last build he has confirmed running, from here, and it is in the decision log rather than in my memory.
+
+**The app now states what it is running on, and can catch this itself.** `mvp.css` sets `--css-version` and `mvp.wide.css` sets `--wide` inside its media query; `mvp.js` reads both through `getComputedStyle` and draws one loud line when either disagrees with `SHELL_VERSION`. Three separate sessions have now been spent on the question "did this arrive", and the answer was never on screen.
+
+**A wide window missing its layout stylesheet looks exactly like a phone.** That is the worst kind of failure this project has produced, worse than the black-and-white one, because it does not look broken — it looks like a decision. The same argument as the network-first service worker in session 101: slow and correct beats fast and lying, and silent and wrong is the thing to design against.
+
+**Four states proved rather than assumed:** everything agreeing and the strip silent; a stale stylesheet named with both numbers; the wide sheet missing and named; and no stylesheet at all.
+
+**The build number is in the header.** It was on the account screen only, which is one press away, and one press is too far when the question is whether a push arrived at all. Every screenshot of the app now carries its own version, which is exactly what the last three rounds of this were missing.
+
+**`mvp.chrome.css`.** The toast and the truth strip left `mvp.css`, which crossed the 400-line cap again. Both belong to no single screen: the toast is fixed to the window and the strip is about the build. Fifth stylesheet, fifth `?v=` query, all five checked by the gate rule from session 105.
+
+**Save point:** `the app reports its own build and catches a stale stylesheet; gates 1, 2, 3, 4, 5 and 6 waiting on a hand`
+
+**Next job:** confirm build 27 is running, then the workflow migration.
+
+---

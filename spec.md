@@ -43,7 +43,7 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
   contract     49
   config       a.16
   answer_key   28
-  shell        26
+  shell        27
   gate1        signed on example 35
   gate2        signed on contract 32
   gate3        signed on shell 1
@@ -78,27 +78,30 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 
 ## THIS SESSION'S JOB
 
-The search box that took one letter, and the two layouts before it.
+Say what arrived, and stop shipping half of it.
 
-**One letter, then the caret gone.** `draw()` emptied `root` and rebuilt everything, including the
-search input, on every keystroke. The element being typed into was destroyed after the first letter and
-replaced by a fresh one holding the same value; the `focus()` call on the next line addressed the old
-node, which by then was detached and focuses nothing. That is what a rebuilt input does, and it is
-exactly the defect screen 2's capture box was built to avoid in session 99 — "the box is built once and
-never redrawn" — a rule written for one screen and needed in two. Fifth time.
+**The report was "the web version doesn't work, no version shown", and the code was not at fault.** The
+capture panel mounts correctly under a wide window; proved headlessly. What was wrong was the delivery:
+the session 107 `changed` zip held 106's files and 107's files and NOT 105's, so `mvp.account.js` never
+reached him and the version block he had asked for was missing from a build that otherwise looked
+correct. A half-applied set of files across three sessions is indistinguishable from a bug in the code,
+and an hour went into telling them apart.
 
-**So screen 1's chrome is built once.** Header, tab row, search box, toggle: made at mount, and `paint()`
-changes their text and their state and never their identity. Only the list itself and the toast are
-rebuilt, and neither can hold a caret. The toggle is built once and hidden on the other tabs rather than
-built conditionally, because a control that appears and disappears moves the tab row a person is aiming
-at.
+**So the zip is cumulative from the last build he has confirmed running.** Written into the decision log
+rather than remembered.
 
-**The header date is recomputed on every paint.** Built once, it showed yesterday on a tab left open
-past midnight, over a list that had already rolled over.
+**And the app now says what it is running on.** `mvp.css` states `--css-version` and `mvp.wide.css` sets
+`--wide`; `mvp.js` reads both and draws one loud line when either disagrees with `SHELL_VERSION`. Three
+sessions have been spent on this question. A stale stylesheet used to be invisible, and a wide window
+missing its layout sheet looked exactly like a phone — which is the worst kind of failure, because it
+looks like a decision. Four states proved: agreeing and silent, stale and named, wide sheet missing and
+named, no stylesheet at all.
 
-**A row and a block of rows left as `mvp.row.js`**, with everything they need handed in. The file crossed
-the cap making its chrome build-once, and the seam is the right one: a row can no longer read the
-screen's state behind its own back.
+**The build number is in the header.** One press away was one press too far when the question is whether
+a push arrived. Every screenshot of the app now carries its own version.
+
+**`mvp.chrome.css`.** The toast and the truth strip left `mvp.css`, which crossed the cap again. Both
+belong to no single screen: one is fixed to the window, the other is about the build.
 
 ## NEXT THREE JOBS
 
@@ -717,6 +720,10 @@ have landed. That is the price of the single table and it is accepted.
 - 17 Aug 2026 — The `Today / Tomorrow / Upcoming` toggle is built once and hidden on the other tabs rather than built conditionally — a control that appears and disappears moves the row above it, and the tab row is what a person is aiming at when they change tabs — the markup now holds three buttons that are not always reachable, which a reader of the DOM has to be told about.
 - 17 Aug 2026 — The header date is recomputed on every paint rather than at mount — a tab left open past midnight showed yesterday's date over a list that had already rolled over — one string per paint.
 - 17 Aug 2026 — A row and a block of rows left `mvp.list.js` as `mvp.row.js`, with everything they need handed in — the file crossed the 400-line cap making its chrome build-once — a row can no longer read the screen's state behind its own back, which is the shape that let `drawRow` quietly depend on `tab` in the first place.
+- 17 Aug 2026 — The stylesheet states its own version in `--css-version` and the wide sheet sets `--wide`, and the app READS BOTH and says so on screen when either disagrees with `SHELL_VERSION` — three sessions were spent working out whether a change had reached the browser or reached it and looked wrong, and a wide window missing its layout sheet looks exactly like a phone, which is the worst kind of failure because it looks like a decision — the check draws nothing when everything agrees, and it is now the loudest thing on the screen when it does not.
+- 17 Aug 2026 — The running build is in the HEADER, not only on the account screen — one press away is one press too far when the question is whether a push arrived at all — every screenshot of the app now carries its own version, which is what the last three rounds of this were missing.
+- 17 Aug 2026 — A delivery rule, written down because breaking it cost a session: the `changed`-only zip is CUMULATIVE from the last build he has confirmed running, never per-session — session 107's zip held 106's and 107's files and not 105's, so `mvp.account.js` never reached him and the version block he asked for was missing from a build that otherwise looked correct — a half-applied set of files across three sessions is indistinguishable from a bug in the code.
+- 17 Aug 2026 — The toast and the truth strip left `mvp.css` as `mvp.chrome.css` — the file crossed the 400-line cap again and both of these belong to no single screen: one is fixed to the window and the other is about the build — fifth stylesheet, fifth `?v=` query, all checked by the gate.
 
 
 ## DELIBERATE DEVIATIONS FROM PROTOCOL
