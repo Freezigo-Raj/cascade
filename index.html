@@ -2,7 +2,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <!-- Edited between sessions and served from a fixed address, so a cached copy is
-     a wrong answer that looks like a defect. -->
+     a wrong answer that looks like a defect.
+
+     THIS TAG DOES NOT WORK AND IS KEPT AS A LABEL. A browser ignores
+     `http-equiv` cache directives for the document that carries them: by the
+     time it is read, the response it would have governed has already been
+     stored. Two things do work and both are elsewhere: `sw.js` fetches the page
+     with `cache: "reload"`, and `mvp.js` re-points the stylesheet link at
+     SHELL_VERSION when the sheet it got is behind. -->
 <meta http-equiv="Cache-Control" content="no-store">
 <title>Cascade</title>
 
@@ -33,7 +40,7 @@
      query on the two `@import` lines inside these files included, because an
      imported sheet is fetched under its own address and would go stale one level
      down otherwise. -->
-<link rel="stylesheet" href="./shell/mvp.edit.css?v=31">
+<link rel="stylesheet" href="./shell/mvp.edit.css?v=32">
 
 <div id="gate" style="display:none"></div>
 

@@ -61,9 +61,27 @@ self.addEventListener("fetch", (e) => {
   // a second answer disagreeing with it.
   if (url.hostname.endsWith(".supabase.co")) return;
 
+  // THE PAGE ITSELF IS FETCHED PAST THE BROWSER'S OWN CACHE.
+  //
+  // Network-first was not enough, and the reason took two builds to see. Every
+  // module carries a fresh `?v=`, so those are always new URLs and always come
+  // off the network. `index.html` cannot carry one: it is the address. GitHub
+  // Pages serves it with a ten-minute lifetime, and `fetch()` in here goes
+  // through the browser's HTTP cache, so for ten minutes after a push this
+  // worker is handed the previous page without a request leaving the phone. The
+  // page's `<link>` then loads the previous version's stylesheet while the
+  // modules are current, which is exactly the mismatch the app was reporting:
+  // new JavaScript, old HTML, and a stylesheet behind by exactly one.
+  //
+  // `cache: "reload"` skips the HTTP cache on the way out. Only for the document,
+  // because everything else already has a unique URL and would gain nothing.
+  const document_ = req.mode === "navigate" || req.destination === "document";
+
   e.respondWith((async () => {
     try {
-      const fresh = await fetch(req);
+      const fresh = document_
+        ? await fetch(req.url, { cache: "reload", credentials: "same-origin" })
+        : await fetch(req);
       // Only a real answer is worth keeping. A 404 cached here would outlive the
       // deploy that fixed it.
       if (fresh && fresh.ok) {

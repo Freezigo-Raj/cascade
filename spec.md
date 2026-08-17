@@ -43,7 +43,7 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
   contract     52
   config       a.17
   answer_key   28
-  shell        31
+  shell        32
   gate1        signed on example 35
   gate2        signed on contract 32
   gate3        signed on shell 1
@@ -825,3 +825,6 @@ have landed. That is the price of the single table and it is accepted.
 - 17 Aug 2026 — Done and a push from the alarm bring the app forward and a snooze does not, his call — all three are queued either way, so the unlock makes a change VISIBLE rather than making it happen, and being asked to unlock at six in the morning to acknowledge a snooze is the app taking more than it gave.
 - 17 Aug 2026 — A press cannot be applied at unlock with the app closed, and this is refused rather than deferred — it would need Supabase writes from Kotlin: a second copy of the auth token, newest-wins, the offset split and the outbox, in a second language — every duplicated rule in this project has drifted eventually, and this would buy a few seconds of earliness.
 - 17 Aug 2026 — Done in the notification shade routes through `AlarmActivity` carrying a `verb` extra, drawing nothing — a broadcast receiver cannot reliably start an activity from the background on Android 10 and later, and an app that comes forward for one Done and not the other is worse than one that never comes forward.
+- 17 Aug 2026 — `sw.js` fetches the DOCUMENT with `cache: "reload"` — network-first still went through the browser's own HTTP cache, and GitHub Pages serves `index.html` with a ten-minute lifetime, so for ten minutes after every push the worker was handed the previous page without a request leaving the phone — every other file carries a fresh `?v=` and is a unique URL, so the page is the only one that could go stale and the stylesheet was always behind by exactly one.
+- 17 Aug 2026 — `mvp.js` re-points the stylesheet link at SHELL_VERSION when the loaded sheet is behind, instead of only drawing a loud line about it — a loud line about something the reader cannot fix is a complaint, and the app knows the number — what stays loud is the sheet fetched at the right version still reporting the wrong one, which is the repository disagreeing with itself and reads differently now.
+- 17 Aug 2026 — The `<meta http-equiv="Cache-Control">` in `index.html` is kept as a LABEL and does nothing — a browser ignores a cache directive inside the document it governs, because by the time the tag is read the response has been stored — it read as a solved problem for four sessions, which is the fourth appearance of the cache defect and the first fix that does not depend on remembering something.

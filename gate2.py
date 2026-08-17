@@ -304,11 +304,19 @@ try:
 except IOError:
     sv=None; bad('shell/render.js is missing')
 # The stylesheet is loaded from a static link, so it cannot carry a date the way
-# every module does. It carries the shell version instead, in three places: the
-# link in index.html and the two @import lines inside mvp.edit.css. A number a
-# person has to remember to bump is a number that goes stale, and this one going
-# stale means a whole session's design never reaching a browser. So it is read
-# rather than trusted.
+# every module does. It carries the shell version instead, in the link in
+# index.html and the five @import lines inside mvp.edit.css. A number a person
+# has to remember to bump is a number that goes stale, and this one going stale
+# means a whole session's design never reaching a browser. So it is read rather
+# than trusted.
+#
+# The link is now ALSO repaired at runtime: `mvp.js` re-points it at
+# SHELL_VERSION when the loaded sheet is behind, because index.html is the one
+# file with no cache-buster of its own and a browser serving a cached page loads
+# the previous version's stylesheet from a link nothing can bump. The gate still
+# reads every number here. A repair that runs is not a reason to stop checking
+# what it repairs: the repository being right is what makes the first paint right,
+# and the repair only rescues the second.
 # The stylesheet also states its own version in a token the app reads at runtime,
 # and a token that disagrees with SHELL_VERSION makes the app accuse the browser
 # of serving something old when the repository is what disagrees. Two numbers in

@@ -2625,3 +2625,28 @@ Colour meant one thing and now means three. Accent is pressable, `#c0492b` is ov
 **Save point:** `done and push surface, snooze stays locked, shell 31 unchanged`
 
 **Next job:** rebuild the APK and run the nine alarm tests.
+
+---
+## Session 115 — 17 August 2026
+
+**Job: the stylesheet is always exactly one version behind, and this is the fourth time the cache has been the answer.**
+
+**The pattern was the diagnosis.** v29 against v30, then v30 against v31. Never two behind, never ahead. Every module in this app is imported under a fresh `?v=`, so those are unique URLs and always come off the network. `index.html` cannot carry one, because it is the address. So the page is the one file that can go stale, and a stale page carries the previous version's `<link>` while the modules it loads are current: new JavaScript, old HTML, a stylesheet behind by exactly one.
+
+**Network-first was not enough, and the layer under it is where this lived.** `sw.js` has fetched network-first since session 101 and is not at fault. `fetch()` inside a worker goes through the browser's own HTTP cache, and GitHub Pages serves `index.html` with a ten-minute lifetime, so for ten minutes after a push the worker was handed the previous page without a request leaving the phone. He restarted the app twice inside that window, which is why restarting looked like it did nothing. Waiting would have worked, which is the worst kind of defect: one that heals before it can be investigated. The document is fetched with `cache: "reload"` now, and only the document, because everything else already has a unique URL.
+
+**The `<meta http-equiv="Cache-Control">` in `index.html` never did anything and is kept as a label.** A browser ignores a cache directive carried inside the document it governs: by the time the tag is read, the response has been stored. It read as a solved problem for four sessions. The comment above it now says what actually solves it and where both halves live.
+
+**The app repairs the stylesheet rather than only complaining about it.** `tellTheTruth()` has drawn a loud line about a stale sheet since session 108, and a loud line about something the person cannot fix is a complaint. The app knows `SHELL_VERSION`, so it re-points the link at it and re-reads the token; the old sheet is left in place until the new one has loaded, so nothing flashes unstyled. What stays loud is the case this cannot repair: a sheet fetched AT the right version still reporting the wrong one, which is the repository disagreeing with itself rather than the browser being behind. The two failures now read differently, which they never did before.
+
+**Both halves are kept even though either would do.** The worker fixes it for a browser that has one; the link repair fixes it inside a WebView, on a first visit before the worker is in control, and on any surface where the worker is not running. Neither is a reason to stop the gate reading every `?v=` in the repository: what makes the FIRST paint right is the repository being right, and the repair only rescues the second.
+
+**Files changed:** `sw.js`, `index.html`, `shell/mvp.js`, `shell/mvp.css`, `shell/mvp.edit.css`, `shell/render.js`, `gate2.py`, `spec.md`, `sessions.md`, `log.manifest`
+
+**Tests:** all six green. `gate2.py` passes, `selftest.py` 28 of 28, `gate4.mjs` 142 of 142, `check_render.mjs` exact, `check_loud.mjs` 6 of 6, `check_alarm.mjs` 50 assertions.
+
+**Not tested:** the repair path has no harness. It needs a real browser holding a real stale page, which no check in this project can produce.
+
+**Save point:** `the page is fetched past the browser cache and the sheet repairs itself, shell 32`
+
+**Next job:** the nine alarm tests.
