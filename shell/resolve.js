@@ -150,6 +150,14 @@ function readCapture(input, task, duplicate, config) {
   const bound = input.bound_task_id
     ? (input.existing_tasks ?? []).find((t) => t.id === input.bound_task_id) ?? { title: input.bound_task_id }
     : null;
+  // EVERY STORED TASK EXCEPT THE ONE BEING EDITED. The three warnings below all
+  // ask "is there another task like this", and while editing there is always
+  // one: the record itself. `task.id` is `new_id` on every call, including an
+  // edit, so the finders' own `t.id !== task.id` guard excludes nothing and the
+  // task is compared against its own stored copy. Removing it here rather than
+  // inside the finders keeps their guard as a second line and leaves the list,
+  // search and Ideas reading the whole set, which they must.
+  const others = bound ? (input.existing_tasks ?? []).filter((t) => t.id !== bound.id) : (input.existing_tasks ?? []);
   return {
     add_button: bound ? "Edit" : "Add",
     input_field: bound ? "bound" : "unbound",
@@ -167,11 +175,11 @@ function readCapture(input, task, duplicate, config) {
     action_row: bound ? ["[Done]", "[Cancel]", "[Archive]"] : [],
     // The clash warning, alongside the duplicate one and fired the same way:
     // on Add, on save and on a push, never while typing.
-    clash_dialog: readClashDialog(readClashes(task, input.existing_tasks)),
+    clash_dialog: readClashDialog(readClashes(task, others)),
     // The second collision, and a different shape: two hard deadlines on one
     // day. A deadline occupies no slot, so `clash_dialog` can never see one, and
     // this fires whether or not either task names an hour.
-    deadline_dialog: readDeadlineDialog(readDeadlineClashes(task, input.existing_tasks), input.now),
+    deadline_dialog: readDeadlineDialog(readDeadlineClashes(task, others), input.now),
     duplicate_dialog: duplicate.duplicate_dialog,
   };
 }
@@ -565,12 +573,29 @@ function readSpan(line, config, chipSpans) {
   // `in 30 mins`, `in 2 hours`. The word `in` belongs to the expression, the way
   // `this` does in `this friday`, and not to `marker_words`: a bare `30 min` is a
   // duration and `in` is the whole of what makes it a time.
+  //
+  // TWO SPACINGS, because people write both. `in 5 mins` is three words and
+  // `in 5mins` is two, and only the first was read. This is the third time a
+  // rule has been written for one spacing of a thing people type several ways:
+  // `5.30pm` was T2 and `5 pm` was T3. The number and the unit are one token or
+  // two, and nothing else about the rule changes.
   const UNITS = { min: 1, mins: 1, minute: 1, minutes: 1, hr: 60, hrs: 60, hour: 60, hours: 60 };
-  for (let i = 0; i + 2 < lows.length + 1; i++) {
-    if (lows[i] !== "in" || !/^\d+$/.test(lows[i + 1] ?? "") || !(lows[i + 2] in UNITS)) continue;
-    span.rel = { minutes: Number(lows[i + 1]) * UNITS[lows[i + 2]] };
-    span.words.push(i, i + 1, i + 2);
-    break;
+  for (let i = 0; i < lows.length; i++) {
+    if (lows[i] !== "in") continue;
+    const next = lows[i + 1] ?? "";
+    // `in 5 mins`: the number and the unit as two words.
+    if (/^\d+$/.test(next) && (lows[i + 2] ?? "") in UNITS) {
+      span.rel = { minutes: Number(next) * UNITS[lows[i + 2]] };
+      span.words.push(i, i + 1, i + 2);
+      break;
+    }
+    // `in 5mins`: joined. The digits and the unit come out of one token.
+    const joined = /^(\d+)([a-z]+)$/.exec(next);
+    if (joined && joined[2] in UNITS) {
+      span.rel = { minutes: Number(joined[1]) * UNITS[joined[2]] };
+      span.words.push(i, i + 1);
+      break;
+    }
   }
 
   // Clock time. `5pm`, `5:30pm`, `5.30pm`, `17:00`, and `5 pm` where the meridiem
@@ -988,7 +1013,12 @@ export function resolve(input) {
   const dates = readDates(input);
   const normalised = readNormalised(dates.title);
   const compare_key = readCompareKey(normalised);
-  const duplicate = readDuplicate(normalised, compare_key, input.existing_tasks, input.config, readInstant(input.now));
+  // The same exclusion as the two dialogs, for the same reason: saving an edit
+  // used to report that the task already exists, naming itself.
+  const duplicateAgainst = input.bound_task_id
+    ? (input.existing_tasks ?? []).filter((t) => t.id !== input.bound_task_id)
+    : input.existing_tasks;
+  const duplicate = readDuplicate(normalised, compare_key, duplicateAgainst, input.config, readInstant(input.now));
   const summed = readSum(dates.title, action_verb, input.config);
   const taps = readTaps(input, derived.commitment_type);
   const nowAt = readInstant(input.now);

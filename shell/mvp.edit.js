@@ -235,7 +235,14 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
       const title = out.task.title;
       unbind();
       await reload();
-      return say(`Saved "${title}"`);
+      say(`Saved "${title}"`);
+      // AN EDIT IS FINISHED WHEN IT IS SAVED. On the narrow layout the editor is
+      // a screen you navigated to, and staying on it after a save leaves you
+      // looking at an empty capture box with the toast about a task that is no
+      // longer in front of you. In the wide layout there is nowhere to go: the
+      // list is already beside the panel, which is why `onBack` is null there.
+      if (onBack) onBack();
+      return;
     }
 
     // Both warnings are asked once. The duplicate fires on Add and nowhere

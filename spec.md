@@ -40,10 +40,10 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 ## VERSIONS
 
   example      40
-  contract     50
+  contract     51
   config       a.17
   answer_key   28
-  shell        29
+  shell        30
   gate1        signed on example 35
   gate2        signed on contract 32
   gate3        signed on shell 1
@@ -813,3 +813,8 @@ have landed. That is the price of the single table and it is accepted.
 - 17 Aug 2026 — The auto-snooze steps are NOT reported to the app; only the end of the chain is — five autos would mean five store writes and five sync round trips for one unanswered alarm, and the `armedFor` diff already protects a running chain from an app that opens mid-way — only the chain running out is a fact about the task.
 - 17 Aug 2026 — Spent autos do NOT survive a reboot; the chain restarts at five, his call — the alternative was persisting a counter whose whole purpose is to expire — the cost is that a phone rebooting during every chain never reaches the end of one, so the task never escalates, and that failure is silent.
 - 17 Aug 2026 — `check_alarm.mjs` is the sixth check, and the first thing in 110 sessions to assert an order out of `rank_key` — no key case names `cards`, `rank_key` or `decided_by`, because the key runs `resolve()` over a typed line and cards are built from `existing_tasks`, so it is a shape mismatch rather than an oversight — a third override reorders every list in the app with the other five checks green, which is the surface every defect found by running the app has been in.
+- 17 Aug 2026 — `in 5mins` parses as `in 5 mins`; the number and the unit may be one token or two — a rule written for one spacing had met a person writing another for the third time, after `5.30pm` and `5 pm` — a spacing is not a grammar, and the next rule reading a number beside a word is written for every spacing on the first pass.
+- 17 Aug 2026 — The duplicate, clash and deadline comparisons exclude `bound_task_id`, applied once at the call rather than inside the three finders — `resolve()` writes `new_id` into the record on every call including an edit, so the finders' own `t.id !== task.id` guard excluded nothing and every saved edit warned that the task duplicated itself — their guard stays as a second line, and the list, search and Ideas keep reading the whole set.
+- 17 Aug 2026 — A saved edit returns to the list on the narrow layout, and the editor header is sticky — an edit is finished when it is saved, and a Back button you have to scroll up to find is not a way out — the wide layout is untouched because its `onBack` is null by design.
+- 17 Aug 2026 — The account screen states whether the alarm shell is present and offers the permission request — a browser copy and the Android build look identical on a phone, so a silent alarm had three causes and no evidence — and it is the first caller `requestAlarmPermissions()` has had: session 111 wrote it and `isNativeShell()` and called neither, which nothing in six checks would have found.
+- 17 Aug 2026 — The `selftest.py` rule-count fixture reads the number live instead of pinning it — it reported SETUP BROKEN the moment a rule was added, which is the fifth time a fixture pinning a moving value has read as a tooling fault and hidden an untested gate — the config-object fixture two lines above it had already been written the right way.

@@ -16,6 +16,7 @@ import { canAlarm, alarmOffered, alarmAt, ringAt, readAlarmView, snoozed, unansw
 import { rankKeyFor, readCards } from "./cards.js";
 import { pushed } from "./push.js";
 import { spawn } from "./repeat.js";
+import { resolve } from "./resolve.js";
 
 let bad = 0;
 const say = (ok, what) => {
@@ -129,6 +130,46 @@ const sentence = readCards([slept, fine], config, () => "Due at 5:00pm", band, n
   .cards.find((c) => c.card_id === "slept");
 say(/rang unanswered/i.test(sentence.card_reason), "the row says why it jumped");
 say(!/rang unanswered/i.test(sentence.card_reason_short), "and mobile does not: no trailing clauses there");
+
+// The three warnings against the task being edited. Not in the answer key for
+// the same reason the ranking is not: the key hands `resolve()` a typed line and
+// these need a stored record with an id, which a typed line cannot produce.
+console.log("\nediting is not a collision with yourself");
+{
+  const stored = {
+    ...task(), id: "aaa", due_at: "2026-08-21T23:59:59+05:30", has_time: false,
+    date_firmness: "hard", date_anchor: "end", date_precision: "day",
+    alarm_type: "none", title: "file gstr", normalised: "file gstr", compare_key: "file gstr",
+    raw_text: "file gstr friday",
+  };
+  const call = (bound) => resolve({
+    typed_line: "file gstr", chip_spans: [], type_chip_tap: null, significance_tap: null,
+    duration_tap: null, firmness_tap: null, notes_text: "", bound_task_id: bound,
+    row_action: null, now: NOW, new_id: "22222222-2222-7222-8222-222222222222",
+    config, existing_tasks: [stored],
+  }).capture;
+  const editing = call("aaa");
+  say(editing.duplicate_dialog === null, "an edit is not a duplicate of itself");
+  say(editing.deadline_dialog === null, "an edit does not share its own deadline day");
+  say(editing.clash_dialog === null, "an edit does not clash with itself");
+  // The same line typed fresh MUST still warn, or the exclusion has gone too far.
+  const adding = call(null);
+  say(adding.duplicate_dialog !== null, "the same line typed fresh still warns");
+}
+
+console.log("\na length of time, spaced either way");
+{
+  const at = (line) => resolve({
+    typed_line: line, chip_spans: [], type_chip_tap: null, significance_tap: null,
+    duration_tap: null, firmness_tap: null, notes_text: "", bound_task_id: null,
+    row_action: null, now: NOW, new_id: "33333333-3333-7333-8333-333333333333",
+    config, existing_tasks: [],
+  }).task.due_at;
+  say(at("pay vendor in 5 mins") === "2026-08-17T16:05:00+05:30", "in 5 mins, three words");
+  say(at("pay vendor in 5mins") === "2026-08-17T16:05:00+05:30", "in 5mins, joined");
+  say(at("pay vendor in 2hours") === "2026-08-17T18:00:00+05:30", "in 2hours, joined");
+  say(at("pay vendor in 5 minutes") === "2026-08-17T16:05:00+05:30", "the long unit still reads");
+}
 
 console.log(`\n${bad === 0 ? "CHECK ALARM: PASS" : `CHECK ALARM: ${bad} FAILED`}\n`);
 process.exit(bad ? 1 : 0);

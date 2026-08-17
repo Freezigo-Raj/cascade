@@ -1,6 +1,6 @@
 # Cascade Part A — Contract
 
-Stage 2 deliverable, version 50. Companion to `spec/example.md`; see VERSIONS in spec.md.
+Stage 2 deliverable, version 51. Companion to `spec/example.md`; see VERSIONS in spec.md.
 
 This file says what every piece of information **is**. `spec/example.md` says what one session **was**. Where they disagree, one of them is wrong and the disagreement is a defect.
 
@@ -371,6 +371,8 @@ Every rendered string, with its template. Part 4 applies here too: these spellin
 
 **The clash warning names the collision and never the arithmetic.** `"meet supplier" is at 5pm.` No minutes, no overlap length. Duration is the engine's and the reader never sees it, which means the warning cannot state what it was computed from. That is the shape this decision produces and it is recorded rather than hidden.
 
+**All three comparisons run against every stored task EXCEPT the one being edited.** `resolve()` writes `new_id` into the record on every call, an edit included, so the finders' own "not me" test never excluded the record being replaced: saving an edit reported the task as a duplicate of itself, clashing with itself, and sharing its own deadline day. The exclusion is `bound_task_id` and it is applied once, before the three run. The list, the search and Ideas still read the whole set.
+
 **It fires where the duplicate dialog fires: on Add, on save, and on a push.** Never while typing, and never on the list. A push is included because pushing into an occupied slot is the same mistake arriving by a different door.
 
 **An alarm needs a stated time, and the toggle is drawn only when there is one.** A task due "Friday" resolves to 23:59:59, so a lead from that instant rings at a quarter to midnight, which is not a reminder about Friday. The alternative was a second rule inventing a time of day the person never gave. So the row appears with a time and disappears with it: a control that cannot work is not drawn.
@@ -456,7 +458,7 @@ Nothing here is a new field. The keys route values that already have items, whic
 
 ## Rules the answer key forced
 
-34 rules that the contract implied and never stated. Each was a case in `tests/answer_key.md` carrying a claim rather than a derivation, or a line the engine got wrong the first time it was run. `gate2.py` counts the paragraphs below and fails if this number is not one of them.
+35 rules that the contract implied and never stated. Each was a case in `tests/answer_key.md` carrying a claim rather than a derivation, or a line the engine got wrong the first time it was run. `gate2.py` counts the paragraphs below and fails if this number is not one of them.
 
 Rules about what a rendered string says live with that string, in section 4, not here: `due_phrase` and everything that decides its wording, and the clause templates for `card_reason`. Rules about the duplicate score live under Duplicate detection. This block holds the parsing rules.
 
@@ -471,6 +473,8 @@ Rules about what a rendered string says live with that string, in section 4, not
 **A word's ending is spelling, and an irregular form is vocabulary.** `replied` reaches `reply` and `submitting` reaches `submit` by rules in the engine, because those are how English spells things and not something a person configures. `paid`, `sent` and `made` reach theirs through `verb_irregulars`, because no rule reaches them and a list is the only thing that can. The lexicon held 52 tokens for 18 verbs before this, a third of them endings added by hand after someone typed one, which is a list that can never be finished. `verb_phrase` keeps the word as typed whichever form matched.
 
 **A verb can be two words.** `follow up` is looked up before either word alone. One token at a time could not express it, which is why the entry could not exist until now.
+
+**`in 5 mins` and `in 5mins` are the same expression.** The number and the unit are one token or two, and only the two-token form was read. Third time a rule written for one spacing met a person writing another: `5.30pm` and `5 pm` were the first two, and the lesson is that a spacing is not a grammar.
 
 **A weak, start or point marker counts only when the date starts right after it.** `submit by friday` is a deadline; `pay by cheque` is how the payment is made, and both recorded `by` before this. In `pay by cheque friday` the date is Friday, `by` stays in `title`, and nothing is hard. Words the expression carries in front of itself, `next` and `this` and `on`, are part of the date, so `by next friday` counts. A strong marker is exempt and has to be: `GST filing deadline` carries no date and is still hard.
 

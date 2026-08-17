@@ -246,7 +246,7 @@ Three tiers. A tier is reached only when the one above ties.
 | 5 | `commitment_type` | appointment, deadline, action, maintenance, habit, purchase, decision, research, project, information, waiting, goal, wish, idea |
 | 6 | `est_duration_min` | shortest first |
 | 7 | `workflow_position` | zero until Part C |
-| 8 | `reminder_fatigue` | zero until Part B |
+| 8 | `reminder_fatigue` | most unanswered alarms first |
 | 9 | `updated_at` | most recently touched first |
 
 A hard deadline beats being overdue. That is deliberate: a hard deadline is a promise made to someone else.
@@ -274,11 +274,17 @@ A task at Normal significance says nothing about significance.
 
 ## The alarm
 
-Part A records the alarm and fires nothing: a browser cannot wake itself, so the scheduler belongs to Part B. What is decided here is what it says and when.
+The web app records the alarm and derives when. The Android shell rings it. A web page cannot wake a phone, loop a sound through Do Not Disturb or draw over a lock screen, so ringing lives in the shell and nowhere else.
 
 It fires at the due time less the lead. The lead is read three ways in order: the task's own, then the suggested one for its type, then the default. All fifteen minutes today, so every task leads by fifteen until a number is moved.
 
-**An alarm needs a stated time.** A task due `Friday` resolves to 23:59:59, so a lead from it would ring at a quarter to midnight.
+**An alarm needs a stated time.** A task due `Friday` resolves to 23:59:59, so a lead from it would ring at a quarter to midnight. The toggle is drawn only while the line carries a time, and one sentence replaces it when there is none.
+
+**On the lock screen:** the title, the mobile sentence, `Done`, and one button per `alarm_snooze_options` member. No `Push`: choosing a push target reads the day's load off every other task, so it needs the app and therefore an unlock.
+
+**Unattended** it rings two minutes, snoozes itself five, and repeats up to five times. Then it stops, `alarm_unanswered_at` is written, and the task rises to the top under `pinned` and `is_hard` with `Its alarm rang unanswered` on the row.
+
+**The account screen states whether anything can ring.** Two installs look identical on a phone and only the Android one carries the plugin.
 
 ```
 file gstr1
@@ -300,8 +306,8 @@ The same list the account screen draws. `decided` means it was chosen against an
 
 | Thing | Why it does not work | Owner |
 |---|---|---|
-| Alarms ring | Recorded and never fired. A browser cannot wake itself | Part B |
-| Reminder timing | Lead, repeat interval and the notification budget are set and read by nothing | Part B |
+| Alarms in the browser | A web page cannot wake a phone, sound through DND, or draw over a lock screen. The Android build rings; this copy records and stays quiet | decided |
+| Notification budget | A cap on how many reminders an hour, with lower-weight ones pushed back. Nothing counts them | Part B |
 | Workflow | Decided in full — dependencies, and/or, if/else, bounded loops, conditions — and no column exists | Part C |
 | Projects | `project_id` is on every record and nothing writes it | Part C |
 | Cancel and Archive | `row_action` members with no control anywhere. A row carries Pin, Delete and its push targets | decided |

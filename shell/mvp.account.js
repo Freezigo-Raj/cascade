@@ -45,7 +45,7 @@ const open = (t) => t.task_state === "ready" && !t.archived;
  * and the second one is the only one worth chasing.
  */
 const NOT_BUILT = [
-  ["Alarms ring", "Every alarm is recorded and nothing fires. A browser cannot wake itself, so the scheduler is Part B.", "Part B"],
+  ["Alarms in the browser", "A web page cannot wake a phone, loop a sound through Do Not Disturb, or draw over a lock screen. The Android build rings; this copy records the alarm and stays quiet. Not a gap: a decision about where ringing lives.", "decided"],
   ["Reminder timing", "Lead times, repeats and the notification budget are set and read by nothing yet.", "Part B"],
   ["Workflow", "One task activating the next. Decided in full — dependencies, and/or, if/else, bounded loops — and no column exists yet.", "Part C"],
   ["Projects", "`project_id` is on every record and nothing writes it. No grouping screen.", "Part C"],
@@ -124,7 +124,7 @@ export function mountAccount(root, { onBack, onSignedOut } = {}) {
     out.appendChild(el("div", "label", "Your data"));
     out.appendChild(button("act", "Export tasks (JSON)", exportAll));
     out.appendChild(el("div", "said",
-      "Every task as it is stored, in one file. Alarms are recorded and ring nothing until Part B."));
+      "Every task as it is stored, in one file."));
     root.appendChild(out);
 
     // What is running. `shell` is the number `index.html` loads the stylesheet
@@ -144,6 +144,52 @@ export function mountAccount(root, { onBack, onSignedOut } = {}) {
     build.appendChild(el("div", "said",
       "If the app looks like the last version, this number is how you tell. A phone can hold on to an old copy; closing the app fully and opening it again fetches this one."));
     root.appendChild(build);
+
+    // WHETHER ANYTHING CAN RING, and it says so rather than being inferred. Two
+    // installs of this app look identical on a phone: the browser's own home
+    // screen shortcut and the Android APK. Only the second carries the alarm
+    // plugin, and until this block existed a silent alarm had three possible
+    // causes and no way to tell them apart. A permission is asked for here, on a
+    // press, and not at launch: a prompt with no reason attached gets refused.
+    const ring = el("div", "group");
+    ring.appendChild(el("div", "label", "Alarms"));
+    const shellRow = el("div", "stat");
+    shellRow.appendChild(el("span", "stat-label", "Alarm shell"));
+    const shellVal = el("span", "stat-value", "checking");
+    shellRow.appendChild(shellVal);
+    ring.appendChild(shellRow);
+    const said = el("div", "said", "");
+    ring.appendChild(said);
+    root.appendChild(ring);
+
+    (async () => {
+      try {
+        const bridge = await import(`./alarm.bridge.js${v}`);
+        if (!bridge.isNativeShell()) {
+          shellVal.textContent = "not present";
+          said.textContent = "This is the browser copy, so nothing can ring: a web page cannot wake a phone, sound through Do Not Disturb, or draw over a lock screen. Install the Android build to get alarms. Everything else works here.";
+          return;
+        }
+        const p = await bridge.alarmPermissionStatus();
+        shellVal.textContent = "present";
+        if (!p.needed) {
+          said.textContent = "Alarms can ring. Exact timing and battery exemption are both granted.";
+          return;
+        }
+        said.textContent = "The shell is here, but Android has not granted everything it needs."
+          + (p.exactAlarm ? "" : " Exact alarm timing is off.")
+          + (p.batteryExempt ? "" : " The app is battery-restricted, which can delay a ring.");
+        ring.appendChild(button("act", "Grant alarm permissions", async () => {
+          // Two system screens, one after the other. Neither can be granted
+          // inside the app, and this is the only thing that opens them.
+          await bridge.requestAlarmPermissions();
+          said.textContent = "Come back to this screen to see what Android granted.";
+        }));
+      } catch (e) {
+        shellVal.textContent = "unknown";
+        said.textContent = "The alarm module did not load: " + (e?.message ?? e);
+      }
+    })();
 
     const later = el("div", "group");
     later.appendChild(el("div", "label", "Not built yet"));

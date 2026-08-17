@@ -72,8 +72,12 @@ CASES=[
   "Reply to bharti singhal   due today \u00b7 reply \u00b7  5m", "Reply to bharti singhal   due today \u00b7 message \u00b7  5m"),
  ("stale count in spec", 'spec.md',
   _live('spec.md', r'the \d+ config objects'), "the 21 config objects"),
+ # Read live, like the config-object count two lines up. Pinning the number
+ # meant the fixture reported SETUP BROKEN the first time a rule was added,
+ # which reads as a tooling fault and hides a gate nobody is testing. Fifth time.
  ("stale rule count in contract", 'contract.md',
-  "34 rules that the contract implied", "7 rules that the contract implied"),
+  _live('contract.md', r'\d+ rules that the contract implied'),
+  "7 rules that the contract implied"),
  # Anchored on the heading alone. Naming an entry underneath it meant the
  # fixture broke every time one was prepended, which reads as a missed defect.
  ("version below the decision log", 'spec.md',

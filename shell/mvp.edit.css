@@ -10,11 +10,11 @@
  * that reason and for no other.
  */
 
-@import url("./mvp.css?v=29");
-@import url("./mvp.account.css?v=29");
-@import url("./mvp.wide.css?v=29");
-@import url("./mvp.chrome.css?v=29");
-@import url("./mvp.web.css?v=29");
+@import url("./mvp.css?v=30");
+@import url("./mvp.account.css?v=30");
+@import url("./mvp.wide.css?v=30");
+@import url("./mvp.chrome.css?v=30");
+@import url("./mvp.web.css?v=30");
 
 /* ------------------------------------------------------------ screen 2
  *
@@ -27,12 +27,21 @@
  * read at arm's length. Nothing here is coloured for emphasis.
  */
 
+/* STICKY, because Back is in here and the advanced panel is taller than a
+   phone. With the panel open the header scrolled away, so the only way off the
+   screen was to scroll back up to find it, and a way out you have to look for
+   is not a way out. The background is opaque so rows do not show through it. */
 .head {
   display: flex;
   align-items: center;
   gap: calc(var(--step) * 4);
   margin-bottom: calc(var(--step) * 4);
   min-height: 24px;
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--sheet);
+  padding: calc(var(--step) * 2) 0;
 }
 
 .bound {

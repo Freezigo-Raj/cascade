@@ -2552,3 +2552,28 @@ Colour meant one thing and now means three. Accent is pressable, `#c0492b` is ov
 **Save point:** `alarm integrated, six checks green, nothing run on a device`
 
 **Next job:** build the Capacitor shell and run the nine alarm tests against this build.
+
+---
+## Session 112 — 17 August 2026
+
+**Job: four defects he found by running build 29 on the phone, and the one thing that was stopping the alarm from being diagnosed at all.**
+
+**`in 5mins` did not parse, and `in 5 mins` did.** The rule wanted three tokens: `in`, digits, a unit. A joined `5mins` is two. Fixed by reading the number and the unit out of one token as well as two. THIRD TIME a rule written for one spacing met a person writing another: `5.30pm` was T2 and `5 pm` was T3, and both were the same shape of mistake. A spacing is not a grammar. Whatever rule comes next that reads a number beside a word should be written for every spacing on the first pass.
+
+**Saving an edit warned that the task duplicated itself, clashed with itself, and shared its own deadline day.** ONE root cause under three symptoms. `resolve()` writes `new_id` into the record on every call, an edit included, and all three finders exclude by `t.id !== task.id`, so the guard compared a fresh id against a stored one and excluded nothing. The exclusion is `bound_task_id` and it is applied once, in `readCapture` and at the `readDuplicate` call, rather than inside the three finders: their own guard stays as a second line, and the list, the search and Ideas keep reading the whole set, which they must. The check proves both directions, because an exclusion that goes too far is the same defect facing the other way: the same line typed fresh must still warn.
+
+**The header is sticky and a saved edit returns to the list.** He reported no way back after editing. Back is drawn on the narrow layout and survives every repaint, so there were two candidates and no way to tell them apart from here: the header scrolling out of reach once the advanced panel is open, and a saved edit leaving the screen with nothing further to do on it. Both are answered without knowing which he hit. An edit is finished when it is saved, and the wide layout is unaffected because its `onBack` is null by design.
+
+**THE ACCOUNT SCREEN NOW SAYS WHETHER ANYTHING CAN RING, and this is the one that mattered.** Two installs of this app look identical on a phone: the browser's home-screen copy and the Android APK. Only the second carries the plugin. He had three icons and a silent alarm, and there was no way to tell which app was running or whether Android had granted anything, so a silent alarm had three possible causes and no evidence. The block reads `present` or `not present`, says why a browser copy cannot ring, and where the shell is present but a permission is missing it offers the button that opens the two system screens. THAT BUTTON IS THE FIRST CALLER `requestAlarmPermissions()` HAS EVER HAD: I wrote it and `isNativeShell()` into the bridge in session 111 and called neither from anywhere, then told him the app would prompt him. It never could. A function with no caller is not a feature, and nothing in six checks looks for one.
+
+**`selftest.py` reported SETUP BROKEN rather than a miss, for the fifth time.** The fixture pinned "34 rules" and the contract now states 35. It reads the number live now, the way the config-object fixture two lines above it already did. A fixture that pins a moving value reads as a tooling fault and hides an untested gate.
+
+**Files changed:** `shell/resolve.js`, `shell/mvp.edit.js`, `shell/mvp.edit.css`, `shell/mvp.account.js`, `shell/mvp.css`, `shell/render.js`, `shell/check_alarm.mjs`, `selftest.py`, `index.html`, `contract.md`, `MVP.md`, `spec.md`, `sessions.md`, `log.manifest`
+
+**Tests:** all six green. `gate2.py` passes. `selftest.py` catches 28 of 28. `gate4.mjs` runs 142 of 144 and every one agrees. `check_render.mjs` exact. `check_loud.mjs` 6 of 6. `check_alarm.mjs` now 46 assertions, adding the three self-comparison cases, the still-warns-when-fresh case, and four spacings of a length of time.
+
+**Not tested:** nothing has rung on a device yet. The account screen is what will say why.
+
+**Save point:** `four field defects fixed, the app now states whether it can ring`
+
+**Next job:** read the Alarms block on the account screen, then the nine alarm tests.
