@@ -18,6 +18,11 @@ const BIN_PATH = "M3 4h10M6.5 4V2.5h3V4M4.5 4l.7 9a1 1 0 001 .9h3.6a1 1 0 001-.9
 function glyph(path, filled) {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.setAttribute("viewBox", "0 0 16 16");
+  // Sized here as well as in the stylesheet: an SVG with no stated size is
+  // 300×150 by default, and one stylesheet arriving late once is all it takes
+  // for two of those to shove a row around.
+  svg.setAttribute("width", "16");
+  svg.setAttribute("height", "16");
   svg.setAttribute("aria-hidden", "true");
   const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
   p.setAttribute("d", path);

@@ -43,7 +43,7 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
   contract     52
   config       a.18
   answer_key   28
-  shell        35
+  shell        36
   gate1        signed on example 35
   gate2        signed on contract 32
   gate3        signed on shell 1
@@ -79,56 +79,35 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 
 ## THIS SESSION'S JOB
 
-Ten field reports from build 34 on the phone, in one pass: the load, the reach, the readings, and two
-questions answered in writing.
+Build 35's first five screenshots, and one instruction: the scroll goes down, not across.
 
-**THE LOAD TIME WAS TWO DECISIONS STACKED, and neither was wrong when it was made.** `index.html`
-imported `mvp.js` under `?v=${Date.now()}`, so every launch was a set of URLs the browser had never
-seen and the whole module graph came off the network cold — including `lemma.js`, which at 3.6 MB is
-nine tenths of the graph and was statically imported in front of the first paint. The clock query was
-the right answer while the document itself could go stale; session 115 fixed that, and a fresh document
-naming a versioned URL is exactly the stylesheet rule in the other file type. So the query is
-`?v=<SHELL_VERSION>` now, `gate2.py` holds it there, and `sw.js` serves any URL that states a version
-from the cache — a new version is a new address, so the stale-copy trap cannot reach it. The model
-loads BEHIND the app: the chain reads it last and can only add, so before it arrives a verb resolves
-through the lexicon, the irregulars and the spelling, exactly as it did the day the model shipped. The
-stated cost: a line typed in the first second or two may miss a lemma-only verb; the next keystroke has
-it. Runners await `lemmaReady`, because a check must not race a download. A leftover `console.log` in
-`resolve()` that ran on every keystroke also left.
+**THE SIDEWAYS STRIPS BROKE THE ROW, and the mechanism is worth writing down.** A row is a grid of
+`tick | body | nudges`, and the nudges track is `auto`, which sizes to the item's INTRINSIC width. A
+sideways nowrap strip of five buttons has an intrinsic width of all five buttons — `overflow-x` hides
+the excess but does not shrink the wish, and a percentage `max-width` is ignored while the track is
+being sized. So the track ate the row, the title column collapsed to a few letters, and the pin and
+bin stacked in the sliver left over. The capture screen failed the same way one layer down: nowrap
+chips shrank their PICKER WRAPPERS until `Pick date` sat on `Pick time`. Both strips are vertical now,
+which was his instruction and is also what the geometry wants — a column's intrinsic width is one
+label, which is what the track was designed around. The push ladder is a column capped at two and a
+half rungs; the date chip row wraps as chips do everywhere else, capped at two rows and a hint of the
+third. Neither draws a scrollbar; the half-cut rung and the half-cut row are the affordance, and the
+first rung is always in view.
 
-**THE ACCOUNT SCREEN WAS ASKING A SESSION-113 PLUGIN SESSION-117 QUESTIONS.** The two halves of this
-app update at different speeds by design — the web half arrives on every open, the Kotlin only when the
-APK is rebuilt — and nothing measured the gap. An absent reading was drawn as `off` and a press called
-a method that did not exist and failed without a sound: both reported symptoms, one cause. The plugin
-now states its build (`version()`, build 2), the bridge states the build it was written against, and
-the account screen draws the difference as a loud sentence naming the fix (rebuild the APK). A reading
-the plugin cannot give says `unknown`, which is true, rather than `off`, which was a guess dressed as a
-reading. The Kotlin also gained the settings fallback for a notification prompt Android will no longer
-show: refused twice, the runtime prompt never appears again and the old code drew nothing.
+**A scrolled screen slid back under the clock.** Session 119's `env()` padding positions only the
+unscrolled page — padding scrolls away with the content it wraps, which the account screen showed
+mid-scroll. A fixed, paper-coloured, touch-inert strip exactly the inset's height now sits over the
+top edge; scrolled content passes behind it and the status bar always sits on paper. 0px tall in an
+ordinary browser tab.
 
-**Reach and touch, five small ones.** A 60px `+` floats bottom-right on the narrow layout — the bar's
-`+` sits where a thumb cannot go, and this is the most-pressed control in the app; the wide layouts
-hide it because the capture box is already on screen. The page carries the phone's own insets
-(`env(safe-area-inset-*)`), so the header no longer sits under the status bar, and the sticky editor
-header offsets by the same inset or it would slide back under on the first scroll. The platform's blue
-tap flash is off and buttons are not selectable text. The push targets became STANDARD LADDERS of four
-or five per precision on a sideways strip that scrolls and draws no scrollbar — the rules under them
-are unchanged (offsets from the task's own date, load still drops full days, overdue still comes back
-to today). The date chip row is the same kind of strip and gained five standard times (`time_suggestions`, a new
-config object): each types its label, the dial stays for everything else, and the two pickers wear the
-accent — pressable is what accent already means, so no new colour was spent.
+**The glyphs state their size in attributes as well as in CSS.** An SVG with no stated size is 300×150
+by default, and one stylesheet arriving late once is all it takes for two of those to shove a row
+around.
 
-**The two questions he asked for thinking on, answered as decisions.** `Workflow` LEFT the row: MVP.md
-has said since session 104 that a row carries Pin, Delete, the Done circle and its push targets, so the
-fifth control contradicted the written rule, and a dead word on every row is a heavier price than the
-WIP entries that remain in the rail and the detail panel. And a row's sentence is NOT drawn when it
-only repeats the heading above it — thirty rows reading `Due today` under a tab called Today was the
-slot's own name said back. The test is exact equality with `Due <slot>` and nothing looser: a time, a
-hedge, an overdue, a window all keep the sentence, so a task spanning days still says its span. Both
-are screen decisions; the engine and the key are untouched.
-
-**Pin and Delete are glyphs now** — a pin that fills when pinned, a bin — with their words kept for
-screen readers and hovers. The words were the widest thing on the row and said what the shapes say.
+**And the screenshots confirmed the session-119 diagnostics working as written**: the header reads the
+new build, the account screen names the APK's Kotlin as build 1 against an expected 2 and says to
+rebuild, the switches the old shell cannot read say `unknown` rather than `off`, and the two it can
+read say `on`. The rebuild instruction stands; nothing in this session changes the Kotlin.
 
 ## NEXT THREE JOBS
 
@@ -844,3 +823,8 @@ have landed. That is the price of the single table and it is accepted.
 - 18 Aug 2026 — A row's sentence is not drawn when it exactly equals `Due <slot>` for the slot it sits under — thirty rows reading `Due today` under a tab called Today was the heading said back, and the sentence exists to add — a time, a hedge, an overdue, a window all differ from the slot's name and keep the sentence, so a task spanning days still states its span; screen decision, engine and key untouched.
 - 18 Aug 2026 — Pin and Delete are drawn glyphs with their words kept for screen readers and hovers — the words were the widest thing on the row and said what the shapes say — the pin fills when pinned, so the state is readable without a word.
 - 18 Aug 2026 — The `console.log` in `resolve()` is deleted — it ran on every keystroke and wrote the typed line to the console, which is both noise and a line of a person's task in a log nobody asked for — nothing.
+- 18 Aug 2026 — **Reverses** two entries from earlier today, quoted as Part 11 requires. The first read: *"The push targets are standard ladders of four or five per precision on a sideways strip that scrolls and draws no scrollbar."* The second read, in part: *"the date row is a sideways strip now so five chips cost no height."* Both superseded on his instruction — *"The scroll should be vertical, not horizontal"* — after build 35 on the phone showed the mechanism: a sideways nowrap strip has the intrinsic width of everything in it, the row's `auto` grid track sizes to intrinsic width with percentage `max-width` ignored, so the track ate the row, the title collapsed and the glyphs stacked; on the capture screen nowrap shrank the picker wrappers until `Pick date` overlapped `Pick time`. The ladders and the time chips themselves stand; only the axis moves.
+- 18 Aug 2026 — The push ladder is a column capped at 70px, about two and a half rungs, scrolling vertically with no scrollbar drawn — a column's intrinsic width is one label, which is what the row's grid track was designed around, and the cap holds the row to its old height whatever the ladder's length — the half-cut third rung is the scroll affordance, and the first rung is always in view.
+- 18 Aug 2026 — The date chip row wraps as chips do everywhere else and is capped at 96px, two rows and a hint of the third, scrolling vertically — wrap is the one flex arrangement whose intrinsic width is a single chip, so nothing upstream is shoved — the tick chip stays first and visible.
+- 18 Aug 2026 — A fixed, paper-coloured, touch-inert strip exactly `env(safe-area-inset-top)` tall sits over the top edge of the page — the session-119 body padding positions only the unscrolled page, since padding scrolls away with the content it wraps, and the account screen mid-scroll slid its text back under the clock — 0px tall in an ordinary browser tab, so it costs nothing there.
+- 18 Aug 2026 — The row glyphs state `width` and `height` attributes as well as carrying the stylesheet rule — an SVG with no stated size is 300×150 by default, and a stylesheet arriving late once is all it takes for two of those to shove a row around — the attribute is the floor, the stylesheet stays the source of the number.

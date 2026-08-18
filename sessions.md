@@ -2740,3 +2740,28 @@ Colour meant one thing and now means three. Accent is pressable, `#c0492b` is ov
 **Save point:** `launches come off the cache, the model loads behind the app, and the APK states its age`
 
 **Next job:** rebuild the APK, then the nine alarm tests.
+
+---
+## Session 120 — 18 August 2026
+
+**Job: build 35's first five screenshots, and one instruction — the scroll goes down, not across.**
+
+**THE SIDEWAYS STRIPS BROKE THE ROW.** A row is `tick | body | nudges` on a grid, and the nudges track is `auto`, which sizes to INTRINSIC width. A sideways nowrap strip of five buttons has the intrinsic width of all five — `overflow-x` hides the excess but does not shrink the wish, and a percentage `max-width` is ignored during track sizing. So the track ate the row, the title collapsed to a few letters, and the pin and bin stacked in the sliver left over. The capture screen failed the same way one layer down: nowrap chips shrank their picker wrappers until `Pick date` sat on `Pick time`. Both strips are vertical now — his instruction, and also what the geometry wants, since a column's intrinsic width is one label. The push ladder is a column capped at 70px (two and a half rungs); the date chip row wraps as chips do everywhere else, capped at 96px (two rows and a hint of the third). No scrollbars drawn; the half-cut rung/row is the affordance; first rung always in view.
+
+**A scrolled screen slid back under the clock.** The env() padding positions only the unscrolled page — padding scrolls away with the content it wraps. A fixed, paper-coloured, touch-inert strip exactly the inset's height sits over the top edge now; scrolled content passes behind it. 0px in a browser tab.
+
+**The glyphs state width/height attributes as well as the CSS rule** — an unsized SVG is 300×150 by default, and one late stylesheet is all it takes.
+
+**The screenshots also confirmed session 119's diagnostics working**: header reads the build, the account screen names the APK's Kotlin as build 1 against expected 2 with the rebuild sentence, unreadable switches say `unknown`, readable ones say `on`. The APK rebuild instruction stands; no Kotlin changed this session.
+
+**Files changed:** `index.html`, `shell/render.js`, `shell/mvp.css`, `shell/mvp.edit.css`, `shell/mvp.row.js`, `MVP.md`, `spec.md`, `sessions.md`, `log.manifest`
+
+**Versions:** shell 36. Everything else unchanged: example 41, contract 52, config a.18, answer_key 28. No schema change, no migration, no Kotlin change.
+
+**Tests:** all six green. gate2 PASS (sealed at 447), selftest 28/28, gate4 142/142, check_render exact, check_loud 6/6, check_alarm PASS. Layout is the one thing these cannot see; the fix is geometry reasoned in writing and needs the phone.
+
+**Not tested:** the vertical scrollers, the capped heights and the scrim need the phone. The permission rows still wait on the APK rebuild.
+
+**Save point:** `the strips scroll down, the row got its width back, the clock sits on paper`
+
+**Next job:** rebuild the APK, then the nine alarm tests.

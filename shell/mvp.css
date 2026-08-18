@@ -46,7 +46,7 @@
      serving an old stylesheet has now cost three sessions of guessing at what
      had and had not arrived. A number that can be read is worth more than a
      number that has to be trusted. */
-  --css-version: 35;
+  --css-version: 36;
 
   --step: 4px;
   --r-card: 18px;
@@ -68,6 +68,23 @@ body {
   padding-bottom: env(safe-area-inset-bottom, 0px);
   padding-left: env(safe-area-inset-left, 0px);
   padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* The padding above only positions the UNSCROLLED page: padding scrolls away
+   with the content it wraps, so a scrolled screen slid its text back under the
+   clock (session 120). This strip is fixed, paper-coloured, exactly the
+   inset's height, and inert to touch — scrolled content passes behind it and
+   the status bar always sits on paper. 0px tall in an ordinary browser tab. */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-top, 0px);
+  background: var(--paper);
+  z-index: 60;
+  pointer-events: none;
 }
 
 /* A press is answered by this stylesheet — the hover and pressed states — not
@@ -350,19 +367,23 @@ html, body {
 
 /* The push targets, on the right, where the design puts its nudges. The labels
    are the engine's own — a band pushes to a band — and not a fixed `+3d`. */
-/* A SIDEWAYS STRIP now (session 119): the targets became a standard ladder of
-   four or five and a column of five would be taller than the row it serves.
-   The strip scrolls, the scrollbar is not drawn, and the first rung is always
-   in view — which keeps the most likely press where it always was. */
+/* A COLUMN THAT SCROLLS, capped at two and a half rungs (session 120, his
+   call, and the geometry agrees). Session 119 laid the ladder sideways, and a
+   sideways nowrap strip has an enormous intrinsic width — which is exactly what
+   the row's `auto` grid track sizes to, `max-width` notwithstanding, so the
+   track ate the row, the title collapsed to a few letters and the icons
+   stacked in the sliver left over. A column's intrinsic width is one label,
+   which is what the track was designed around. The cap holds the row to its
+   old height whatever the ladder's length, the half-cut third rung is the
+   scroll affordance since the scrollbar is not drawn, and the first rung is
+   always in view — the most likely press stays where it always was. */
 .nudges {
   display: flex;
-  flex-direction: row;
-  align-items: flex-start;
+  flex-direction: column;
   gap: 5px;
-  flex-shrink: 1;
-  min-width: 0;
-  max-width: 40%;
-  overflow-x: auto;
+  flex-shrink: 0;
+  max-height: 70px;
+  overflow-y: auto;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
 }

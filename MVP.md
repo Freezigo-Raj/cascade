@@ -80,7 +80,7 @@ Today  ·  Tomorrow  ·  Upcoming
 | Done | one per row | The task moves to the Done tab |
 | Pin | one per row | A pin glyph, filled while pinned; the word stays for screen readers. Pinned tasks sort above everything |
 | Delete | one per row | A bin glyph; the word stays for screen readers. The row goes for real. One step of undo holds the only copy |
-| Push | 4 or 5 per row | Moves the date without opening the task. Each says only where it lands. A sideways strip that scrolls |
+| Push | 4 or 5 per row | Moves the date without opening the task. Each says only where it lands. A column that scrolls vertically, capped at two and a half rungs |
 | Undone | one per Done row | Brings the task back |
 | `+` | 2 | Opens screen 2 empty. One in the bar; one floats 60px at the bottom right on the narrow layout (session 119), where a thumb is. The wide layouts hide the float because the capture box is already on screen |
 
@@ -123,7 +123,7 @@ call kushan          Due Friday.
    [Done] [Pin] [Delete]   ⇢ Next week   ⇢ +2 weeks
 ```
 
-The targets are a standard ladder per precision (session 119), on a sideways strip that scrolls and draws no scrollbar; the first rung is always in view.
+The targets are a standard ladder per precision (session 119), in a column that scrolls vertically (session 120), capped at two and a half rungs so the row keeps its height; no scrollbar is drawn, the half-cut rung is the affordance, and the first rung is always in view.
 
 | The task says | Targets |
 |---|---|
@@ -167,7 +167,7 @@ The box is at the top. The tap buttons are with it. The matching tasks are below
 | Weekend | 1 | Same |
 | Pick date | 1 | A date picker. Writes its date into the box, with the year only when it is not this year |
 | Pick time | 1 | A time picker. Writes the time beside the date |
-| Time chips | 5 | `9am` `12pm` `3pm` `6pm` `9pm`, after the pickers (session 119). Each types its label; the dial stays for every other time. The whole date row is a sideways strip that scrolls |
+| Time chips | 5 | `9am` `12pm` `3pm` `6pm` `9pm`, after the pickers (session 119). Each types its label; the dial stays for every other time. The date row wraps and scrolls vertically, capped at two rows and a hint of the third (session 120) |
 | `✓ <date>` | 1 | The date the engine read. Tapping it removes those words from the box |
 | Type chips | 3 + 1 | The engine's guess, marked, beside `deadline`, `action`, `appointment`. A small button opens the advanced panel |
 | Advanced | 1 | Opens a panel on the same screen. Everything that corrects what the typing already said, in one place |
