@@ -179,24 +179,48 @@ export function mountAccount(root, { onBack, onSignedOut } = {}) {
         // way to learn what Android granted is to ask it again.
         const draw = async () => {
           for (const dead of [...ring.querySelectorAll("[data-perm]")]) dead.remove();
+          // TWO BUILDS IN ONE APP (session 119). The web half updates itself on
+          // every open; the Kotlin half only changes when the APK is rebuilt.
+          // When the plugin is older than this screen, its readings are not
+          // wrong — they are absent, and every row used to dress that absence
+          // as `off` while every button called a method that was not there and
+          // failed silently. The difference is now the first thing said.
+          const shellBuild = await bridge.alarmShellVersion();
+          const stale = shellBuild < bridge.ALARM_SHELL_EXPECTED;
+          if (stale) {
+            const loud = el("div", "said",
+              `The alarm shell inside this APK is build ${shellBuild} and the app expects build ${bridge.ALARM_SHELL_EXPECTED}. ` +
+              "The web half updates itself; the Kotlin half cannot. Rebuild and reinstall the APK, then come back here. " +
+              "A row reading `unknown` below is a switch this old shell cannot read.");
+            loud.dataset.perm = "stale";
+            ring.appendChild(loud);
+          }
           const p = await bridge.alarmPermissionStatus();
           said.textContent = p.needed
             ? "Each of these is a switch Android holds and the app cannot set. What is missing is listed below."
-            : "Alarms can ring, on the lock screen, on time.";
+            : stale ? "" : "Alarms can ring, on the lock screen, on time.";
           for (const x of bridge.PERMISSIONS) {
+            const known = typeof p[x.key] === "boolean";
             const row = el("div", "stat");
             row.dataset.perm = x.key;
             row.appendChild(el("span", "stat-label", x.label));
-            row.appendChild(el("span", "stat-value", p[x.key] ? "on" : "off"));
+            row.appendChild(el("span", "stat-value", known ? (p[x.key] ? "on" : "off") : "unknown"));
             ring.appendChild(row);
-            if (p[x.key]) continue;
+            if (p[x.key] !== false) continue;
             // The reason sits with the switch rather than in a paragraph above
             // it: a person reading a row wants to know what THIS one costs.
             const note = el("div", "said", x.why);
             note.dataset.perm = x.key;
             ring.appendChild(note);
             const go = button("act", `Turn on ${x.label.toLowerCase()}`, async () => {
-              await bridge.requestAlarmPermission(x.key);
+              const opened = await bridge.requestAlarmPermission(x.key);
+              // A press that cannot work says so, once, where it was pressed.
+              if (!opened) {
+                const why = el("div", "said",
+                  "This APK is too old to open that screen. Rebuild and reinstall it.");
+                why.dataset.perm = x.key;
+                go.after(why);
+              }
             });
             go.dataset.perm = x.key;
             ring.appendChild(go);

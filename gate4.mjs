@@ -31,7 +31,10 @@ const verbose = argv.includes("--verbose");
 // --placeholder runs the current key against the frozen Stage 3 file under the
 // Stage 4 reading, which is how a key edit is checked once the engine has rules.
 const placeholder = argv.includes("--placeholder");
-const { resolve } = await import(placeholder ? "./shell/resolve.stage3.js" : "./shell/resolve.js");
+const _engine = await import(placeholder ? "./shell/resolve.stage3.js" : "./shell/resolve.js");
+const { resolve } = _engine;
+// The model loads behind the app; a runner is the one caller that must not race it.
+if (_engine.lemmaReady) await _engine.lemmaReady;
 
 // A fixed input, not an answer. Any UUID v7 would do.
 const NEW_ID = "019876e2-0000-7000-8000-000000000000";

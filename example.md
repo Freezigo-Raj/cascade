@@ -1,6 +1,6 @@
 # spec/example.md — Cascade Part A
 
-Stage 1 deliverable, version 40. Written by hand. No code anywhere in this file.
+Stage 1 deliverable, version 41. Written by hand. No code anywhere in this file.
 Scope: **Part A only.** Parts B, C and D each get their own example at their turn.
 
 ---
@@ -230,7 +230,7 @@ One task. Every field, every origin. **This is the Gate 1 table.**
 | `task_state` | `ready` | Rule: capture succeeded, no gates. Members: `ready`, `done`, `cancelled`. |
 | `pinned` | `false` | Default |
 | `project_id` | *(none)* | Default. Manual only, Part C. |
-| `config_version` | `a.17` | System. The config in force at capture. Records are written to storage now, so the stamp is evidence again and the deviation that let it lag has expired. |
+| `config_version` | `a.18` | System. The config in force at capture. Records are written to storage now, so the stamp is evidence again and the deviation that let it lag has expired. |
 | `created_at` | `2026-08-03T10:40:00+05:30` | Clock, handed in |
 | `updated_at` | `2026-08-03T10:40:00+05:30` | Clock. Equal to `created_at` until the first change. |
 | `archived` | `false` | Default |

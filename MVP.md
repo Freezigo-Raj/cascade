@@ -78,11 +78,11 @@ Today  ·  Tomorrow  ·  Upcoming
 | Search box | 1 | Filters the tab you are on, in place |
 | Task row | one per task | Tapping the row opens screen 2 with that task loaded |
 | Done | one per row | The task moves to the Done tab |
-| Pin | one per row | Pinned tasks sort above everything |
-| Delete | one per row | The row goes for real. One step of undo holds the only copy |
-| Push | 2 or 3 per row | Moves the date without opening the task. Each says only where it lands |
+| Pin | one per row | A pin glyph, filled while pinned; the word stays for screen readers. Pinned tasks sort above everything |
+| Delete | one per row | A bin glyph; the word stays for screen readers. The row goes for real. One step of undo holds the only copy |
+| Push | 4 or 5 per row | Moves the date without opening the task. Each says only where it lands. A sideways strip that scrolls |
 | Undone | one per Done row | Brings the task back |
-| `+` | 1 | Opens screen 2 empty |
+| `+` | 2 | Opens screen 2 empty. One in the bar; one floats 60px at the bottom right on the narrow layout (session 119), where a thumb is. The wide layouts hide the float because the capture box is already on screen |
 
 **A row is a title and a sentence.** No badge, no verb, no minutes.
 
@@ -123,14 +123,16 @@ call kushan          Due Friday.
    [Done] [Pin] [Delete]   ⇢ Next week   ⇢ +2 weeks
 ```
 
+The targets are a standard ladder per precision (session 119), on a sideways strip that scrolls and draws no scrollbar; the first rung is always in view.
+
 | The task says | Targets |
 |---|---|
-| `Due at 5pm` | +1 hour · Tomorrow · Next week |
-| `Due this morning` | Later today · Tomorrow · Next week |
-| `Due today` / `Due Friday` | Tomorrow · Next week · +2 weeks |
-| `Due next week` | Next week · +2 weeks · Next month |
-| `Due next month` | Next month · +3 months |
-| `Overdue since Friday` | Today · Tomorrow |
+| `Due at 5pm` | +1 hour · +4 hours · Tomorrow · +2 days · Next week |
+| `Due this morning` | Later today · Tomorrow · +2 days · Next week · +2 weeks |
+| `Due today` / `Due Friday` | Tomorrow · +2 days · Next week · +2 weeks · Next month |
+| `Due next week` | Next week · +2 weeks · Next month · +2 months |
+| `Due next month` | Next month · +2 months · +3 months |
+| `Overdue since Friday` | Today · Tomorrow · +2 days · Next week |
 | No date | none |
 
 **A full day is not offered while a lighter one further out is.** The app knows what each day holds and says none of it. In the example above Tomorrow is missing because it is already full.
@@ -165,6 +167,7 @@ The box is at the top. The tap buttons are with it. The matching tasks are below
 | Weekend | 1 | Same |
 | Pick date | 1 | A date picker. Writes its date into the box, with the year only when it is not this year |
 | Pick time | 1 | A time picker. Writes the time beside the date |
+| Time chips | 5 | `9am` `12pm` `3pm` `6pm` `9pm`, after the pickers (session 119). Each types its label; the dial stays for every other time. The whole date row is a sideways strip that scrolls |
 | `✓ <date>` | 1 | The date the engine read. Tapping it removes those words from the box |
 | Type chips | 3 + 1 | The engine's guess, marked, beside `deadline`, `action`, `appointment`. A small button opens the advanced panel |
 | Advanced | 1 | Opens a panel on the same screen. Everything that corrects what the typing already said, in one place |
@@ -264,6 +267,8 @@ The lead clause says the date at the finest granularity that is **true**, not th
 A task with a start and no due date reads `From Friday`, `From 5pm`, `From 20 Aug`.
 A hedged date reads `Due around Friday`.
 
+The sentence is not drawn when it exactly repeats the slot heading above it (session 119): `Due today` on the Today slot, `Due tomorrow` on Tomorrow. The test is exact equality with `Due <slot>` and nothing looser — a time, a hedge, an overdue and a window all differ from the slot's name and keep the sentence. Screen decision; the engine returns both sentences unchanged.
+
 One trailing clause may follow, and only when it is true of the task:
 
 - `You pinned this.`
@@ -290,7 +295,7 @@ It fires at the due time less the lead. The lead is read three ways in order: th
 
 **Unattended** it rings two minutes, snoozes itself five, and repeats up to five times. Then it stops, `alarm_unanswered_at` is written, and the task rises to the top under `pinned` and `is_hard` with `Its alarm rang unanswered` on the row.
 
-**The account screen states whether anything can ring, and names each permission separately.** Two installs look identical on a phone and only the Android one carries the plugin. Four Android permissions sit behind a working alarm and they fail differently: without notifications nothing appears, without exact timing the ring drifts, without full-screen access it arrives as a notification and the alarm screen never appears, without battery exemption a ring can be held back. Each is drawn with its own state and its own button, plus one that walks through everything missing.
+**The account screen states whether anything can ring, names each permission separately, and measures the APK's age.** The Kotlin states its own build and the screen compares it to the one the bridge expects (session 119): behind, it says so in a sentence naming the fix, a reading the old plugin cannot give says `unknown` rather than `off`, and a press the old plugin cannot serve says so where it was pressed. Two installs look identical on a phone and only the Android one carries the plugin. Four Android permissions sit behind a working alarm and they fail differently: without notifications nothing appears, without exact timing the ring drifts, without full-screen access it arrives as a notification and the alarm screen never appears, without battery exemption a ring can be held back. Each is drawn with its own state and its own button, plus one that walks through everything missing.
 
 ```
 file gstr1
@@ -302,7 +307,7 @@ The mobile sentence, because a notification is the smallest screen there is. Pus
 
 ## Counts
 
-3 text boxes (capture, the notes, and the list's search). 27 fixed buttons on screens 1 and 2, plus 2 or 3 push buttons per row, plus 3 on screen 3 (export, sign out, back). 1 dialog carrying up to 3 warnings, 1 toast.
+3 text boxes (capture, the notes, and the list's search). 33 fixed buttons on screens 1 and 2 (the floating `+` and five time chips arrived, the row's `Workflow` tag left), plus 4 or 5 push buttons per row, plus 3 on screen 3 (export, sign out, back). 1 dialog carrying up to 3 warnings, 1 toast.
 
 ---
 
@@ -327,7 +332,7 @@ The same list the account screen draws. `decided` means it was chosen against an
 | Import | The export writes a file and nothing reads one back | later |
 | Dark theme | One set of tokens, tuned for the light ground | later |
 
-**Every `later` control that is drawn looks the same.** Dimmed, and pressing it says in one sentence what is missing and which Part owns it. A control that swallows a press reads as broken; a control that explains itself reads as unfinished, which is what it is. `Workflow` on a row is the only one drawn today.
+**Every `later` control that is drawn looks the same.** Dimmed, and pressing it says in one sentence what is missing and which Part owns it. A control that swallows a press reads as broken; a control that explains itself reads as unfinished, which is what it is. None is drawn on a row (session 119: the `Workflow` tag left, because a row carries Pin, Delete, the Done circle and its push targets and has since session 104); the marked WIP places are the rail and the detail panel.
 
 ---
 

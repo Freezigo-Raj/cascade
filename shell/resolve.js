@@ -1,4 +1,17 @@
-import { lemmas } from "./lemma.js";
+// THE MODEL IS LOADED BEHIND THE APP, NOT IN FRONT OF IT. `lemma.js` is 3.6 MB
+// — nine tenths of the whole graph — and a static import here put it between a
+// person and the first paint. The chain rule already makes this safe: the model
+// is read LAST and can only add, so before it arrives a verb resolves through
+// the lexicon, the irregulars and the spelling rules exactly as it did on the
+// day the model shipped, when it reached nothing the three before it did. The
+// cost is that a line typed in the first second or two may miss a lemma-only
+// verb; the next keystroke re-resolves and has it. Harnesses that must be
+// deterministic await `lemmaReady` before running a case.
+let lemmasNow = null;
+export const lemmaReady = import("./lemma.js")
+  .then((m) => { lemmasNow = m.lemmas; })
+  .catch(() => {});
+const lemmas = (line) => (lemmasNow ? lemmasNow(line) : null);
 import { readCards, readIdeas, readDone, rankKeyFor } from "./cards.js";
 import { readResults } from "./search.js";
 import { readPushOptions } from "./push.js";
@@ -1004,8 +1017,6 @@ export function listOnly(existing, config, now) {
 }
 
 export function resolve(input) {
-  console.log("[resolve] called with typed_line=%o", input.typed_line);
-
   refuse(input.typed_line, input.config);
 
   const { verb_phrase, action_verb } = readVerb(input.typed_line, input.config, lemmas(input.typed_line));

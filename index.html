@@ -40,7 +40,7 @@
      query on the two `@import` lines inside these files included, because an
      imported sheet is fetched under its own address and would go stale one level
      down otherwise. -->
-<link rel="stylesheet" href="./shell/mvp.edit.css?v=34">
+<link rel="stylesheet" href="./shell/mvp.edit.css?v=35">
 
 <div id="gate" style="display:none"></div>
 
@@ -58,10 +58,15 @@
   <aside id="aside"></aside>
 </div>
 
-<!-- The document is never cached, but a module it names is. Loading it under a
-     fresh query each time is the only thing that reliably stops that, and the
-     query is carried on to everything the module imports. -->
-<script type="module">import(`./shell/mvp.js?v=${Date.now()}`);</script>
+<!-- THE MODULE QUERY IS THE SHELL VERSION, NOT THE CLOCK.
+     `Date.now()` here made every launch a set of URLs the browser had never
+     seen, so the whole module graph — the 3.6 MB language model included — came
+     off the network on every open. That was the load time. It was also
+     unnecessary: session 115 already fetches this document past the HTTP cache,
+     so the page is always current, and a current page naming a versioned URL is
+     exactly the stylesheet rule one line up. Same number, same gate check, and a
+     launch after the first is a set of cache hits. -->
+<script type="module">import("./shell/mvp.js?v=35");</script>
 
 <!-- Registered after the app, never before it. A worker that installs first can
      answer the very requests that are loading the page it came from. -->

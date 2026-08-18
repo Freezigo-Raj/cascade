@@ -13,7 +13,7 @@ Current stage: 5
 Gates passed: **Gate 1**, **Gate 2**, **Gate 3** and **Gate 4**, each on an older file than the one it names. All four signatures are stale and all four are waiting on a hand. See VERSIONS.
 Stage 4 is closed and signed. Stage 5 is open: the rules go in one at a time and the same command is read the other way round, so a case that still fails names a rule not yet written. `gate4.mjs` reads the stage out of the line above and inverts its own verdict on it. Every case in the key agrees with the engine. Section I taps a type, a significance and a bound task, which no case did before, and section B and H state what the card says. `gate4.mjs` reads Stage 5 and passes: 142 run, 142 green, 0 on invariants alone, 0 errored. Nine rules are written and every obligation the contract records is now met except the ranking, which is Stage 6's. Gate 5 is the hand that says Stage 5 is finished.
 
-Status: the contract is written in the protocol's three groups, with Name, Type, Required, Unit, Range, Example and From per item. 13 inputs, 13 working values, the 44-field `Task`, the 4-field `UndoEntry`, 40 rendered outputs, 14 cross-field invariants, and config at 36 objects populated. `tsc --strict` compiles clean and `gate2.py` passes. The Stage 3 shell is built and Gate 3 is signed: the panel drew correctly by hand, and deleting `card_badge` from the placeholder produced a red box naming `resolve.js` and the missing field rather than a blank screen. `resolve()` now returns three keys, `task`, `list` and `capture`, and the contract names that shape. The answer key holds 144 key cases.
+Status: the contract is written in the protocol's three groups, with Name, Type, Required, Unit, Range, Example and From per item. 13 inputs, 13 working values, the 44-field `Task`, the 4-field `UndoEntry`, 40 rendered outputs, 14 cross-field invariants, and config at 37 objects populated. `tsc --strict` compiles clean and `gate2.py` passes. The Stage 3 shell is built and Gate 3 is signed: the panel drew correctly by hand, and deleting `card_badge` from the placeholder produced a red box naming `resolve.js` and the missing field rather than a blank screen. `resolve()` now returns three keys, `task`, `list` and `capture`, and the contract names that shape. The answer key holds 144 key cases.
 
 D-1: **Typing the thought is the whole of the work.**
 
@@ -39,11 +39,11 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 
 ## VERSIONS
 
-  example      40
+  example      41
   contract     52
-  config       a.17
+  config       a.18
   answer_key   28
-  shell        34
+  shell        35
   gate1        signed on example 35
   gate2        signed on contract 32
   gate3        signed on shell 1
@@ -64,7 +64,7 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 **Built, and only as verified as the gate above it:**
 - `spec/example.md` — Stage 1 finished example. Gate 1 signed on the current file.
 - `schema/contract.md`, `schema/types.ts` — Stage 2. Gate 2 signed on the current file; `tsc --strict` compiles clean.
-- `config.ts` — the 36 config objects. Every vocabulary member is reachable from the lexicon.
+- `config.ts` — the 37 config objects. Every vocabulary member is reachable from the lexicon.
 - `shell/lemma.js` — wink-nlp and its English web model, MIT, bundled once and committed. 3.6 MB. No build step at run time: the shell serves it as a static file and the gate imports the same one. Read last in the verb chain.
 - The record also carries its four handed-in values, `raw_text`, `id`, `created_at` and `config_version`, which is what makes a case able to be green at all.
 - `tests/answer_key.md` — the hand-written key, Gate 4 signed on the current file. Every case a table row and every case carrying a derivation. 142 run and every one states a value; the two that do not run each name the gate that answers them.
@@ -79,60 +79,56 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 
 ## THIS SESSION'S JOB
 
-The alarm, integrated: it rings, it can be snoozed from the lock screen, and a task whose alarm was
-slept through escalates.
+Ten field reports from build 34 on the phone, in one pass: the load, the reach, the readings, and two
+questions answered in writing.
 
-**An alarm needs a stated time, and the toggle now appears and disappears with one.** A task due
-"Friday" resolves to 23:59:59, so a lead off that instant rings at a quarter to midnight, which is not
-a reminder about Friday. `canAlarm()` has refused that since session 94; what was missing was the
-screen saying so. The Alarm row is drawn only while `has_time`, and in its place is one sentence
-naming the time as what is missing. A control that cannot work is worse than an absent one: its
-absence reads as a decision and its presence reads as a promise.
+**THE LOAD TIME WAS TWO DECISIONS STACKED, and neither was wrong when it was made.** `index.html`
+imported `mvp.js` under `?v=${Date.now()}`, so every launch was a set of URLs the browser had never
+seen and the whole module graph came off the network cold — including `lemma.js`, which at 3.6 MB is
+nine tenths of the graph and was statically imported in front of the first paint. The clock query was
+the right answer while the document itself could go stale; session 115 fixed that, and a fresh document
+naming a versioned URL is exactly the stylesheet rule in the other file type. So the query is
+`?v=<SHELL_VERSION>` now, `gate2.py` holds it there, and `sw.js` serves any URL that states a version
+from the cache — a new version is a new address, so the stale-copy trap cannot reach it. The model
+loads BEHIND the app: the chain reads it last and can only add, so before it arrives a verb resolves
+through the lexicon, the irregulars and the spelling, exactly as it did the day the model shipped. The
+stated cost: a line typed in the first second or two may miss a lemma-only verb; the next keystroke has
+it. Runners await `lemmaReady`, because a check must not race a download. A leftover `console.log` in
+`resolve()` that ran on every keystroke also left.
 
-**`alarm_type` lost `repeat` and became a toggle.** Every alarm rings for two minutes, snoozes itself
-for five, and does that up to five times. So "ring again every" was a second way of asking for what
-an alarm already does, and a task that should come back another day has `recurrence`. `alarm_repeat_min`
-is deleted rather than deprecated, because nothing is live yet and a field kept for a data set that
-does not exist is a field nobody can delete later.
+**THE ACCOUNT SCREEN WAS ASKING A SESSION-113 PLUGIN SESSION-117 QUESTIONS.** The two halves of this
+app update at different speeds by design — the web half arrives on every open, the Kotlin only when the
+APK is rebuilt — and nothing measured the gap. An absent reading was drawn as `off` and a press called
+a method that did not exist and failed without a sound: both reported symptoms, one cause. The plugin
+now states its build (`version()`, build 2), the bridge states the build it was written against, and
+the account screen draws the difference as a loud sentence naming the fix (rebuild the APK). A reading
+the plugin cannot give says `unknown`, which is true, rather than `off`, which was a guess dressed as a
+reading. The Kotlin also gained the settings fallback for a notification prompt Android will no longer
+show: refused twice, the runtime prompt never appears again and the old code drew nothing.
 
-**The snooze intervals moved from capture to the ring.** 5 / 10 / 30 / 60, one button each on the lock
-screen. Nobody knows at capture how long they will want, and the number is only ever wanted with the
-thing in front of them. 15 left the list because four buttons is already the most a thumb should have
-to aim at on a lock screen.
+**Reach and touch, five small ones.** A 60px `+` floats bottom-right on the narrow layout — the bar's
+`+` sits where a thumb cannot go, and this is the most-pressed control in the app; the wide layouts
+hide it because the capture box is already on screen. The page carries the phone's own insets
+(`env(safe-area-inset-*)`), so the header no longer sits under the status bar, and the sticky editor
+header offsets by the same inset or it would slide back under on the first scroll. The platform's blue
+tap flash is off and buttons are not selectable text. The push targets became STANDARD LADDERS of four
+or five per precision on a sideways strip that scrolls and draws no scrollbar — the rules under them
+are unchanged (offsets from the task's own date, load still drops full days, overdue still comes back
+to today). The date chip row is the same kind of strip and gained five standard times (`time_suggestions`, a new
+config object): each types its label, the dial stays for everything else, and the two pickers wear the
+accent — pressable is what accent already means, so no new colour was spent.
 
-**SNOOZE MOVES THE TELLING, PUSH MOVES THE TASK**, and that is why Push is not on the lock screen.
-Choosing a push target reads the day's load off every other task, which the app does and a dead
-WebView cannot. So a push needs an unlock, and the alarm offers Done and four numbers.
+**The two questions he asked for thinking on, answered as decisions.** `Workflow` LEFT the row: MVP.md
+has said since session 104 that a row carries Pin, Delete, the Done circle and its push targets, so the
+fifth control contradicted the written rule, and a dead word on every row is a heavier price than the
+WIP entries that remain in the rail and the detail panel. And a row's sentence is NOT drawn when it
+only repeats the heading above it — thirty rows reading `Due today` under a tab called Today was the
+slot's own name said back. The test is exact equality with `Due <slot>` and nothing looser: a time, a
+hedge, an overdue, a window all keep the sentence, so a task spanning days still says its span. Both
+are screen decisions; the engine and the key are untouched.
 
-**Two homes for a snooze, and `alarm_armed_for` is what stops them fighting.** `alarm_snoozed_until`
-on the task is the truth and reaches the other devices; the shell keeps its own copy so it can re-ring
-with the WebView dead, which is the normal case rather than the exception. The bridge as written before
-this session cancelled a live snooze the moment the app was opened: it diffed on the ring time, and a
-snoozed alarm's ring time is not its derived instant, so the task either dropped out of the desired set
-for being in the past or looked stale and got re-armed. The shell now records the derived instant it
-armed against, the diff compares that, and an alarm already armed for the right instant is left alone
-whatever its ring time says. The same rule is what lets the auto-snooze chain run without reporting
-each step.
-
-**A slept-through alarm escalates the task, and not by touching importance.** Importance is user-set
-only and has been since July. `alarm_unanswered_at` is the live marker and joins `pinned` and `is_hard`
-as the third tier-1 override, third so a soft task with a missed alarm cannot jump a hard task without
-one. `reminder_fatigue` is the count, it is never cleared, and Part A writes it now: it was a working
-value sourced from a Part B structure, which meant zero in every record and read by nothing. A push, a
-Done or an edit that moves the date clears the marker and leaves the count. The same pair as
-`first_due_at` and `push_count`.
-
-**The row says why it jumped.** Colour cannot: three states is the limit and pressable, overdue and
-synced are all three. So it is a trailing clause on `card_reason`, and absent from `card_reason_short`,
-where no trailing clause goes.
-
-**`check_alarm.mjs` is the sixth check and the first to reach `rank_key`.** Nothing in the 144-case
-answer key names `cards`, `rank_key` or `decided_by`, and that is a shape mismatch rather than an
-oversight: the key runs `resolve()` over a typed line, and cards are built from `existing_tasks`. A
-third override reorders every list in the app with all five other checks green, which is exactly the
-surface every defect found by running the app has been in. Three of its cases are the ordering: a
-slept-through hard task above an answered one, a hard task above a soft one with a missed alarm, and a
-pin above both.
+**Pin and Delete are glyphs now** — a pin that fills when pinned, a bin — with their words kept for
+screen readers and hovers. The words were the widest thing on the row and said what the shapes say.
 
 ## NEXT THREE JOBS
 
@@ -834,3 +830,17 @@ have landed. That is the price of the single table and it is accepted.
 - 17 Aug 2026 — `window.__cascadeBack()` is what the Android shell asks before acting on a back gesture, and `MainActivity` closes the app only when it answers false — `popstate` is enough in a browser, but in a WebView the gesture reaches the activity first and Capacitor's default is to guess from WebView history, where `pushState` entries are same-page and whether they count varies by version — the decision belongs in the file that knows which screen is showing.
 - 17 Aug 2026 — A back gesture closes an open dialog before it leaves a screen — a dialog is the nearest thing on the screen and a back aimed at anything is most likely aimed at it — the veil and the Cancel button carry data attributes for no other reason.
 - 17 Aug 2026 — `MainActivity.java` is kept in the repository under `android/` rather than described in prose — the plugin registration line was left out of the install instructions once and cost a build that ran, looked right, and had no alarm in it, and a file cannot be half-remembered the way a step can.
+- 18 Aug 2026 — `index.html` imports `mvp.js` under `?v=<SHELL_VERSION>` rather than `?v=${Date.now()}`, and `gate2.py` holds the two together the way it holds the stylesheet queries — the clock query made every launch a cold download of the whole graph, and it was only ever protecting against a stale document, which session 115's `cache: "reload"` already prevents — a versioned URL named by a document that is always fresh cannot serve a whole session that never arrived.
+- 18 Aug 2026 — `sw.js` serves any URL that states a `?v=` from the cache and skips the network — a versioned address is immutable, since a new version is a new address chosen by a document that is always fetched fresh — the network-first rule stays for everything unversioned, and the header now states the exception beside the rule.
+- 18 Aug 2026 — `lemma.js` loads behind the app (`lemmaReady`), not in front of the first paint — it is 3.6 MB, nine tenths of the graph, and the chain reads the model last and lets it only add, so before it arrives a verb resolves exactly as it did the day the model shipped — the stated cost is a lemma-only verb missed in the first second or two, healed by the next keystroke; runners await `lemmaReady` because a check must not race a download.
+- 18 Aug 2026 — The Kotlin plugin states its own build (`version()`, build 2), the bridge states the build it was written against, and the account screen draws the gap as a sentence naming the fix — the two halves update at different speeds by design and nothing measured the drift, so a session-113 plugin answered session-117 questions with silence that the screen dressed as `off` — a reading the plugin cannot give now says `unknown`, and a press that cannot work says so where it was pressed.
+- 18 Aug 2026 — `requestNotifications` opens the settings screen when Android will no longer show the runtime prompt — a prompt refused twice is never shown again and the request call returns having drawn nothing, which reads as a dead button — whether it can still appear is inferred from `shouldShowRequestPermissionRationale` plus a stored asked-once flag, both false meaning never-asked and both spent meaning settings.
+- 18 Aug 2026 — A 60px `+` floats bottom-right on the narrow layout and the wide layouts hide it — the bar's `+` is the most-pressed control in the app and sits where a thumb cannot reach, and at 940px and up the capture box is already on screen so a way into it would be a control with nothing to open — both are the same control and open screen 2 empty.
+- 18 Aug 2026 — The page carries `env(safe-area-inset-*)` on all four sides and the sticky editor header offsets its `top` by the same inset — inside the Android shell and the installed web app the page runs edge to edge and the header sat under the status bar — an ordinary browser tab reads the insets as 0px and pays nothing.
+- 18 Aug 2026 — The push targets are standard ladders of four or five per precision on a sideways strip that scrolls and draws no scrollbar — two or three fixed rungs meant pushing twice to reach a fortnight, and a column of five would be taller than the row it serves — the rules under them are unchanged: offsets from the task's own date, the load still drops full days, overdue still comes back to today, and the first rung stays in view.
+- 18 Aug 2026 — `time_suggestions` (config a.18): five standard times as chips after the pickers, each typing its label into the box — a common time was a dial with several presses, and the date row is a sideways strip now so five chips cost no height — screen vocabulary like `chip_presets`, the engine reads only the words, and the dial stays for every time not on the strip.
+- 18 Aug 2026 — The two pickers wear the accent (wash, border, deep ink) — they were grey like the word chips and read as more of the same when they are the way into every date and time the strip does not carry — pressable is what accent already means, so no new colour is spent and the three-state limit holds.
+- 18 Aug 2026 — `Workflow` leaves the row — MVP.md has said since session 104 that a row carries Pin, Delete, the Done circle and its push targets, so the fifth control contradicted the written rule, and a dead word on every row is a heavier price than a WIP entry — the rail and the detail panel keep their marked WIP places, so session 109's keep-the-shape decision stands.
+- 18 Aug 2026 — A row's sentence is not drawn when it exactly equals `Due <slot>` for the slot it sits under — thirty rows reading `Due today` under a tab called Today was the heading said back, and the sentence exists to add — a time, a hedge, an overdue, a window all differ from the slot's name and keep the sentence, so a task spanning days still states its span; screen decision, engine and key untouched.
+- 18 Aug 2026 — Pin and Delete are drawn glyphs with their words kept for screen readers and hovers — the words were the widest thing on the row and said what the shapes say — the pin fills when pinned, so the state is readable without a word.
+- 18 Aug 2026 — The `console.log` in `resolve()` is deleted — it ran on every keystroke and wrote the typed line to the console, which is both noise and a line of a person's task in a log nobody asked for — nothing.

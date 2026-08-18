@@ -10,11 +10,11 @@
  * that reason and for no other.
  */
 
-@import url("./mvp.css?v=34");
-@import url("./mvp.account.css?v=34");
-@import url("./mvp.wide.css?v=34");
-@import url("./mvp.chrome.css?v=34");
-@import url("./mvp.web.css?v=34");
+@import url("./mvp.css?v=35");
+@import url("./mvp.account.css?v=35");
+@import url("./mvp.wide.css?v=35");
+@import url("./mvp.chrome.css?v=35");
+@import url("./mvp.web.css?v=35");
 
 /* ------------------------------------------------------------ screen 2
  *
@@ -38,7 +38,9 @@
   margin-bottom: calc(var(--step) * 4);
   min-height: 24px;
   position: sticky;
-  top: 0;
+  /* Sticky against the phone's own bar, not the page edge: without the inset
+     the header slid back under the status bar on the first scroll. */
+  top: env(safe-area-inset-top, 0px);
   z-index: 3;
   background: var(--sheet);
   padding: calc(var(--step) * 2) 0;
@@ -95,6 +97,34 @@
 .chip:hover, .chip:focus-visible { color: var(--ink); border-color: var(--edge); }
 .chip.on { background: var(--signal); border-color: var(--signal); color: var(--sheet); }
 .chip.more { letter-spacing: 0.14em; }
+
+/* The date row is a SIDEWAYS STRIP (session 119): six presets, two pickers and
+   five standard times do not fit a phone, and wrapping them made a wall. The
+   strip scrolls, the scrollbar is not drawn, and the tick chip stays first. The
+   other tap rows keep wrapping — none of them grew. */
+.taps.dates {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 2px;
+}
+.taps.dates::-webkit-scrollbar { display: none; }
+.taps.dates .chip { flex-shrink: 0; }
+
+/* The two pickers LOOK like what they are (session 119): the way into every
+   date and time the strip does not carry. They were grey like the word chips
+   and read as more of the same. Accent means pressable, which they are, so this
+   spends no new colour. */
+.picker .chip {
+  color: var(--signal-deep);
+  background: var(--signal-wash);
+  border-color: var(--signal);
+}
+.picker .chip:hover, .picker .chip:focus-visible {
+  background: var(--signal);
+  color: var(--sheet);
+}
 
 /* A picker is a chip beside a native control, not a native control stretched
    under a chip. The old shape relied on the press landing on the browser's own

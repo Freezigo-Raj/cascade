@@ -46,7 +46,7 @@
      serving an old stylesheet has now cost three sessions of guessing at what
      had and had not arrived. A number that can be read is worth more than a
      number that has to be trusted. */
-  --css-version: 34;
+  --css-version: 35;
 
   --step: 4px;
   --r-card: 18px;
@@ -56,6 +56,29 @@
 }
 
 * { box-sizing: border-box; }
+
+/* THE PHONE'S OWN BARS (session 119). Inside the Android shell and the
+   installed web app the page runs edge to edge, so without these four insets
+   the header sat under the status bar and read as painted over. `env()` is 0px
+   in an ordinary browser tab, so this costs nothing there. The sticky editor
+   header carries the top inset too, in mvp.edit.css, or it would slide back
+   under the bar the moment the page scrolled. */
+body {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* A press is answered by this stylesheet — the hover and pressed states — not
+   by the platform's blue flash, and a row title is a button, not prose to
+   select. Inputs and notes keep selection; they are the two places a caret
+   belongs. */
+button, .row .title { -webkit-tap-highlight-color: transparent; }
+button {
+  user-select: none;
+  -webkit-user-select: none;
+}
 
 html, body {
   margin: 0;
@@ -327,7 +350,23 @@ html, body {
 
 /* The push targets, on the right, where the design puts its nudges. The labels
    are the engine's own — a band pushes to a band — and not a fixed `+3d`. */
-.nudges { display: flex; flex-direction: column; gap: 5px; flex-shrink: 0; }
+/* A SIDEWAYS STRIP now (session 119): the targets became a standard ladder of
+   four or five and a column of five would be taller than the row it serves.
+   The strip scrolls, the scrollbar is not drawn, and the first rung is always
+   in view — which keeps the most likely press where it always was. */
+.nudges {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 5px;
+  flex-shrink: 1;
+  min-width: 0;
+  max-width: 40%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.nudges::-webkit-scrollbar { display: none; }
 .nudge {
   font-family: inherit;
   font-size: 11.5px;
@@ -346,7 +385,12 @@ html, body {
 /* No mono face in this system, so the four signals that made these subordinate
    are rebuilt out of Figtree: small, uppercase, letter-spaced, low contrast. */
 
-.acts { display: flex; flex-wrap: wrap; gap: calc(var(--step) * 4); margin-top: calc(var(--step) * 2.5); }
+.acts { display: flex; flex-wrap: wrap; align-items: center; gap: calc(var(--step) * 4); margin-top: calc(var(--step) * 2.5); }
+/* The two glyph actions. Same quiet colour as the words they replaced, the
+   same signals on hover, and a 16px shape inside a press target a thumb can
+   actually hit. */
+.act.icon { padding: 4px; line-height: 0; }
+.act.icon svg { width: 16px; height: 16px; display: block; }
 .act {
   font-family: inherit;
   font-size: 10.5px;
@@ -379,3 +423,29 @@ html, body {
   .search { width: 100%; margin-left: 0; order: 3; }
   .row { padding: calc(var(--step) * 3); }
 }
+
+/* ------------------------------------------------------------------ the FAB */
+/* The most-pressed control in the app, put where a thumb is (session 119). It
+   is the bar's `+` again, not a second behaviour: both open screen 2 empty.
+   Narrow layout only — the wide layouts keep the capture box on screen, so
+   mvp.wide.css hides it there. It floats above the rows and clears the
+   phone's own bottom inset. */
+.fab {
+  position: fixed;
+  right: calc(var(--step) * 5);
+  bottom: calc(calc(var(--step) * 5) + env(safe-area-inset-bottom, 0px));
+  width: 60px;
+  height: 60px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--signal);
+  color: var(--sheet);
+  font-family: var(--face-body);
+  font-size: 32px;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: var(--lift);
+  z-index: 5;
+}
+.fab:hover, .fab:focus-visible { background: var(--signal-deep); }

@@ -6,7 +6,7 @@
 // Vocabulary members are never removed or repurposed, only deactivated.
 const active = (id) => ({ id, active: true });
 export const partAConfig = {
-    version: "a.17",
+    version: "a.18",
     // --- Vocabulary: records hold these members ---
     // Drawn only from what the example exercises. Thin on purpose:
     // a missing member falls to `other`, which is free. An extra member is permanent.
@@ -217,6 +217,10 @@ export const partAConfig = {
     chip_presets: [
         "This afternoon", "Tonight", "Tomorrow morning", "Weekend", "Pick date", "Pick time",
     ],
+    // Times a thumb can reach without opening a dial (session 119). Screen
+    // vocabulary like `chip_presets`: each types its label into the box, the
+    // engine reads the words, and no record depends on the list.
+    time_suggestions: ["9am", "12pm", "3pm", "6pm", "9pm"],
     significance_buttons: [
         { value: 10, label: "Low" },
         { value: 30, label: "Normal" },

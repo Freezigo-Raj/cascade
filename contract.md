@@ -613,6 +613,7 @@ Thirty-six objects. Each holds one thing that grows, so a change touches one obj
 | `ranking` | `overrides` `pinned` `is_hard` `alarm_unanswered`; `mode` `lexicographic`; `factors` the nine, in order; `weights` absent while lexicographic | — |
 | `reason_clauses` | `lead` templates by time, precision then band; `trailing` templates by `decided_by`, each with its own joiner | — |
 | `chip_presets` | the capture chips. Screen vocabulary: the engine reads none of them, and a chip types its label into the box. `Pick date` and `Pick time` open pickers and type what was picked. | — |
+| `time_suggestions` | standard times offered as chips after the pickers: 9am, 12pm, 3pm, 6pm, 9pm. Screen vocabulary like `chip_presets`: each types its label into the box, the engine reads the words, and no record depends on the list. | — |
 | `significance_buttons` | `{10, Low}` `{30, Normal}` `{70, High}` | points |
 | `duration_units` | what the chips beside the duration box multiply by: `min` 1, `hour` 60, `day` 1440. Screen vocabulary. A unit is never stored: the box and the chip are read together and one number of minutes is written. | minutes |
 | `duration_suggestions` | minutes offered beside the box: 15, 30, 60, 120. Not a vocabulary and no record holds one; tapping one fills the box. | minutes |

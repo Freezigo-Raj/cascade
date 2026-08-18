@@ -129,6 +129,20 @@ class CascadeAlarmPlugin : Plugin() {
         call.resolve(JSObject().put("alarms", arr))
     }
 
+    /**
+     * THE KOTLIN STATES ITS OWN BUILD (session 119). The web half of this app
+     * updates itself on every open; this half only changes when the APK is
+     * rebuilt, so the two drift apart by design and the web half has to be able
+     * to see how far. The account screen compares this number to the one the
+     * bridge was written against and says so on screen when it is behind. A
+     * plugin too old to carry this method at all reads as build 1 over there.
+     * Bump it whenever a method is added or a reading changes shape.
+     */
+    @PluginMethod
+    fun version(call: PluginCall) {
+        call.resolve(JSObject().put("version", 2))
+    }
+
     @PluginMethod
     fun permissions(call: PluginCall) {
         val pm = context.getSystemService(PowerManager::class.java)
@@ -186,13 +200,34 @@ class CascadeAlarmPlugin : Plugin() {
         call.resolve()
     }
 
-    /** The runtime prompt while it is still offered, the settings screen after. */
+    /**
+     * The runtime prompt while Android is still willing to show it, the settings
+     * screen after. A prompt refused twice is never shown again — the request
+     * call returns having drawn nothing, which reads as a dead button. Whether
+     * the prompt can still appear is readable (`shouldShowRequestPermissionRationale`
+     * is false both before the first ask and after the final refusal, so a flag
+     * records that an ask has happened), and when it cannot, the settings screen
+     * is the honest answer.
+     */
     @PluginMethod
     fun requestNotifications(call: PluginCall) {
+        val prefs = context.getSharedPreferences("cascade_perms", android.content.Context.MODE_PRIVATE)
         if (Build.VERSION.SDK_INT >= 33 && !canNotify()) {
-            activity.requestPermissions(
-                arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 9001
-            )
+            val askedBefore = prefs.getBoolean("asked_notifications", false)
+            val promptable = activity.shouldShowRequestPermissionRationale(
+                android.Manifest.permission.POST_NOTIFICATIONS
+            ) || !askedBefore
+            if (promptable) {
+                prefs.edit().putBoolean("asked_notifications", true).apply()
+                activity.requestPermissions(
+                    arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 9001
+                )
+            } else {
+                activity.startActivity(
+                    Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                        .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                )
+            }
         } else if (!canNotify()) {
             activity.startActivity(
                 Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)

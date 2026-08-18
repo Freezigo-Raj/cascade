@@ -430,6 +430,8 @@ export interface Config {
   ranking: RankingConfig;
   reason_clauses: ReasonClauses;
   chip_presets: string[];
+  /** Times offered as chips beside the pickers; each types its label into the box. */
+  time_suggestions: string[];
   significance_buttons: SignificanceButton[];
   /** Label to minutes for the chips beside the duration box. Never stored. */
   duration_units: Record<string, number>;

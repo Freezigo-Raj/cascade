@@ -1,6 +1,7 @@
 // Headless Gate 3 harness: does the placeholder, rendered, equal example section 1?
 import { readFileSync } from "node:fs";
-import { resolve } from "./resolve.js";
+import { resolve, lemmaReady } from "./resolve.js";
+await lemmaReady; // the model loads lazily; a check must not race it
 import { renderDefaultList } from "./render.js";
 import { partAConfig } from "./config.js";
 

@@ -342,6 +342,12 @@ if sv:
     for where,got in _css_refs:
         if not got: bad('%s loads a stylesheet with no ?v= query; a cached copy of it is a whole session that never arrived'%where)
         elif got!=sv: bad('%s loads a stylesheet at v=%s, SHELL_VERSION is %s'%(where,got,sv))
+    # The module import is pinned the same way (session 119). `Date.now()` there
+    # made every launch a cold download of the whole graph; a stale pin would be
+    # the stylesheet defect in the other file type.
+    _mj=re.search(r'shell/mvp\.js\?v=(\d+)', _H) if '_H' in dir() else None
+    if not _mj: bad('index.html does not import shell/mvp.js under ?v=<SHELL_VERSION>; either it is cold on every launch or it can go stale')
+    elif _mj.group(1)!=sv: bad('index.html imports mvp.js at v=%s, SHELL_VERSION is %s'%(_mj.group(1),sv))
 
 for key,real in [('example',ev),('contract',cv),('config',gv),('answer_key',kv)]+([('shell',sv)] if sv else []):
     m=re.search(r'^\s*%s\s+(\S+)\s*$'%key,vb.group(1),re.M) if vb else None

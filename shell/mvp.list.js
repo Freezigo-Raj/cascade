@@ -167,7 +167,7 @@ export function mountList(root, { openEdit, openAccount, onTasks } = {}) {
   // A row and a block of rows live in `mvp.row.js`; this file crossed the
   // 400-line cap building its chrome once. Everything they need is handed in,
   // so a row cannot read this screen's state behind its own back.
-  const ctx = () => ({ all, tab, narrow, act, say, openEdit });
+  const ctx = () => ({ all, tab, slot, narrow, act, say, openEdit });
   const drawRow = (card) => rowOf(card, ctx());
   const drawBlock = (name, cards, isNow) => blockOf(name, cards, isNow, ctx());
 
@@ -252,8 +252,21 @@ export function mountList(root, { openEdit, openAccount, onTasks } = {}) {
 
   const body = el("div", "body-list");
   const toastSlot = el("div", "toast-slot");
+
+  // THE SAME CONTROL AS `plus`, WHERE A THUMB IS (session 119). The `+` in the
+  // bar sits at the top of the screen, which is the one place a hand cannot
+  // reach, and it is the most-pressed control in the app. This one floats at
+  // the bottom right, above the rows, and exists only on the narrow layout —
+  // the wide layouts keep the capture box on screen, so a second way in there
+  // would be a control with nothing to open.
+  const fab = el("button", "fab", "+");
+  fab.type = "button";
+  fab.title = "Capture";
+  fab.setAttribute("aria-label", "Capture");
+  fab.addEventListener("click", () => openEdit && openEdit(null));
+
   root.innerHTML = "";
-  root.append(headBlock, bar, slots, body, toastSlot);
+  root.append(headBlock, bar, slots, body, fab, toastSlot);
 
   // ---------------------------------------------------------------- painting
 

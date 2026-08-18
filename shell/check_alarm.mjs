@@ -16,7 +16,8 @@ import { canAlarm, alarmOffered, alarmAt, ringAt, readAlarmView, snoozed, unansw
 import { rankKeyFor, readCards } from "./cards.js";
 import { pushed } from "./push.js";
 import { spawn } from "./repeat.js";
-import { resolve } from "./resolve.js";
+import { resolve, lemmaReady } from "./resolve.js";
+await lemmaReady; // the model loads lazily; a check must not race it
 
 let bad = 0;
 const say = (ok, what) => {

@@ -85,26 +85,39 @@ function targetsFor(task, now) {
     return [
       { label: "Today", at: today + (at % DAY) },
       { label: "Tomorrow", at: today + DAY + (at % DAY) },
+      { label: "+2 days", at: today + 2 * DAY + (at % DAY) },
+      { label: "Next week", at: today + 7 * DAY + (at % DAY) },
     ];
   }
+  // Each set is a STANDARD LADDER at the precision the person gave (session
+  // 119): the row scrolls sideways, so four or five rungs cost no height and a
+  // push no longer has to be made twice to reach a fortnight. The rules under
+  // them are unchanged — offsets from the task's own date, the coarsest rung
+  // one step beyond the precision, and the load still drops full days.
   switch (task.date_precision) {
     case "time":
       return [
         { label: "+1 hour", at: at + HOUR },
+        { label: "+4 hours", at: at + 4 * HOUR },
         { label: "Tomorrow", at: at + DAY },
+        { label: "+2 days", at: at + 2 * DAY },
         { label: "Next week", at: at + 7 * DAY },
       ];
     case "band":
       return [
         { label: "Later today", at: at + 4 * HOUR },
         { label: "Tomorrow", at: at + DAY },
+        { label: "+2 days", at: at + 2 * DAY },
         { label: "Next week", at: at + 7 * DAY },
+        { label: "+2 weeks", at: at + 14 * DAY },
       ];
     case "day":
       return [
         { label: "Tomorrow", at: at + DAY },
+        { label: "+2 days", at: at + 2 * DAY },
         { label: "Next week", at: at + 7 * DAY },
         { label: "+2 weeks", at: at + 14 * DAY },
+        { label: "Next month", at: at + 28 * DAY },
       ];
     case "span":
     case "week":
@@ -112,16 +125,20 @@ function targetsFor(task, now) {
         { label: "Next week", at: at + 7 * DAY },
         { label: "+2 weeks", at: at + 14 * DAY },
         { label: "Next month", at: at + 28 * DAY },
+        { label: "+2 months", at: at + 56 * DAY },
       ];
     case "month":
       return [
         { label: "Next month", at: at + 28 * DAY },
+        { label: "+2 months", at: at + 56 * DAY },
         { label: "+3 months", at: at + 84 * DAY },
       ];
     default:
       return [
         { label: "Tomorrow", at: at + DAY },
+        { label: "+2 days", at: at + 2 * DAY },
         { label: "Next week", at: at + 7 * DAY },
+        { label: "+2 weeks", at: at + 14 * DAY },
       ];
   }
 }

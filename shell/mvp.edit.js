@@ -51,7 +51,7 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
   const box = el("textarea", "box");
   box.rows = 2;
   box.placeholder = "type the thought";
-  const dateRow = el("div", "taps");
+  const dateRow = el("div", "taps dates");
   const doRow = el("div", "dorow");
   const typeRow = el("div", "taps types");
   const panel = el("div", "panel");

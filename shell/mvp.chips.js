@@ -109,6 +109,14 @@ export function makeDates(row, config, on) {
     }));
   }
 
+  // Standard times after the pickers (session 119). The row scrolls sideways,
+  // so five more chips cost no height, and a common time is one press instead
+  // of a dial. Each types its label, exactly as a preset does; the picker stays
+  // for every time that is not on the strip.
+  for (const t of config.time_suggestions ?? []) {
+    row.appendChild(button("chip time", t, () => on.typeTime(t)));
+  }
+
   return {
     /** The date the engine read, ticked. Tapping it takes those words back out. */
     update(said) {

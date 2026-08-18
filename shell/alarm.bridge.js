@@ -280,19 +280,53 @@ export const PERMISSIONS = [
     request: "requestBatteryExemption" },
 ];
 
+/**
+ * THE TWO HALVES OF THIS APP UPDATE AT DIFFERENT SPEEDS, and this number is how
+ * the fast half finds out. The web app arrives on every open — the shell points
+ * at the live address — and the Kotlin arrives only when he rebuilds and
+ * reinstalls the APK. Session 119's account screen was asking a session-113
+ * plugin for readings it did not have: every row read `off` whatever the
+ * switches said, and pressing `Turn on` called a method that did not exist and
+ * failed without a sound. Both symptoms, one cause, and nothing on screen could
+ * say so. Now the plugin states its build, the bridge states the one it was
+ * written against, and the account screen draws the difference as the loud
+ * sentence it is. An old plugin with no `version()` at all reads as build 1.
+ */
+export const ALARM_SHELL_EXPECTED = 2;
+
+export async function alarmShellVersion() {
+  const Alarm = plugin();
+  if (!Alarm) return 0;
+  try {
+    const { version } = await Alarm.version();
+    return version ?? 1;
+  } catch (e) {
+    return 1;
+  }
+}
+
 export async function alarmPermissionStatus() {
   const Alarm = plugin();
   if (!Alarm) return { needed: false };
   const p = await Alarm.permissions();
-  return { ...p, needed: PERMISSIONS.some((x) => !p[x.key]) };
+  // A key the plugin did not answer stays `undefined` — the screen reads that
+  // as `unknown`, which is true, rather than `off`, which was a guess dressed
+  // as a reading. Only a stated `false` counts as missing.
+  return { ...p, needed: PERMISSIONS.some((x) => p[x.key] === false) };
 }
 
-/** One permission, by key. The account screen asks for them one at a time. */
+/**
+ * One permission, by key. The account screen asks for them one at a time.
+ * Returns false when the plugin in this APK predates the method, so the screen
+ * can say the true thing instead of failing silently.
+ */
 export async function requestAlarmPermission(key) {
   const Alarm = plugin();
   const which = PERMISSIONS.find((x) => x.key === key);
-  if (!Alarm || !which) return;
-  await Alarm[which.request]();
+  if (!Alarm || !which) return false;
+  if (typeof Alarm[which.request] !== "function") return false;
+  try { await Alarm[which.request](); return true; }
+  catch (e) { return false; }
 }
 
 /**
@@ -306,6 +340,6 @@ export async function requestAlarmPermissions() {
   if (!Alarm) return;
   const p = await Alarm.permissions();
   for (const x of PERMISSIONS) {
-    if (!p[x.key]) await Alarm[x.request]();
+    if (p[x.key] === false && typeof Alarm[x.request] === "function") await Alarm[x.request]();
   }
 }

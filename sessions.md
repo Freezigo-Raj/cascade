@@ -2715,3 +2715,28 @@ Colour meant one thing and now means three. Accent is pressable, `#c0492b` is ov
 **Save point:** `back is one decision in one file, asked by both layers`
 
 **Next job:** the nine alarm tests.
+
+---
+## Session 119 — 18 August 2026
+
+**Job: ten field reports from build 34, in one pass — the load, the reach, the readings, and two questions answered in writing.**
+
+**THE LOAD TIME WAS TWO DECISIONS STACKED.** `index.html` imported `mvp.js` under `?v=${Date.now()}`, so every launch was a set of URLs no cache had seen and the whole graph came off the network cold — including `lemma.js`, 3.6 MB and nine tenths of the graph, statically imported in front of the first paint. The clock query was right while the document could go stale; session 115 ended that, so the query is `?v=<SHELL_VERSION>` now, `gate2.py` holds it there like the stylesheet, and `sw.js` serves any URL stating a version from the cache, because a new version is a new address chosen by a document that is always fresh. The model loads BEHIND the app: the chain reads it last and can only add, so before it arrives a verb resolves exactly as it did the day the model shipped. Stated cost: a lemma-only verb missed in the first second or two, healed by the next keystroke. Runners await `lemmaReady`. A leftover `console.log` in `resolve()` that wrote the typed line to the console on every keystroke also left.
+
+**THE ACCOUNT SCREEN WAS ASKING A SESSION-113 PLUGIN SESSION-117 QUESTIONS.** The web half updates on every open and the Kotlin only on an APK rebuild, by design, and nothing measured the gap: an absent reading was drawn as `off` and a press called a method that did not exist and failed silently — his two symptoms, one cause. The plugin states its build now (`version()`, build 2), the bridge states the build it was written against, and the screen draws the difference as a loud sentence naming the fix. Absent readings say `unknown`. The Kotlin also opens settings when Android will no longer show the notification prompt: refused twice, the runtime prompt never appears again and the old code drew nothing.
+
+**Reach and touch.** A 60px `+` floats bottom-right on the narrow layout (the bar's `+` is the most-pressed control in the app and sits where a thumb cannot go); wide layouts hide it because the capture box is on screen. The page carries `env(safe-area-inset-*)` so the header no longer sits under the status bar, and the sticky editor header offsets by the same inset. The platform's blue tap flash is off and buttons are not selectable text. Push targets became standard ladders of four or five per precision on a sideways strip; the rules under them are unchanged. The date chip row is the same kind of strip and gained five standard times (`time_suggestions`, config a.18); the two pickers wear the accent, which spends no new colour because pressable is what accent means.
+
+**The two questions, answered as decisions.** `Workflow` left the row — MVP.md has said since session 104 that a row carries Pin, Delete, the Done circle and its push targets, and the WIP places that remain are the rail and the detail panel. And a row's sentence is not drawn when it exactly equals `Due <slot>` for the slot it sits under — thirty rows reading `Due today` under a tab called Today was the heading said back. A time, a hedge, an overdue, a window all keep the sentence, so a task spanning days still states its span. Both are screen decisions; the engine and the key are untouched. Pin and Delete are glyphs, words kept for screen readers, the pin filled while pinned.
+
+**Files changed:** `index.html`, `sw.js`, `gate2.py`, `shell/render.js`, `shell/resolve.js`, `shell/push.js`, `shell/mvp.row.js`, `shell/mvp.list.js`, `shell/mvp.chips.js`, `shell/mvp.edit.js`, `shell/mvp.account.js`, `shell/alarm.bridge.js`, `shell/config.js`, `shell/mvp.css`, `shell/mvp.edit.css`, `shell/mvp.wide.css`, `config.ts`, `types.ts`, `contract.md`, `example.md`, `gate4.mjs`, `shell/check_render.mjs`, `shell/check_alarm.mjs`, `MVP.md`, `spec.md`, `sessions.md`, `log.manifest`, and `CascadeAlarmPlugin.kt` under `android/`
+
+**Versions:** example 41, contract 52, config a.18, shell 35, answer_key 28. Config is 37 objects. No schema change and no migration: `ensureConfig()` upserts a.18 on the first write.
+
+**Tests:** all six green. `gate2.py` passes (now also holding the `mvp.js?v=` to SHELL_VERSION). `selftest.py` 28 of 28. `gate4.mjs` 142 of 142. `check_render.mjs` exact. `check_loud.mjs` 6 of 6. `check_alarm.mjs` passes. Proved headlessly: a verb resolves through the lexicon before `lemmaReady` and identically after it; the day ladder reads Tomorrow · +2 days · Next week · +2 weeks · Next month.
+
+**Not tested:** the safe-area insets, the FAB, the strips and the stale-shell sentence need a phone. The Kotlin changed, so the permission rows only fully resolve after an APK rebuild — until then the loud sentence and the `unknown` readings are the fix.
+
+**Save point:** `launches come off the cache, the model loads behind the app, and the APK states its age`
+
+**Next job:** rebuild the APK, then the nine alarm tests.
