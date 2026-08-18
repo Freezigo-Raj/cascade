@@ -8,7 +8,7 @@
 // panel is what the hand checks. Bump it when anything under shell/ that the
 // panel depends on changes. `gate2.py` reads it and VERSIONS in spec.md states
 // it, the same way config.ts states its own.
-export const SHELL_VERSION = 38;
+export const SHELL_VERSION = 39;
 
 export const W = 68; // total panel width, from spec/example.md section 1
 

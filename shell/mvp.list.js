@@ -149,9 +149,16 @@ export function mountList(root, { openEdit, openAccount, onTasks } = {}) {
 
   function visible() {
     const lists = listOnly(all, partAConfig, now());
-    const pool = tab === "Ideas" ? lists.ideas
-               : tab === "Done" ? lists.done
-               : lists.cards.filter((c) => c.card_band === slot);
+    // A SEARCH IS A QUESTION ABOUT EVERYTHING NOT DONE (session 123, his
+    // call). Scoped to the open slot it kept answering "not in Today" for a
+    // task sitting in Upcoming, which reads as "does not exist". With text in
+    // the box the pool is every band plus Ideas; Done stays out unless the
+    // Done tab itself is open, because a search is for things still owed.
+    const pool = filter.trim()
+      ? (tab === "Done" ? lists.done : [...lists.cards, ...lists.ideas])
+      : tab === "Ideas" ? lists.ideas
+      : tab === "Done" ? lists.done
+      : lists.cards.filter((c) => c.card_band === slot);
     if (!filter.trim()) return pool;
     // The same four tiers the capture box uses, through the same matcher, so
     // the two search boxes cannot disagree about what counts as a match.
@@ -219,7 +226,7 @@ export function mountList(root, { openEdit, openAccount, onTasks } = {}) {
 
   const headRight = el("div", "head-right");
   const tools = el("div", "head-tools");
-  const acct = el("button", "avatar", "\u2022\u2022");
+  const acct = el("button", "avatar", "\u2022\u2022\u2022");
   acct.type = "button";
   acct.title = "Account";
   acct.setAttribute("aria-label", "Account");
@@ -235,14 +242,14 @@ export function mountList(root, { openEdit, openAccount, onTasks } = {}) {
     const b = el("button", "tab", name);
     b.type = "button";
     b.setAttribute("role", "tab");
-    b.addEventListener("click", () => { tab = name; paint(); });
+    b.addEventListener("click", () => { tab = name; filter = ""; searchBox.value = ""; paint(); });
     bar.appendChild(b);
     return b;
   });
 
   const searchBox = el("input", "search");
   searchBox.type = "search";
-  searchBox.placeholder = "search";
+  searchBox.placeholder = "search all tasks";
   // No `draw()` and no `focus()`. The box keeps its own value and its own caret
   // because it is the same element it was a keystroke ago.
   searchBox.addEventListener("input", () => { filter = searchBox.value; paint(); });
@@ -265,7 +272,7 @@ export function mountList(root, { openEdit, openAccount, onTasks } = {}) {
   const slotButtons = SLOTS.map((name) => {
     const b = el("button", "slot", name);
     b.type = "button";
-    b.addEventListener("click", () => { slot = name; paint(); });
+    b.addEventListener("click", () => { slot = name; filter = ""; searchBox.value = ""; paint(); });
     slots.appendChild(b);
     return b;
   });

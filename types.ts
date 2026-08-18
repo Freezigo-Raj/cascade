@@ -141,7 +141,7 @@ export interface Task {
 
   // Deferred: Part B
   /** `{every, unit}` while the task repeats, empty when it does not. */
-  recurrence: { every: number; unit: "day" | "week" | "month" } | null;
+  recurrence: { every: number; unit: "day" | "week" | "month" | "year" } | null;
   /** What the person asked for. The shell is what fires it. */
   alarm_type: AlarmType;
   /** Minutes before `due_at`. Empty when there is no alarm. */

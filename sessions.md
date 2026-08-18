@@ -2813,3 +2813,28 @@ Colour meant one thing and now means three. Accent is pressable, `#c0492b` is ov
 **Save point:** `the scroll shows itself, the type control answers how many, the alarm asks in four words`
 
 **Next job:** rebuild the APK, then the nine alarm tests.
+
+---
+## Session 123 — 18 August 2026
+
+**Job: the lock screen rang and wrote nothing; the alarm moves onto the capture screen; his slide review.**
+
+**EVERY LOCK-SCREEN OUTCOME WAS SILENTLY LOST.** `apply()` passed the changed record alone to `tasks.update(...)` where the store's contract is `update(id, record)`; the store threw `is not here` into a catch and Done, Push, Snooze and the unanswered escalation all wrote NOTHING — the alarm rang correctly and then forgot everything it decided. All four branches now pass the id. Honesty note: `check_alarm.mjs` proves the pure functions and never calls `apply()`, so this walked straight past it — recorded in the log. Web-half fix only; no APK rebuild needed for it.
+
+**A lock-screen Done spawns the repeat's next occurrence** exactly as the list's Done does. Before this, only the in-app press spawned, so a weekly task closed from the alarm screen silently ended its series.
+
+**THE ALARM LIVES ON THE CAPTURE SCREEN** while the line carries an exact time: toggle + `rings 2:45pm` (due minus lead, config default). No time, no row; the panel keeps Lead and the four words.
+
+**His slides:** date chips as TWO SIDE-BY-SIDE SCROLL COLUMNS (near `This…`/`Tonight` left, later right, ~3 chips each, drawn scrollbar + fade); repeat read back as one sentence (`every week on Tuesday at 3pm`, derived from the anchoring due date); `year` joined the repeat units (one line in `step()`, n×12 months — proved headlessly, 14 Aug 2026 + 1 year → 14 Aug 2027); number inputs wear sheet + drawn edge (a field, not a chip); the sticky header wears the paper (no band behind the bound chip); avatar is `•••`; the narrow bar's `+` is gone (FAB covers it; wide keeps `+`); push ladder shows three rungs; search covers every not-done task when text is present, placeholder `search all tasks`, and any slot/tab press clears it.
+
+**Files changed:** `index.html`, `shell/render.js`, `shell/alarm.bridge.js`, `shell/repeat.js`, `shell/mvp.edit.js`, `shell/mvp.panel.js`, `shell/mvp.chips.js`, `shell/mvp.list.js`, `shell/mvp.css`, `shell/mvp.edit.css`, `shell/mvp.wide.css`, `types.ts`, `contract.md`, `MVP.md`, `spec.md`, `sessions.md`, `log.manifest`
+
+**Versions:** shell 39, contract 54. Config unchanged a.19, example 42, answer_key 28. No Kotlin change.
+
+**Tests:** all six green; sealed 470. Year spawn proved headlessly.
+
+**Not tested:** the fixed lock-screen outcomes and the capture-screen alarm need the phone.
+
+**Save point:** `the lock screen keeps its word, the alarm shows itself before the panel, the chips know now from later`
+
+**Next job:** his phone pass on build 39; the nine alarm tests, especially 9 (unanswered escalation), now that outcomes actually write.

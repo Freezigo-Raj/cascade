@@ -33,6 +33,7 @@ const { partAConfig } = await import(`./config.js${v}`);
 const { tasks } = await import(`./store.select.js${v}`);
 const { canAlarm, alarmAt, ringAt, snoozed, unanswered } = await import(`./alarm.js${v}`);
 const { pushed } = await import(`./push.js${v}`);
+const { spawn } = await import(`./repeat.js${v}`);
 const { listOnly } = await import(`./resolve.js${v}`);
 
 const DEBOUNCE_MS = 2000;
@@ -187,7 +188,10 @@ async function apply(id, verb, tsMs) {
 
   if (verb === "DONE") {
     const stamp = isoAt(Math.max(tsMs, ms(task.updated_at ?? now) + 1000, Date.now()), task);
-    await tasks.update({
+    // update(id, record) — every branch here once passed the record alone, the
+    // store threw `is not here` into a catch, and lock-screen Done, Push,
+    // Snooze and the unanswered escalation all wrote NOTHING (session 123).
+    await tasks.update(task.id, {
       ...task,
       task_state: "done",
       closed_at: now,
@@ -195,22 +199,28 @@ async function apply(id, verb, tsMs) {
       alarm_unanswered_at: null,
       updated_at: stamp,
     });
+    // A LOCK-SCREEN DONE IS A DONE: a repeat spawns its next occurrence here
+    // exactly as it does from the list (session 123 — before this, only the
+    // in-app press spawned, so a weekly task closed from the alarm screen
+    // silently ended its series).
+    const next = spawn({ ...task, task_state: "done" }, crypto.randomUUID(), now);
+    if (next) await tasks.add(next);
     return;
   }
   if (verb.startsWith("PUSH:")) {
     // The target travels whole, offset included, because a due date is a local
     // instant and rebuilding one from epoch milliseconds would drop the zone.
     const to = verb.slice("PUSH:".length);
-    await tasks.update(pushed(task, to, now));
+    await tasks.update(task.id, pushed(task, to, now));
     return;
   }
   if (verb.startsWith("SNOOZE")) {
     const mins = Number(verb.split(":")[1]) || partAConfig.alarm_defaults.auto_snooze_min;
-    await tasks.update(snoozed(task, mins, now));
+    await tasks.update(task.id, snoozed(task, mins, now));
     return;
   }
   if (verb === "UNANSWERED") {
-    await tasks.update(unanswered(task, now));
+    await tasks.update(task.id, unanswered(task, now));
   }
 }
 

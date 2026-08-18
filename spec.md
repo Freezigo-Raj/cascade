@@ -40,10 +40,10 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 ## VERSIONS
 
   example      42
-  contract     53
+  contract     54
   config       a.19
   answer_key   28
-  shell        38
+  shell        39
   gate1        signed on example 35
   gate2        signed on contract 32
   gate3        signed on shell 1
@@ -79,27 +79,36 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 
 ## THIS SESSION'S JOB
 
-Build 37 on the phone: the scroll that read as vanished, the type control, and four words for the alarm.
+Session 123: the lock screen was ringing and writing nothing, the alarm moves onto the capture
+screen, and his slide review — ten screen items in all.
 
-**THE SCROLL DID NOT VANISH; ITS AFFORDANCE DID, and that is the same thing.** Build 37 capped the
-date scroller at exactly two rows, hid the scrollbar, and put the fade in the row gap where it painted
-nothing. Two opaque rows with no hint below them is a wall, whatever the overflow property says. His
-sizing now stands: one row of each group visible — about three options — and the rest down a vertical
-scroll that LOOKS scrollable, with a thin drawn scrollbar, a bottom fade over real chips, and the
-scroll contained inside the strip so it does not drag the page.
+**EVERY LOCK-SCREEN OUTCOME WAS SILENTLY LOST, and one wrong call signature did it.** The bridge's
+`apply()` passed the changed record alone to `tasks.update(...)`, but the store's contract is
+`update(id, record)`. The store threw `is not here` into a catch, the console warned where no one
+reads it, and Done, Push, Snooze and the unanswered escalation all wrote NOTHING — the alarm rang
+correctly and then forgot everything it decided. All four branches now pass the id. This is exactly
+the kind of defect check_alarm.mjs never sees: it proves the pure functions and never calls
+`apply()`, which is recorded rather than hidden.
 
-**THE TYPE CONTROL IS A DROPDOWN OF ALL FOURTEEN, and this reverses session 91 on his instruction.**
-He asked the screen a question it could not answer — how many types are there? — because three chips
-answer "which of these three" and nothing answers "what exists". The native select shows every type,
-wears the engine's guess as its value, scrolls on its own, and is the control the design always drew:
-the example's panel has said `⟨action ▾⟩` since Stage 1, so the chips were the deviation and this is
-the return. What session 91 protected still stands untouched: `verb_to_type` maps a verb to exactly
-one type, there are no runners-up, and nothing is guessed. The Type group left the advanced panel —
-the dropdown holds all fourteen, so a second copy was the same control twice — and the panel now runs
-notes, alarm, repeat, firmness, duration.
+**A LOCK-SCREEN DONE NOW SPAWNS THE REPEAT'S NEXT OCCURRENCE.** Only the in-app press spawned, so
+a weekly task closed from the alarm screen silently ended its series. `apply()` does what the list
+does: write done, then spawn.
 
-**The alarm's three sentences became four words**: `Needs an exact time.` The old paragraph explained
-midnight to a person who only needed to know what was missing.
+**THE ALARM LIVES ON THE CAPTURE SCREEN** while the line carries an exact time: a toggle and the
+instant it will ring, `rings 2:45pm`, due minus lead. Setting a ring should not require opening the
+panel, and a toggle that hides its consequence is a guess. No time, no row — the panel's four words
+cover that.
+
+**His slides**: the date chips are TWO COLUMNS SIDE BY SIDE, each its own three-chip scroll — near
+phrases (`This …`, `Tonight`) left, later right, so the first glance answers "now or later". The
+repeat states the app's reading as one sentence, `every week on Tuesday at 3pm`, derived from the
+due date the schedule anchors on. `year` joined the repeat units — one line in `step()`, twelve
+months. Number boxes wear a sheet ground and a drawn edge so they read as fields, not one more
+chip. The sticky header wears the paper, so no band sits behind the bound chip. The avatar is three
+dots. The bar's `+` left the narrow layout — the FAB is the same control where a thumb is — and the
+wide layout keeps it. Search covers EVERY task not done (all bands plus Ideas) the moment the box
+has text, says so (`search all tasks`), and a slot or tab press clears it, because a navigation is
+an answer accepted. The push ladder shows three rungs before the fade.
 
 ## NEXT THREE JOBS
 
@@ -838,3 +847,10 @@ have landed. That is the price of the single table and it is accepted.
 - 18 Aug 2026 — **Reverses** session 91, quoted as Part 11 requires: *"The type chip offers three and hides eleven behind an advanced panel — `verb_to_type` maps a verb to one type, so there are no runners-up and alternates would have to be guessed from a table with nothing behind it — a fixed short list is honest where a guessed one is not."* Requested directly this session — the three chips could not answer "how many types are there", which is what he asked the screen — the control is a native dropdown of all fourteen with the engine's guess as its value, which is what the example has drawn since Stage 1 (`⟨action ▾⟩`), so the chips were the deviation. Everything the old entry protected stands: one derived type, no runners-up, nothing guessed. `type_suggestions` stays in config; the Stage 3 harness still reads it.
 - 18 Aug 2026 — The Type group left the advanced panel — the dropdown beside the ⋯ holds all fourteen, so a second copy in the panel was the same control drawn twice — the panel runs notes, alarm, repeat, firmness, duration.
 - 18 Aug 2026 — The alarm's missing-time note is four words, `Needs an exact time.` — the old three sentences explained midnight arithmetic to a person who only needed to know what was missing — his edit, near verbatim.
+- 18 Aug 2026 — Every lock-screen alarm outcome wrote nothing: `apply()` passed the record alone where the store's contract is `update(id, record)`, the throw landed in a catch, and Done, Push, Snooze and the unanswered escalation were all silently lost — all four branches now pass the id — `check_alarm.mjs` proves the pure functions and never calls `apply()`, so this walked past it, recorded rather than hidden.
+- 18 Aug 2026 — A lock-screen Done spawns the repeat's next occurrence exactly as the list's Done does — before this only the in-app press spawned, so closing a weekly task from the alarm screen silently ended its series.
+- 18 Aug 2026 — The alarm toggle lives on the capture screen while the line carries an exact time, stating the instant it will ring (`rings 2:45pm`, due minus lead) — setting a ring should not require opening the panel, and a toggle that hides its consequence is a guess — no time, no row; the panel's four words cover that case.
+- 18 Aug 2026 — The date chips are two side-by-side columns, each its own ~3-chip vertical scroll with drawn scrollbar and fade — near phrases (`This …`, `Tonight`) left, later phrases right — one wrapped strip made today and next month neighbours, and the first glance should answer `now or later`.
+- 18 Aug 2026 — `year` joined the repeat units — one line in `step()`, `n * 12` months, so 29 Feb rolls to 1 Mar by the arithmetic months already rely on — and the panel states the app's reading of a set repeat as one sentence, `every week on Tuesday at 3pm`, derived from the due date the schedule anchors on, because a control that echoes its meaning back cannot be silently misread.
+- 18 Aug 2026 — Screen dressing from his slides: number inputs wear a sheet ground and a drawn edge (a field, not one more chip); the sticky header wears the paper so no band sits behind the bound chip; the avatar is three dots; the narrow bar's `+` is gone (the FAB is the same control where a thumb is; wide keeps the `+`); the push ladder shows three rungs before the fade.
+- 18 Aug 2026 — With text in the search box the pool is every band plus Ideas rather than the open slot — scoped, a task in Upcoming answered `not in Today`, which reads as `does not exist` — the placeholder says `search all tasks`, Done stays out unless the Done tab is open, and a slot or tab press clears the box because a navigation is an answer accepted.

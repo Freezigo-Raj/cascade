@@ -14,6 +14,7 @@
   /* The capture box is already on screen at this width; a floating way into it
      would be a control with nothing to open. */
   .fab { display: none; }
+  .plus { display: inline-flex; }
 
   /* Set so `mvp.js` can ask whether this file arrived. Without it, a wide window
      missing this stylesheet looks exactly like a phone, which is the worst kind

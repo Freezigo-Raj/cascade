@@ -56,13 +56,14 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
   const dateRow = el("div", "dates-block");
   const doRow = el("div", "dorow");
   const typeRow = el("div", "taps types");
+  const alarmRow = el("div", "alarm-row");
   const panel = el("div", "panel");
   const matches = el("div", "matches");
   // The order is the order of the decisions: the words, then the date they
   // carry, then what kind of thing it is, then how much it matters — and only
   // then the press. Add sat above the type chips and asked to be pressed before
   // the last two answers were given.
-  root.append(head, box, dateRow, typeRow, panel, doRow, matches);
+  root.append(head, box, dateRow, typeRow, alarmRow, panel, doRow, matches);
 
   // The chip row is built once. It holds two native pickers, and a picker that is
   // rebuilt while it is open closes without returning anything: opening a
@@ -362,6 +363,15 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
     doRow.appendChild(go);
   }
 
+  /** `2:45pm` from epoch ms, the phone's own clock. */
+  function fmtClock(t) {
+    const d = new Date(t);
+    let h = d.getHours(); const m = d.getMinutes();
+    const half = h >= 12 ? "pm" : "am";
+    h = h % 12 || 12;
+    return h + (m ? ":" + String(m).padStart(2, "0") : "") + half;
+  }
+
   function drawTypes(out) {
     typeRow.innerHTML = "";
     panel.innerHTML = "";
@@ -383,6 +393,23 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
     }
     sel.addEventListener("change", () => { typeTap = sel.value; paint(); });
     typeRow.appendChild(sel);
+    // THE ALARM LIVES ON THE CAPTURE SCREEN when the line carries an exact
+    // time (session 123, his call) — setting a ring should not require
+    // opening the panel. The row states when it will ring, due minus lead,
+    // because a toggle that hides the consequence is a guess. No time, no
+    // row: the panel's four words cover that case.
+    alarmRow.innerHTML = "";
+    if (out.task.has_time && out.task.due_at) {
+      const on = alarmType !== "none";
+      const lead = leadMin ?? partAConfig.alarm_defaults.lead_min;
+      const ringMs = new Date(out.task.due_at).getTime() - lead * 60000;
+      const tog = button("chip alarm-toggle" + (on ? " on" : ""),
+        on ? "Alarm on" : "Alarm off",
+        () => { alarmType = on ? "none" : "on"; paint(); });
+      tog.setAttribute("aria-pressed", String(on));
+      alarmRow.appendChild(tog);
+      if (on) alarmRow.appendChild(el("span", "alarm-when", "rings " + fmtClock(ringMs)));
+    }
     const more = button("chip more" + (advanced ? " on" : ""), "\u22ef", () => { advanced = !advanced; paint(); });
     more.setAttribute("aria-expanded", String(advanced));
     more.title = "Advanced";
@@ -393,6 +420,7 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
         // The toggle exists only while the line carries a time, and this is the
         // engine's answer to that rather than the screen's guess at it.
         hasTime: Boolean(out.task.has_time),
+        dueAt: out.task.due_at,
         durationMin: durTap ?? out.task.est_duration_min,
         durationTapped: durTap !== null,
         firmness: firmTap,

@@ -117,14 +117,22 @@ export function makeDates(row, config, on) {
   pinned.appendChild(picker("Pick time", (value) => on.pickTime(timeWords(value))));
   row.appendChild(pinned);
 
-  // The date scroller. Ten phrases, every one proved against the engine before
-  // it joined the config, wrapping as chips do and scrolling down past two rows.
-  const dscroll = el("div", "taps scroll-dates");
+  // TWO COLUMNS SIDE BY SIDE, EACH ITS OWN SCROLL (session 123, from his
+  // slides): the near column holds today's phrases (the ones starting `This`,
+  // plus `Tonight`), the far column holds everything later. Ten phrases in one
+  // wrapped strip made today and next month neighbours; split by horizon, the
+  // first glance answers "now or later" before any scrolling. Every phrase is
+  // still proved against the engine before it may join the config.
+  const cols = el("div", "dates-cols");
+  const near = el("div", "taps date-col");
+  const later = el("div", "taps date-col");
   for (const preset of config.chip_presets) {
     if (PICKERS.has(preset)) continue; // an old config naming the pickers loses nothing
-    dscroll.appendChild(button("chip", preset, () => on.pickWords(preset)));
+    const today = preset.startsWith("This") || preset === "Tonight";
+    (today ? near : later).appendChild(button("chip", preset, () => on.pickWords(preset)));
   }
-  row.appendChild(dscroll);
+  cols.append(near, later);
+  row.appendChild(cols);
 
   // The standard times. Five chips is at most two rows, so nothing to cap.
   const tscroll = el("div", "taps times-row");

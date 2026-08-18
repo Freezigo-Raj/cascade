@@ -1,6 +1,6 @@
 # Cascade Part A — Contract
 
-Stage 2 deliverable, version 53. Companion to `spec/example.md`; see VERSIONS in spec.md.
+Stage 2 deliverable, version 54. Companion to `spec/example.md`; see VERSIONS in spec.md.
 
 This file says what every piece of information **is**. `spec/example.md` says what one session **was**. Where they disagree, one of them is wrong and the disagreement is a defect.
 
@@ -169,7 +169,7 @@ Typed now so the record shape is fixed, as Part 3 Stage 2 requires. Part A write
 
 | Name | Type | Required | Unit | Range | Part A writes | Part |
 |---|---|---|---|---|---|---|
-| `recurrence` | object | optional | — | `{every, unit}` with `unit` one of `day` `week` `month`. Empty when the task does not repeat. | *(none)* | the advanced panel |
+| `recurrence` | object | optional | — | `{every, unit}` with `unit` one of `day` `week` `month` `year` (`year` added session 123). Empty when the task does not repeat. | *(none)* | the advanced panel |
 | `alarm_type` | one-of-a-fixed-set | yes | — | an `alarm_types` member. `none` on capture. Set only while `has_time`. | `none` | the advanced panel |
 | `alarm_lead_min` | whole number | optional | minutes | Before `due_at`, up to `alarm_defaults.max_lead_min`. Empty when `alarm_type` is `none`. | *(none)* | the advanced panel |
 | `alarm_snoozed_until` | instant | optional | — | When it rings instead of `alarm_at`. Empty until a snooze. May sit past `due_at`. | *(none)* | the alarm shell |

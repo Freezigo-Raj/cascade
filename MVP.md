@@ -161,7 +161,7 @@ The box is at the top. The tap buttons are with it. The matching tasks are below
 |---|---|---|
 | Text box | 1 | The only one in Part A. On edit it holds the **title**, never the typed line |
 | Add / Edit | 1 | Reads `Add` when empty, `Edit` when a task is loaded |
-| Date chips | 10 | From `chip_presets` (session 121): This afternoon, This evening, Tonight, Tomorrow morning/afternoon/evening, Weekend, Next weekend, Next week, Next month — every phrase proved against the engine before joining (`day after tomorrow` failed and is out). One row visible, the rest down a vertical scroll with a thin drawn scrollbar and a bottom fade (session 122: build 37 hid the scrollbar and the scroll read as vanished) |
+| Date chips | 10 | From `chip_presets` (session 121), every phrase proved against the engine before joining (`day after tomorrow` failed and is out). Two columns side by side (session 123): near phrases (`This …`, `Tonight`) left, later right, each its own ~3-chip vertical scroll with a thin drawn scrollbar and a bottom fade |
 | Pick date | 1 | A date picker, PINNED beside the tick with Pick time — the way into every unlisted date never scrolls away (session 121) |
 | Pick time | 1 | A time picker, pinned |
 | Time chips | 5 | `9am` `12pm` `3pm` `6pm` `9pm`, their own row below the date scroller, capped at one row with the same drawn scrollbar where they wrap |
@@ -172,8 +172,8 @@ The box is at the top. The tap buttons are with it. The matching tasks are below
 | Advanced | 1 | Opens a panel on the same screen. Everything that corrects what the typing already said, in one place |
 | Takes about | 1 + 3 + 4 | In the advanced panel. A number box and `min` / `hour` / `day`, plus four suggestions. Sets `duration_tap`; the label says whether the number is the person's or the verb's |
 | How firm | 4 | In the advanced panel. `auto` / `normal` / `soft` / `hard`. `auto` gives the marker words their say back, so the tap is undoable |
-| Repeat | 1 | In the advanced panel. An interval: every N days, weeks or months |
-| Alarm | 1 | In the advanced panel, and ONLY while the line carries a time. `none` / `on`. Without a time the row is replaced by four words: `Needs an exact time.` (session 122) |
+| Repeat | 1 | In the advanced panel. An interval: every N days, weeks, months or years (`year` added session 123). A set repeat is read back as one sentence — `every week on Tuesday at 3pm` — derived from the due date it anchors on. Marking one done spawns the next, from the list AND from the lock screen (session 123) |
+| Alarm | 2 | ON THE CAPTURE SCREEN while the line carries an exact time (session 123): a toggle plus the instant it will ring, `rings 2:45pm`, due minus lead. The panel keeps the Lead input; without a time the panel row is four words: `Needs an exact time.` (session 122) |
 | Lead | 1 | Minutes before the task. 15 by default, changed per task. The note under it states the ring length, the auto-snooze interval and the limit |
 | Notes | 1 | In the advanced panel, at the foot of it. Read, never matched: a note reaches neither search nor the duplicate warning |
 | Low / Normal / High | 3 | Normal is the default and is marked |
@@ -306,7 +306,7 @@ The mobile sentence, because a notification is the smallest screen there is. Pus
 
 ## Counts
 
-3 text boxes (capture, the notes, and the list's search). 31 fixed buttons on screens 1 and 2 outside the advanced panel — screen 1: three tabs, `+`, the floating `+`, three slot buttons, the avatar; screen 2: ten date chips, two pickers, five time chips, `⋯`, three significance buttons, Add — plus the type dropdown (all fourteen types, session 122) — plus 4 or 5 push buttons per row, plus 3 on screen 3 (export, sign out, back). 1 dialog carrying up to 3 warnings, 1 toast.
+3 text boxes (capture, the notes, and the list's search — the search covers every task not done and clears on any slot or tab press, session 123). 31 fixed buttons on screens 1 and 2 outside the advanced panel — screen 1: three tabs, `+` (wide layout only, session 123 — narrow keeps just the floating `+`), the floating `+`, three slot buttons, the avatar (three dots); screen 2: ten date chips in two scroll columns, two pickers, five time chips, the alarm toggle when a time is stated, `⋯`, three significance buttons, Add — plus the type dropdown (all fourteen types, session 122) — plus 4 or 5 push buttons per row (three visible before the fade), plus 3 on screen 3 (export, sign out, back). 1 dialog carrying up to 3 warnings, 1 toast.
 
 ---
 

@@ -31,7 +31,31 @@
 const v = new URL(import.meta.url).search;
 const { el, button } = await import(`./mvp.paint.js${v}`);
 
-const REPEAT_UNITS = ["day", "week", "month"];
+const REPEAT_UNITS = ["day", "week", "month", "year"];
+
+const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const MONTHS = ["January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"];
+const nth = (n) => n + (n % 10 === 1 && n !== 11 ? "st" : n % 10 === 2 && n !== 12 ? "nd" : n % 10 === 3 && n !== 13 ? "rd" : "th");
+
+/** The app's reading of the repeat, as one sentence, derived from the due
+ * date the schedule anchors on (session 123, his slide): `every week on
+ * Tuesday at 3pm`. Spawn-on-done semantics mean the sentence describes the
+ * schedule, not a promise about when the next row appears. */
+function repeatSentence(repeat, dueAt, hasTime) {
+  if (!repeat || !dueAt) return null;
+  const n = repeat.every ?? 1;
+  const base = n === 1 ? `every ${repeat.unit}` : `every ${n} ${repeat.unit}s`;
+  const d = new Date(dueAt.slice(0, 19));
+  let when = "";
+  if (repeat.unit === "week") when = ` on ${WEEKDAYS[d.getDay()]}`;
+  if (repeat.unit === "month") when = ` on the ${nth(d.getDate())}`;
+  if (repeat.unit === "year") when = ` on ${d.getDate()} ${MONTHS[d.getMonth()]}`;
+  const clock = hasTime
+    ? ` at ${((d.getHours() + 11) % 12) + 1}${d.getMinutes() ? ":" + String(d.getMinutes()).padStart(2, "0") : ""}${d.getHours() < 12 ? "am" : "pm"}`
+    : "";
+  return base + when + clock;
+}
 
 /** `min` `hour` `day` in descending size, so a duration reads in its largest whole unit. */
 const unitsBySize = (config) =>
@@ -54,7 +78,7 @@ export function splitDuration(minutes, config) {
  *                               setDuration, setFirmness, setNotes }
  */
 export function drawPanel(panel, config, state, on) {
-  const { repeat, alarmType, leadMin, hasTime } = state;
+  const { repeat, alarmType, leadMin, hasTime, dueAt } = state;
   const { durationMin, durationTapped, firmness, notes } = state;
 
   const group = (label, into) => {
@@ -140,7 +164,11 @@ export function drawPanel(panel, config, state, on) {
     rep.appendChild(button("chip" + (on_ ? " on" : ""), u + "s", () =>
       on.setRepeat({ every: Math.max(1, Number(every.value) || 1), unit: u })));
   }
-  group("Repeat every", rep);
+  const repWrap = el("div", "");
+  repWrap.appendChild(rep);
+  const sentence = repeatSentence(repeat, dueAt, hasTime);
+  if (sentence) repWrap.appendChild(el("div", "note repeat-said", sentence));
+  group("Repeat every", repWrap);
 
   // ------------------------------------------------------------------ firmness
   //

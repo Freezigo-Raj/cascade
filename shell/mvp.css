@@ -46,7 +46,7 @@
      serving an old stylesheet has now cost three sessions of guessing at what
      had and had not arrived. A number that can be read is worth more than a
      number that has to be trusted. */
-  --css-version: 38;
+  --css-version: 39;
 
   --step: 4px;
   --r-card: 18px;
@@ -240,6 +240,11 @@ html, body {
 .search:focus-visible { outline: 0; border-color: var(--signal); background: var(--sheet); }
 
 .plus {
+  /* GONE ON NARROW (session 123, his slide): the FAB is the same control
+     where a thumb is, so a second + in the unreachable top bar was noise.
+     The wide layout keeps it — there the + unbinds the panel and no FAB
+     exists. mvp.wide.css turns it back on. */
+  display: none;
   width: 34px;
   height: 34px;
   border-radius: 50%;
@@ -382,7 +387,9 @@ html, body {
   flex-direction: column;
   gap: 5px;
   flex-shrink: 0;
-  max-height: 56px;
+  /* Three rungs before the fade (session 123, his slide) — two showed and
+     the third most-used target was always a scroll away. */
+  max-height: 84px;
   overflow-y: auto;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;

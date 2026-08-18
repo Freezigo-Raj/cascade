@@ -10,11 +10,11 @@
  * that reason and for no other.
  */
 
-@import url("./mvp.css?v=38");
-@import url("./mvp.account.css?v=38");
-@import url("./mvp.wide.css?v=38");
-@import url("./mvp.chrome.css?v=38");
-@import url("./mvp.web.css?v=38");
+@import url("./mvp.css?v=39");
+@import url("./mvp.account.css?v=39");
+@import url("./mvp.wide.css?v=39");
+@import url("./mvp.chrome.css?v=39");
+@import url("./mvp.web.css?v=39");
 
 /* ------------------------------------------------------------ screen 2
  *
@@ -42,7 +42,10 @@
      the header slid back under the status bar on the first scroll. */
   top: env(safe-area-inset-top, 0px);
   z-index: 3;
-  background: var(--sheet);
+  /* The ground, not a card (session 123, his slide): a sheet-coloured strip
+     behind the bound chip read as a band across the screen. Sticky still
+     needs opacity, so it wears the paper the page already wears. */
+  background: var(--paper);
   padding: calc(var(--step) * 2) 0;
 }
 
@@ -114,23 +117,37 @@
    below" and the scroll read as vanished. A thin scrollbar is drawn, the last
    14px fade, and the scroll stays inside the strip instead of dragging the
    page. */
-.taps.scroll-dates, .taps.times-row {
-  max-height: 46px;
+/* TWO DATE COLUMNS (session 123, his slides): near dates left, later dates
+   right, each a vertical scroll about three chips tall with a drawn thin
+   scrollbar and a bottom fade. The times keep their capped single strip. */
+.dates-cols {
+  display: flex;
+  gap: calc(var(--step) * 2);
+  margin-top: calc(var(--step) * 2);
+}
+.taps.date-col {
+  flex: 1 1 0;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+}
+.taps.date-col .chip { text-align: center; }
+.taps.date-col, .taps.times-row {
+  max-height: 118px;
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: var(--edge) transparent;
   padding-right: 6px;
-}
-.taps.scroll-dates::-webkit-scrollbar, .taps.times-row::-webkit-scrollbar { width: 3px; }
-.taps.scroll-dates::-webkit-scrollbar-thumb, .taps.times-row::-webkit-scrollbar-thumb {
-  background: var(--edge);
-  border-radius: 2px;
-}
-.taps.scroll-dates {
   -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 14px), transparent);
   mask-image: linear-gradient(to bottom, black calc(100% - 14px), transparent);
+}
+.taps.times-row { max-height: 46px; }
+.taps.date-col::-webkit-scrollbar, .taps.times-row::-webkit-scrollbar { width: 3px; }
+.taps.date-col::-webkit-scrollbar-thumb, .taps.times-row::-webkit-scrollbar-thumb {
+  background: var(--edge);
+  border-radius: 2px;
 }
 
 /* The two pickers LOOK like what they are (session 119): the way into every
@@ -225,8 +242,11 @@
   font-size: 13px;
   font-weight: 600;
   color: var(--ink);
-  background: var(--sunk);
-  border: 1.5px solid transparent;
+  /* A field, not a chip (session 123, his slide): the numbers sat in the same
+     sunk pill as the taps around them and read as one more option. A sheet
+     ground with a drawn edge says "type here". */
+  background: var(--sheet);
+  border: 1.5px solid var(--edge);
   border-radius: var(--r-pill);
   padding: calc(var(--step) * 2) calc(var(--step) * 3);
   width: 68px;
@@ -355,3 +375,8 @@
   max-width: 60%;
 }
 .type-select:focus-visible { border-color: var(--signal); outline: none; }
+
+/* The alarm on the capture screen (session 123): drawn only while the line
+   carries an exact time; the toggle plus the instant it will ring. */
+.alarm-row { display: flex; align-items: center; gap: calc(var(--step) * 3); margin-top: calc(var(--step) * 2); }
+.alarm-when { font-size: 12.5px; color: var(--signal-deep); font-weight: 600; }
