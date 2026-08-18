@@ -6,7 +6,7 @@
 // Vocabulary members are never removed or repurposed, only deactivated.
 const active = (id) => ({ id, active: true });
 export const partAConfig = {
-    version: "a.18",
+    version: "a.19",
     // --- Vocabulary: records hold these members ---
     // Drawn only from what the example exercises. Thin on purpose:
     // a missing member falls to `other`, which is free. An extra member is permanent.
@@ -215,7 +215,13 @@ export const partAConfig = {
         },
     },
     chip_presets: [
-        "This afternoon", "Tonight", "Tomorrow morning", "Weekend", "Pick date", "Pick time",
+        // The date scroller, one chip per phrase the engine reads (session 121;
+        // each is proved headlessly before joining — `day after tomorrow` failed
+        // and is out). The two pickers left this list: they are screen furniture,
+        // pinned beside the tick, not vocabulary.
+        "This afternoon", "This evening", "Tonight",
+        "Tomorrow morning", "Tomorrow afternoon", "Tomorrow evening",
+        "Weekend", "Next weekend", "Next week", "Next month",
     ],
     // Times a thumb can reach without opening a dial (session 119). Screen
     // vocabulary like `chip_presets`: each types its label into the box, the

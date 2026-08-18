@@ -10,7 +10,7 @@ import type { Config } from "./types";
 const active = (id: string) => ({ id, active: true });
 
 export const partAConfig: Config = {
-  version: "a.18",
+  version: "a.19",
 
   // --- Vocabulary: records hold these members ---
   // Drawn only from what the example exercises. Thin on purpose:
@@ -242,7 +242,13 @@ export const partAConfig: Config = {
   },
 
   chip_presets: [
-    "This afternoon", "Tonight", "Tomorrow morning", "Weekend", "Pick date", "Pick time",
+      // The date scroller, one chip per phrase the engine reads (session 121;
+      // each is proved headlessly before joining — `day after tomorrow` failed
+      // and is out). The two pickers left this list: they are screen furniture,
+      // pinned beside the tick, not vocabulary.
+      "This afternoon", "This evening", "Tonight",
+      "Tomorrow morning", "Tomorrow afternoon", "Tomorrow evening",
+      "Weekend", "Next weekend", "Next week", "Next month",
   ],
   // Times a thumb can reach without opening a dial (session 119). Screen
   // vocabulary like `chip_presets`: each types its label into the box, the

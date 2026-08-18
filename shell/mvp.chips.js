@@ -1,7 +1,18 @@
-// Cascade Part A — the date chip row on screen 2.
+// Cascade Part A — the date block on screen 2.
 //
-// Every control here does one thing: put words in the box. A date arrives one
-// way, through the words in the line, and nothing here sets a date field.
+// Every control here does one thing: hand words to the line the engine reads.
+// A date arrives one way, through words, and nothing here sets a date field.
+// Since session 121 the words no longer appear in the box — the box holds what
+// the person typed, the picked words ride beside it (see `mvp.edit.js`), and
+// the tick chip is where the engine's reading shows. The engine is untouched:
+// it still receives one line with the picked words in it.
+//
+// THREE PIECES, in one block: a pinned row holding the tick and the two
+// pickers, which never move and never scroll (his call, session 121: the way
+// into every unlisted date must always be visible); a date scroller of the
+// config's phrases; and a row of standard times. The scrollers cut nothing in
+// half — the date scroller fades at its bottom edge instead, which says "more
+// below" without amputating a chip.
 //
 // BUILT ONCE AND NEVER REDRAWN, which is the third time this rule has had to be
 // applied and the second time it was applied late. The capture box has had it
@@ -95,30 +106,35 @@ function picker(label, onPicked) {
  */
 export function makeDates(row, config, on) {
   row.innerHTML = "";
+
+  // The pinned row: the engine's reading, then the two ways into any date and
+  // any time the chips below do not carry. These never scroll out of reach.
+  const pinned = el("div", "taps pinned");
   const tickSlot = el("span", "tick-slot");
-  row.appendChild(tickSlot);
+  pinned.appendChild(tickSlot);
+  pinned.appendChild(picker("Pick date", (value) =>
+    on.pickWords(dateWords(value, new Date().getFullYear()))));
+  pinned.appendChild(picker("Pick time", (value) => on.pickTime(timeWords(value))));
+  row.appendChild(pinned);
 
+  // The date scroller. Ten phrases, every one proved against the engine before
+  // it joined the config, wrapping as chips do and scrolling down past two rows.
+  const dscroll = el("div", "taps scroll-dates");
   for (const preset of config.chip_presets) {
-    if (!PICKERS.has(preset)) {
-      row.appendChild(button("chip", preset, () => on.typeWords(preset)));
-      continue;
-    }
-    row.appendChild(picker(preset, (value) => {
-      if (preset === "Pick date") on.typeWords(dateWords(value, new Date().getFullYear()));
-      else on.typeTime(timeWords(value));
-    }));
+    if (PICKERS.has(preset)) continue; // an old config naming the pickers loses nothing
+    dscroll.appendChild(button("chip", preset, () => on.pickWords(preset)));
   }
+  row.appendChild(dscroll);
 
-  // Standard times after the pickers (session 119). The row scrolls sideways,
-  // so five more chips cost no height, and a common time is one press instead
-  // of a dial. Each types its label, exactly as a preset does; the picker stays
-  // for every time that is not on the strip.
+  // The standard times. Five chips is at most two rows, so nothing to cap.
+  const tscroll = el("div", "taps times-row");
   for (const t of config.time_suggestions ?? []) {
-    row.appendChild(button("chip time", t, () => on.typeTime(t)));
+    tscroll.appendChild(button("chip time", t, () => on.pickTime(t)));
   }
+  row.appendChild(tscroll);
 
   return {
-    /** The date the engine read, ticked. Tapping it takes those words back out. */
+    /** The date the engine read, ticked. Tapping it takes the picked words back. */
     update(said) {
       tickSlot.innerHTML = "";
       if (!said) return;

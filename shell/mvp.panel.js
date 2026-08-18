@@ -66,11 +66,95 @@ export function drawPanel(panel, config, state, on) {
     panel.appendChild(wrap);
   };
 
-  const types = el("div", "taps");
-  for (const id of rest) {
-    types.appendChild(button("chip" + (id === chosen ? " on" : ""), id, () => on.setType(id)));
+  // THE ORDER IS THE ORDER A PERSON THINKS ABOUT A TASK (session 121, his
+  // words): what it is about (notes), whether it must ring (alarm), whether it
+  // comes back (repeat), how movable the date is (firmness), how long it takes
+  // (duration) — and the type classification last, because the engine already
+  // guessed it and the chips above the panel already offer the likely three.
+
+
+  // --------------------------------------------------------------------- notes
+  //
+  // Read, never matched. A note reaches neither search nor the duplicate
+  // warning, and that is a decision rather than an omission: stored records are
+  // never rewritten, so a note that fed `normalised` later would leave every
+  // task captured before it unsearchable by its own note for ever.
+  const note = el("textarea", "notes");
+  note.rows = 3;
+  note.maxLength = config.limits.notes_chars;
+  note.placeholder = "anything the title should not carry";
+  note.value = notes ?? "";
+  note.addEventListener("input", () => on.setNotes(note.value));
+  group("Notes", note);
+  // --------------------------------------------------------------------- alarm
+  //
+  // Two members, drawn only while the line carries a time. `once` and `repeat`
+  // became one `on`: every alarm rings for two minutes, snoozes itself for five
+  // and does that up to five times, so "ring again every" was a second way of
+  // asking for what the alarm already does, and a task that should come back
+  // another day has `Repeat every` above.
+  if (hasTime) {
+    const alarm = el("div", "taps");
+    for (const kind of config.alarm_types) {
+      const on_ = alarmType === kind;
+      alarm.appendChild(button("chip" + (on_ ? " on" : ""), kind, () => on.setAlarm(kind)));
+    }
+    group("Alarm", alarm);
+  } else {
+    // Said rather than left blank: the row is missing for a reason and the
+    // reason is fixable by typing a time.
+    group("Alarm", el("div", "note",
+      "Add a time to the line and the alarm can be set. A date with no time is due at midnight, and an alarm before midnight is not a reminder about that day."));
   }
-  group("Type", types);
+
+  if (hasTime && alarmType !== "none") {
+    const lead = el("div", "taps");
+    const mins = el("input", "num");
+    mins.type = "number";
+    mins.min = "0";
+    mins.max = String(config.alarm_defaults.max_lead_min);
+    mins.value = String(leadMin ?? config.alarm_defaults.lead_min);
+    mins.addEventListener("input", () => on.setLead(Math.max(0, Number(mins.value) || 0)));
+    lead.appendChild(mins);
+    lead.appendChild(el("span", "note",
+      `minutes before. It rings for ${Math.round(config.alarm_defaults.ring_sec / 60)} min, then snoozes itself ${config.alarm_defaults.auto_snooze_min} min at a time, up to ${config.alarm_defaults.auto_max} times.`));
+    group("Lead", lead);
+  }
+
+  // -------------------------------------------------------------------- repeat
+  //
+  // An interval and nothing more. A repeat spawns its next occurrence when this
+  // one is marked done, and only then, so the shape needs no start and no end.
+  const rep = el("div", "taps");
+  rep.appendChild(button("chip" + (repeat ? "" : " on"), "never", () => on.setRepeat(null)));
+  const every = el("input", "num");
+  every.type = "number";
+  every.min = "1";
+  every.value = String(repeat?.every ?? 1);
+  every.addEventListener("input", () => {
+    const n = Math.max(1, Number(every.value) || 1);
+    if (repeat) on.setRepeat({ every: n, unit: repeat.unit });
+  });
+  rep.appendChild(every);
+  for (const u of REPEAT_UNITS) {
+    const on_ = repeat?.unit === u;
+    rep.appendChild(button("chip" + (on_ ? " on" : ""), u + "s", () =>
+      on.setRepeat({ every: Math.max(1, Number(every.value) || 1), unit: u })));
+  }
+  group("Repeat every", rep);
+
+  // ------------------------------------------------------------------ firmness
+  //
+  // `is_hard` is the first ranking factor below a pin, and until this row
+  // existed the only way to reach it was to type a marker word: `deadline`,
+  // `by Friday`, `no later than`. A capture made entirely of taps could not be
+  // hard. `Auto` gives the words back their say, so a tap is undoable.
+  const firm = el("div", "taps");
+  firm.appendChild(button("chip" + (firmness ? "" : " on"), "auto", () => on.setFirmness(null)));
+  for (const f of config.firmness_order) {
+    firm.appendChild(button("chip" + (firmness === f ? " on" : ""), f, () => on.setFirmness(f)));
+  }
+  group("How firm", firm);
 
   // ------------------------------------------------------------------ duration
   //
@@ -111,88 +195,10 @@ export function drawPanel(panel, config, state, on) {
   // no screen.
   group(durationTapped ? "Takes about" : "Takes about (from the verb)", dur);
   group("", quick);
-
-  // ------------------------------------------------------------------ firmness
-  //
-  // `is_hard` is the first ranking factor below a pin, and until this row
-  // existed the only way to reach it was to type a marker word: `deadline`,
-  // `by Friday`, `no later than`. A capture made entirely of taps could not be
-  // hard. `Auto` gives the words back their say, so a tap is undoable.
-  const firm = el("div", "taps");
-  firm.appendChild(button("chip" + (firmness ? "" : " on"), "auto", () => on.setFirmness(null)));
-  for (const f of config.firmness_order) {
-    firm.appendChild(button("chip" + (firmness === f ? " on" : ""), f, () => on.setFirmness(f)));
+  const types = el("div", "taps");
+  for (const id of rest) {
+    types.appendChild(button("chip" + (id === chosen ? " on" : ""), id, () => on.setType(id)));
   }
-  group("How firm", firm);
+  group("Type", types);
 
-  // -------------------------------------------------------------------- repeat
-  //
-  // An interval and nothing more. A repeat spawns its next occurrence when this
-  // one is marked done, and only then, so the shape needs no start and no end.
-  const rep = el("div", "taps");
-  rep.appendChild(button("chip" + (repeat ? "" : " on"), "never", () => on.setRepeat(null)));
-  const every = el("input", "num");
-  every.type = "number";
-  every.min = "1";
-  every.value = String(repeat?.every ?? 1);
-  every.addEventListener("input", () => {
-    const n = Math.max(1, Number(every.value) || 1);
-    if (repeat) on.setRepeat({ every: n, unit: repeat.unit });
-  });
-  rep.appendChild(every);
-  for (const u of REPEAT_UNITS) {
-    const on_ = repeat?.unit === u;
-    rep.appendChild(button("chip" + (on_ ? " on" : ""), u + "s", () =>
-      on.setRepeat({ every: Math.max(1, Number(every.value) || 1), unit: u })));
-  }
-  group("Repeat every", rep);
-
-  // --------------------------------------------------------------------- alarm
-  //
-  // Two members, drawn only while the line carries a time. `once` and `repeat`
-  // became one `on`: every alarm rings for two minutes, snoozes itself for five
-  // and does that up to five times, so "ring again every" was a second way of
-  // asking for what the alarm already does, and a task that should come back
-  // another day has `Repeat every` above.
-  if (hasTime) {
-    const alarm = el("div", "taps");
-    for (const kind of config.alarm_types) {
-      const on_ = alarmType === kind;
-      alarm.appendChild(button("chip" + (on_ ? " on" : ""), kind, () => on.setAlarm(kind)));
-    }
-    group("Alarm", alarm);
-  } else {
-    // Said rather than left blank: the row is missing for a reason and the
-    // reason is fixable by typing a time.
-    group("Alarm", el("div", "note",
-      "Add a time to the line and the alarm can be set. A date with no time is due at midnight, and an alarm before midnight is not a reminder about that day."));
-  }
-
-  if (hasTime && alarmType !== "none") {
-    const lead = el("div", "taps");
-    const mins = el("input", "num");
-    mins.type = "number";
-    mins.min = "0";
-    mins.max = String(config.alarm_defaults.max_lead_min);
-    mins.value = String(leadMin ?? config.alarm_defaults.lead_min);
-    mins.addEventListener("input", () => on.setLead(Math.max(0, Number(mins.value) || 0)));
-    lead.appendChild(mins);
-    lead.appendChild(el("span", "note",
-      `minutes before. It rings for ${Math.round(config.alarm_defaults.ring_sec / 60)} min, then snoozes itself ${config.alarm_defaults.auto_snooze_min} min at a time, up to ${config.alarm_defaults.auto_max} times.`));
-    group("Lead", lead);
-  }
-
-  // --------------------------------------------------------------------- notes
-  //
-  // Read, never matched. A note reaches neither search nor the duplicate
-  // warning, and that is a decision rather than an omission: stored records are
-  // never rewritten, so a note that fed `normalised` later would leave every
-  // task captured before it unsearchable by its own note for ever.
-  const note = el("textarea", "notes");
-  note.rows = 3;
-  note.maxLength = config.limits.notes_chars;
-  note.placeholder = "anything the title should not carry";
-  note.value = notes ?? "";
-  note.addEventListener("input", () => on.setNotes(note.value));
-  group("Notes", note);
 }

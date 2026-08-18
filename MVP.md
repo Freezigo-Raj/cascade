@@ -43,7 +43,7 @@ D-1: **Typing the thought is the whole of the work.**
 | Shape | One column, one screen at a time | Two columns: the list, and the capture panel beside it |
 | Tapping a row | Navigates to screen 2 | Loads the task into the panel. The list keeps its scroll, its tab and its search |
 | `+` | Navigates to an empty screen 2 | Unbinds the panel and puts the caret in it |
-| Back | On screen 2 | Not drawn. There is nowhere to go back to |
+| Back | Not drawn (session 121): the gesture, the browser's own Back and a save's return are the ways out | Not drawn. There is nowhere to go back to |
 | The panel | — | Sticky, so it does not leave the window when the list scrolls |
 | Sentence on a row | `card_reason_short` under 600px | `card_reason` |
 | Keys | — | `n` capture, `/` search, `Esc` let go. None fires while a field has focus |
@@ -102,7 +102,7 @@ Social alpha application
 Due today. You called this a deadline.
 ```
 
-**Duration never appears.** It decides the Ideas order, the sixth ranking factor and the load on a day, and the reader never sees it.
+**Duration appears in exactly one place: the slot totals** (session 121, his call — an amendment to session 89's quiet rule). Each of Today / Tomorrow / Upcoming wears the sum of the durations it holds (`Today · 1h 40m`), the verb's guess where nobody chose one, because that is the number a person needs to choose which day to open. Everywhere else the rule holds: no duration on any row, no load beside any push target, no push count.
 
 | Tab | Holds | Order |
 |---|---|---|
@@ -161,13 +161,12 @@ The box is at the top. The tap buttons are with it. The matching tasks are below
 |---|---|---|
 | Text box | 1 | The only one in Part A. On edit it holds the **title**, never the typed line |
 | Add / Edit | 1 | Reads `Add` when empty, `Edit` when a task is loaded |
-| This afternoon | 1 | Types its own words into the box |
-| Tonight | 1 | Same |
-| Tomorrow morning | 1 | Same. It reads `morning` as a band on a named day, so the whole label is consumed and none of it strands in the title |
-| Weekend | 1 | Same |
-| Pick date | 1 | A date picker. Writes its date into the box, with the year only when it is not this year |
-| Pick time | 1 | A time picker. Writes the time beside the date |
-| Time chips | 5 | `9am` `12pm` `3pm` `6pm` `9pm`, after the pickers (session 119). Each types its label; the dial stays for every other time. The date row wraps and scrolls vertically, capped at two rows and a hint of the third (session 120) |
+| Date chips | 10 | From `chip_presets` (session 121): This afternoon, This evening, Tonight, Tomorrow morning/afternoon/evening, Weekend, Next weekend, Next week, Next month — every phrase proved against the engine before joining (`day after tomorrow` failed and is out). In a scroller capped at two rows that fades at its bottom edge rather than cutting a chip in half |
+| Pick date | 1 | A date picker, PINNED beside the tick with Pick time — the way into every unlisted date never scrolls away (session 121) |
+| Pick time | 1 | A time picker, pinned |
+| Time chips | 5 | `9am` `12pm` `3pm` `6pm` `9pm`, their own row below the date scroller |
+
+**A pick puts no words in the box** (session 121). The box holds what the person typed; a tapped chip's or picker's words join the line the engine reads, beside the box and under a `chip_span`, and the tick chip is where the reading shows. Tapping the tick takes the picked words back. A date still arrives one way — through words in the one line — and the engine is untouched. A pick on an empty box waits, previewed on the tick, until there are words to date: date words alone are not a commitment.
 | `✓ <date>` | 1 | The date the engine read. Tapping it removes those words from the box |
 | Type chips | 3 + 1 | The engine's guess, marked, beside `deadline`, `action`, `appointment`. A small button opens the advanced panel |
 | Advanced | 1 | Opens a panel on the same screen. Everything that corrects what the typing already said, in one place |
@@ -183,7 +182,7 @@ The box is at the top. The tap buttons are with it. The matching tasks are below
 
 **Everything re-reads on every keystroke.** The date, the type, the duration, the matches.
 
-**Going back is the phone's own gesture, and the app decides what it means.** The swipe or the system button leaves the editor and the account screen, closes an open dialog before either, and from the list it closes the app. In a browser that is `popstate`; in the Android shell the gesture reaches the activity first, so the activity asks the app and acts on the answer rather than guessing from WebView history. A drawn Back sits at the top of a screen, which is where a thumb cannot reach and where a long screen scrolls it out of sight; the gesture works from anywhere and is the same on every app on the phone. The drawn button stays as well and does the same single thing.
+**Going back is the phone's own gesture, and the app decides what it means.** The swipe or the system button leaves the editor and the account screen, closes an open dialog before either, and from the list it closes the app. In a browser that is `popstate`; in the Android shell the gesture reaches the activity first, so the activity asks the app and acts on the answer rather than guessing from WebView history. A drawn Back sits at the top of a screen, which is where a thumb cannot reach and where a long screen scrolls it out of sight; the gesture works from anywhere and is the same on every app on the phone. The drawn button LEFT in session 121 (his call): the gesture, the browser's own Back and a save's return already cover every exit, and the editor's head now appears only while a task is bound, holding its title chip and the ✕.
 
 **A date arrives one way: through the words in the box.** Every chip types words. A tapped date beats a typed one. A second tap replaces the first.
 
@@ -307,7 +306,7 @@ The mobile sentence, because a notification is the smallest screen there is. Pus
 
 ## Counts
 
-3 text boxes (capture, the notes, and the list's search). 33 fixed buttons on screens 1 and 2 (the floating `+` and five time chips arrived, the row's `Workflow` tag left), plus 4 or 5 push buttons per row, plus 3 on screen 3 (export, sign out, back). 1 dialog carrying up to 3 warnings, 1 toast.
+3 text boxes (capture, the notes, and the list's search). 34 fixed buttons on screens 1 and 2 outside the advanced panel — screen 1: three tabs, `+`, the floating `+`, three slot buttons, the avatar; screen 2: ten date chips, two pickers, five time chips, three type chips, `⋯`, three significance buttons, Add — plus 4 or 5 push buttons per row, plus 3 on screen 3 (export, sign out, back). 1 dialog carrying up to 3 warnings, 1 toast.
 
 ---
 

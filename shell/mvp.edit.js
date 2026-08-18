@@ -21,13 +21,15 @@ const { tasks, undo, UNDO_ID } = await import(`./store.select.js${v}`);
 const { nowLocal } = await import(`./mvp.clock.js${v}`);
 const { ask } = await import(`./mvp.dialog.js${v}`);
 const { drawPanel } = await import(`./mvp.panel.js${v}`);
-const { typeInto, typeBeside, removeSpans } = await import(`./mvp.words.js${v}`);
+const { removeSpans } = await import(`./mvp.words.js${v}`);
 const { el, button } = await import(`./mvp.paint.js${v}`);
 const { makeDates, storedWhen, when } = await import(`./mvp.chips.js${v}`);
 
 export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {}) {
   let line = "";
-  let chipSpan = null;      // where the last tapped words landed, or null
+  let chipSpan = null;      // where the picked words sit in the composed line, or null
+  let pickedDate = "";      // words a date chip or the date picker handed over
+  let pickedTime = "";      // words a time chip or the time picker handed over
   let boundId = null;       // the task being edited, or null
   let typeTap = null;
   let sigTap = null;
@@ -51,7 +53,7 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
   const box = el("textarea", "box");
   box.rows = 2;
   box.placeholder = "type the thought";
-  const dateRow = el("div", "taps dates");
+  const dateRow = el("div", "dates-block");
   const doRow = el("div", "dorow");
   const typeRow = el("div", "taps types");
   const panel = el("div", "panel");
@@ -71,8 +73,8 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
   // below this line, and handing them over directly reads a `const` before it
   // exists. The wrappers resolve when the chip is pressed, which is after.
   const dates = makeDates(dateRow, partAConfig, {
-    typeWords: (words) => typeWords(words),
-    typeTime: (words) => typeTime(words),
+    pickWords: (words) => pickWords(words),
+    pickTime: (words) => pickTime(words),
     clearDate: () => clearDate(read()),
   });
 
@@ -104,10 +106,50 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
 
   // --------------------------------------------------------------- the words
   //
-  // The arithmetic is in `mvp.words.js`; what is here is the part that touches
-  // the screen. Every one of these puts words in the box and nothing sets a
-  // date field, which is the whole of "a date arrives one way".
+  // A date still arrives one way — through words in the one line the engine
+  // reads — but since session 121 the PICKED words do not appear in the box.
+  // The box holds what the person typed; the picked words are composed onto
+  // the end of it before every read, under a `chip_span` so the engine knows
+  // they were tapped; and the tick chip is where the reading shows. His words:
+  // "selecting a time should not insert any text". The engine sees the same
+  // line it always did.
+  //
+  // A date pick replaces the picked date, a time pick replaces the picked
+  // time, and the two coexist: `Tonight` then `9pm` reads as tonight at 9pm.
+  // Typing does not clear a pick — the tick chip is the one way back out,
+  // which is also what it is for a stored date.
 
+  function compose() {
+    const tail = [pickedDate, pickedTime].filter(Boolean).join(" ");
+    const head = box.value.replace(/\s+$/, "");
+    // A pick with an empty box joins NOTHING: date words alone would become
+    // the title ("Tomorrow morning" as a task), which is a capture of no
+    // commitment. The pick waits in state, the tick chip previews it, and it
+    // joins the line the moment there are words to date.
+    if (!tail || !head.trim()) {
+      line = box.value;
+      chipSpan = null;
+      return;
+    }
+    line = `${head} ${tail}`;
+    chipSpan = { start: line.length - tail.length, end: line.length };
+  }
+
+  function pickWords(words) {
+    pickedDate = words;
+    compose();
+    paint();
+    box.focus();
+  }
+
+  function pickTime(words) {
+    pickedTime = words;
+    compose();
+    paint();
+    box.focus();
+  }
+
+  /** For the one remaining span edit: taking TYPED date words out of the box. */
   function apply(result) {
     line = result.line;
     chipSpan = result.span;
@@ -115,9 +157,6 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
     paint();
     box.focus();
   }
-
-  const typeWords = (words) => apply(typeInto(line, chipSpan, words));
-  const typeTime = (words) => apply(typeBeside(line, chipSpan, words));
 
   /**
    * The chip shows the date; tapping it takes those words back out of the box.
@@ -127,6 +166,14 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
    * and the save writes a record with none — which is the same task in Ideas.
    */
   function clearDate(out) {
+    // Picked words are not in the box, so there is nothing to cut out of it.
+    if (pickedDate || pickedTime) {
+      pickedDate = "";
+      pickedTime = "";
+      compose();
+      paint();
+      return;
+    }
     const spans = out?.task.date_spans ?? [];
     if (spans.length) return apply(removeSpans(line, spans));
     if (boundId) { dropDate = true; paint(); }
@@ -143,6 +190,8 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
     line = task.title;
     box.value = line;
     chipSpan = null;
+    pickedDate = "";
+    pickedTime = "";
     // A tapped type and a moved significance are the person's, and re-reading
     // the title finds neither: the words that implied them were consumed on
     // capture. Loading them back is what stops a save quietly resetting both.
@@ -169,6 +218,8 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
     line = "";
     box.value = "";
     chipSpan = null;
+    pickedDate = "";
+    pickedTime = "";
     typeTap = null;
     sigTap = null;
     repeat = null;
@@ -280,10 +331,12 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
 
   function drawHead(out) {
     head.innerHTML = "";
-    // In the wide layout the panel sits beside the list, so there is nowhere to
-    // go back to. A Back button there would be a control whose destination is
-    // already on screen.
-    if (!inPanel) head.appendChild(button("act", "\u2039 Back", () => onBack && onBack()));
+    // No Back button (session 121, his call). The Android gesture asks
+    // `__cascadeBack()`, the browser has its own Back, and a save returns on
+    // its own — three ways out already, and the word was renting the top of
+    // the screen. The head now exists only while a task is bound, so an empty
+    // capture starts at the box.
+    head.style.display = out?.capture.bound_task_chip ? "" : "none";
     // Only while editing. The ✕ leaves without saving, which is the one way out
     // that changes nothing.
     if (out?.capture.bound_task_chip) {
@@ -382,7 +435,12 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
   function paint() {
     const out = read();
     drawHead(out);
-    dates.update(when(out) || (dropDate ? "" : storedWhen(out?.list.cards ?? [], boundId)));
+    // The engine's reading first; failing that, a pick still waiting for words
+    // in the box; failing that, the stored date of the task being edited.
+    const waiting = !box.value.trim() && (pickedDate || pickedTime)
+      ? [pickedDate, pickedTime].filter(Boolean).join(" ").toLowerCase()
+      : "";
+    dates.update(when(out) || waiting || (dropDate ? "" : storedWhen(out?.list.cards ?? [], boundId)));
     drawDo(out);
     drawTypes(out);
     drawMatches(out);
@@ -395,9 +453,9 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
   }
 
   // Everything re-reads on every keystroke: the date, the type, the duration,
-  // the matches. Editing the line also clears the tapped span, so a tap only
-  // outranks the words while it was the last thing that happened.
-  box.addEventListener("input", () => { line = box.value; chipSpan = null; paint(); });
+  // the matches. The picked words survive typing — they are not in the box, so
+  // typing cannot mangle them, and the tick chip is their one way out.
+  box.addEventListener("input", () => { compose(); paint(); });
 
   // Returned for the same reason screen 1's are: a listener that outlives its
   // screen redraws a screen that is no longer on the page. This one is milder —

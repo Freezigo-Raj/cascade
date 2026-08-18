@@ -2765,3 +2765,28 @@ Colour meant one thing and now means three. Accent is pressable, `#c0492b` is ov
 **Save point:** `the strips scroll down, the row got its width back, the clock sits on paper`
 
 **Next job:** rebuild the APK, then the nine alarm tests.
+
+---
+## Session 121 — 18 August 2026
+
+**Job: eleven reports from build 36, one structural — a pick should put no words in the box.**
+
+**SEARCH NEVER WORKED FROM A PHONE.** The matcher compares against `normalised` (lowercase); a phone keyboard capitalises the first letter of anything; so `Pcb` scored zero against `pcb pin requirement`. The capture box never hit it — its line is normalised inside the engine — which is why every desktop test passed. Lowercased at the call site.
+
+**A PICK PUTS NO WORDS IN THE BOX.** A date still arrives one way, through words in the ONE line the engine reads; what moved is where the words live on screen. The box holds what was typed; picked words compose onto the line's end under a `chip_span`; the tick chip shows the reading and takes the pick back. Date pick replaces the picked date, time pick replaces the picked time, the two coexist (Tonight + 9pm → tonight at 9pm, proved headlessly). A pick on an empty box waits, previewed on the tick — composed immediately, the date words became the title. Engine, contract inputs, key untouched.
+
+**THE DATE BLOCK IS THREE PIECES.** Pinned row (tick, Pick date, Pick time) that never scrolls; a date scroller of ten phrases, each proved against the engine before joining config a.19 (`day after tomorrow` failed — reads `from tomorrow`, strands `day` in the title — and is out; This evening, Tomorrow afternoon/evening, Next weekend, Next week, Next month joined); the five times on their own row. Nothing anywhere is cut in half any more: the scroller and the push ladder fade at the bottom edge — the 120 half-cut affordance read as a defect, and was one.
+
+**The rest.** Slot-owned header dates (Tomorrow wears tomorrow, Upcoming says where it starts, Ideas/Done wear nothing). Slot totals (`Today · 1h 40m`) — a logged amendment to session 89's quiet rule, the ONE place a duration appears; rows and push targets stay quiet. Panel order: notes, alarm, repeat, firmness, duration, type. Back button left screen 2; the head exists only while a task is bound. Account draws Turn on for `unknown` as well as `off`. Export: Downloads in a browser; inside the APK the WebView ignores blob downloads — recorded under FOUND, NOT FIXED, fix belongs to the next Kotlin session.
+
+**Files changed:** `index.html`, `shell/render.js`, `shell/config.js`, `config.ts`, `shell/mvp.chips.js`, `shell/mvp.edit.js`, `shell/mvp.panel.js`, `shell/mvp.list.js`, `shell/mvp.account.js`, `shell/mvp.css`, `shell/mvp.edit.css`, `contract.md`, `example.md` (chip rows redrawn in both boxes), `MVP.md`, `spec.md`, `sessions.md`, `log.manifest`
+
+**Versions:** example 42, contract 52, config a.19, shell 37, answer_key 28. Config still 37 objects; `ensureConfig()` upserts a.19, no migration, no Kotlin change.
+
+**Tests:** all six green. gate2 PASS (sealed 459), selftest 28/28, gate4 142/142, check_render exact against the redrawn example box, check_loud 6/6, check_alarm PASS. Proved headlessly: all ten presets resolve with clean titles; box+pick composition resolves at every combination tried; the empty-box guard holds.
+
+**Not tested:** everything visual needs the phone. The APK rebuild from session 119 is still pending and now also carries the export gap.
+
+**Save point:** `search works from a phone, picks stay out of the box, nothing is cut in half`
+
+**Next job:** rebuild the APK, then the nine alarm tests.

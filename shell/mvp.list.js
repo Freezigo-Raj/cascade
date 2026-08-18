@@ -155,10 +155,16 @@ export function mountList(root, { openEdit, openAccount, onTasks } = {}) {
     if (!filter.trim()) return pool;
     // The same four tiers the capture box uses, through the same matcher, so
     // the two search boxes cannot disagree about what counts as a match.
+    // Lowercased first (session 121): the matcher compares against `normalised`,
+    // which is lowercase, and a phone keyboard capitalises the first letter of
+    // anything — so `Pcb` scored zero against `pcb pin requirement` and search
+    // never worked from a phone. The capture box never hit this because its
+    // line is normalised inside the engine.
+    const q = filter.trim().toLowerCase();
     const byId = new Map(all.map((t) => [t.id, t]));
     return pool.filter((c) => {
       const t = byId.get(c.card_id);
-      return matchTier(filter, t ? t.normalised : c.card_title, partAConfig).tier > 0;
+      return matchTier(q, t ? t.normalised : c.card_title, partAConfig).tier > 0;
     });
   }
 
@@ -172,8 +178,22 @@ export function mountList(root, { openEdit, openAccount, onTasks } = {}) {
   const drawBlock = (name, cards, isNow) => blockOf(name, cards, isNow, ctx());
 
   /** `Sat 17 Aug`, the one thing the header knows that a person might not. */
-  const today = () =>
-    new Date().toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+  const fmtDay = (d) =>
+    d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+
+  /**
+   * The date under the title belongs to the SLOT, not to the clock (session
+   * 121): a tab called Tomorrow wearing today's date read as a bug. Today wears
+   * today, Tomorrow wears tomorrow, Upcoming says where it starts, and Ideas
+   * and Done wear nothing because neither holds dated ground.
+   */
+  const slotDate = () => {
+    if (tab !== "Tasks") return "";
+    const d = new Date();
+    if (slot === "Tomorrow") d.setDate(d.getDate() + 1);
+    if (slot === "Upcoming") { d.setDate(d.getDate() + 2); return `from ${fmtDay(d)}`; }
+    return fmtDay(d);
+  };
 
   // ------------------------------------------------------------- the skeleton
   //
@@ -193,7 +213,7 @@ export function mountList(root, { openEdit, openAccount, onTasks } = {}) {
   const headLeft = el("div", "");
   const kicker = el("div", "kicker", tab);
   const title = el("h1", "head-title", slot);
-  const dateLine = el("div", "head-date", today());
+  const dateLine = el("div", "head-date", slotDate());
   headLeft.append(kicker, title, dateLine);
   headBlock.appendChild(headLeft);
 
@@ -270,14 +290,35 @@ export function mountList(root, { openEdit, openAccount, onTasks } = {}) {
 
   // ---------------------------------------------------------------- painting
 
+  /** `1h 40m`, or `45m`, or nothing when a slot holds no minutes. */
+  const fmtLoad = (min) => {
+    if (!min) return "";
+    const h = Math.floor(min / 60), m = min % 60;
+    return h ? (m ? `${h}h ${m}m` : `${h}h`) : `${m}m`;
+  };
+
   function paint() {
     kicker.textContent = tab;
     // Recomputed rather than built once: a tab left open past midnight showed
     // yesterday's date under a list that had already rolled over.
-    dateLine.textContent = today();
+    dateLine.textContent = slotDate();
     title.textContent = tab === "Tasks" ? slot : tab;
     tabButtons.forEach((b, i) => b.setAttribute("aria-selected", String(tab === TABS[i])));
-    slotButtons.forEach((b, i) => b.setAttribute("aria-pressed", String(slot === SLOTS[i])));
+    // Each slot wears its total (session 121, his call): the sum of every
+    // duration it holds, the verb's guess where nobody chose one. Per-row and
+    // per-target loads stay quiet as decided in session 89 — this is the one
+    // place the weight of a day appears, and it is the place a person looks to
+    // choose which day to open.
+    const lists = listOnly(all, partAConfig, now());
+    const byId = new Map(all.map((t) => [t.id, t]));
+    const loadOf = (name) => fmtLoad(lists.cards
+      .filter((c) => c.card_band === name)
+      .reduce((sum, c) => sum + (byId.get(c.card_id)?.est_duration_min ?? 0), 0));
+    slotButtons.forEach((b, i) => {
+      const load = loadOf(SLOTS[i]);
+      b.textContent = load ? `${SLOTS[i]} \u00b7 ${load}` : SLOTS[i];
+      b.setAttribute("aria-pressed", String(slot === SLOTS[i]));
+    });
     slots.style.display = tab === "Tasks" ? "" : "none";
     if (searchBox.value !== filter) searchBox.value = filter;
 

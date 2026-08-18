@@ -39,11 +39,11 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 
 ## VERSIONS
 
-  example      41
+  example      42
   contract     52
-  config       a.18
+  config       a.19
   answer_key   28
-  shell        36
+  shell        37
   gate1        signed on example 35
   gate2        signed on contract 32
   gate3        signed on shell 1
@@ -79,35 +79,42 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 
 ## THIS SESSION'S JOB
 
-Build 35's first five screenshots, and one instruction: the scroll goes down, not across.
+Eleven reports from build 36, one of them structural: a pick should put no words in the box.
 
-**THE SIDEWAYS STRIPS BROKE THE ROW, and the mechanism is worth writing down.** A row is a grid of
-`tick | body | nudges`, and the nudges track is `auto`, which sizes to the item's INTRINSIC width. A
-sideways nowrap strip of five buttons has an intrinsic width of all five buttons — `overflow-x` hides
-the excess but does not shrink the wish, and a percentage `max-width` is ignored while the track is
-being sized. So the track ate the row, the title column collapsed to a few letters, and the pin and
-bin stacked in the sliver left over. The capture screen failed the same way one layer down: nowrap
-chips shrank their PICKER WRAPPERS until `Pick date` sat on `Pick time`. Both strips are vertical now,
-which was his instruction and is also what the geometry wants — a column's intrinsic width is one
-label, which is what the track was designed around. The push ladder is a column capped at two and a
-half rungs; the date chip row wraps as chips do everywhere else, capped at two rows and a hint of the
-third. Neither draws a scrollbar; the half-cut rung and the half-cut row are the affordance, and the
-first rung is always in view.
+**SEARCH NEVER WORKED FROM A PHONE, and the defect was one case fold.** The matcher compares against
+`normalised`, which is lowercase, and a phone keyboard capitalises the first letter of anything — so
+the query scored zero against the very title it was typed from. The capture box never hit this because
+its line is normalised inside the engine; the list's search box passed the raw query. It is lowercased
+at the call site now.
 
-**A scrolled screen slid back under the clock.** Session 119's `env()` padding positions only the
-unscrolled page — padding scrolls away with the content it wraps, which the account screen showed
-mid-scroll. A fixed, paper-coloured, touch-inert strip exactly the inset's height now sits over the
-top edge; scrolled content passes behind it and the status bar always sits on paper. 0px tall in an
-ordinary browser tab.
+**A PICK PUTS NO WORDS IN THE BOX.** His words, and an amendment worth being precise about: a date
+still arrives one way, through words in the ONE line the engine reads. What changed is where those
+words live on screen. The box holds what the person typed; a tapped chip's or picker's words are
+composed onto the end of that line before every read, under a `chip_span` so the engine knows they
+were tapped; and the tick chip is where the reading shows and where the pick is taken back. A date
+pick replaces the picked date, a time pick replaces the picked time, and the two coexist — Tonight
+then 9pm reads as tonight at 9pm, proved headlessly. A pick on an empty box joins nothing and waits,
+previewed on the tick, because date words alone would have become a title. The engine, the contract's
+inputs and the key are untouched.
 
-**The glyphs state their size in attributes as well as in CSS.** An SVG with no stated size is 300×150
-by default, and one stylesheet arriving late once is all it takes for two of those to shove a row
-around.
+**THE DATE BLOCK IS THREE PIECES.** A pinned row — the tick, Pick date, Pick time — that never
+scrolls, because the way into every unlisted date must always be visible (his call). A date scroller
+of ten phrases, every one proved against the engine before joining the config: `day after
+tomorrow` failed the proof — it reads as `from tomorrow` and strands `day` in the title — and is out.
+And the five standard times on their own row. Nothing is cut in half anywhere any more: the scroller
+and the push ladder fade at their bottom edge instead, which says `more below` without amputating a
+chip — the session-120 half-cut affordance read as a defect, and on reflection it was one.
 
-**And the screenshots confirmed the session-119 diagnostics working as written**: the header reads the
-new build, the account screen names the APK's Kotlin as build 1 against an expected 2 and says to
-rebuild, the switches the old shell cannot read say `unknown` rather than `off`, and the two it can
-read say `on`. The rebuild instruction stands; nothing in this session changes the Kotlin.
+**The rest, briefly.** The header date belongs to the slot: Tomorrow wears tomorrow's date, Upcoming
+says where it starts, Ideas and Done wear nothing. Each slot wears its total load (`Today · 1h 40m`) —
+an amendment to session 89's quiet rule, made on his request, and the ONLY place a duration appears;
+rows and push targets stay quiet. The advanced panel runs in the order a person thinks: notes, alarm,
+repeat, firmness, duration, type last. The Back button left screen 2 — the gesture, the browser's own
+Back and a save's return already cover every exit — and the editor's head now exists only while a task
+is bound. The account screen draws a Turn on button for `unknown` switches as well as `off` ones: a
+switch the old shell cannot read may still be off, and pressing it on a too-old shell answers with the
+rebuild sentence. Export lands in the browser's Downloads folder as `cascade-<date>.json`; inside the
+Android shell the WebView ignores blob downloads, which is recorded under FOUND, NOT FIXED.
 
 ## NEXT THREE JOBS
 
@@ -146,6 +153,8 @@ Lines typed into the live shell that came out wrong. Open until each is either f
 **These are for a session of their own.** Each is a rule that does not exist rather than a rule that is wrong, except T6, which is a rule misfiring. None is caught by the key, because the key has no case for any of them, which is the point: 142 green says the rules do what they say, not that they cover what people type.
 
 ## FOUND, NOT FIXED
+
+- Export inside the Android shell does nothing: `exportAll()` clicks a blob anchor, the Capacitor WebView has no handler for blob downloads, and no file lands anywhere. In a browser or the installed web app it lands in Downloads as `cascade-<date>.json`. Found 18 Aug (session 121) answering "export stores where?". The fix is a share sheet or a Kotlin write, both of which touch the APK, so it waits for the next Kotlin session rather than riding a screen session.
 
 - No check ties a due date drawn in the example to a date span in the text that produced it. Session 37 found one drawn task whose text could not produce its date, by hand, after twenty-nine Gate 1 passes.
 
@@ -828,3 +837,15 @@ have landed. That is the price of the single table and it is accepted.
 - 18 Aug 2026 — The date chip row wraps as chips do everywhere else and is capped at 96px, two rows and a hint of the third, scrolling vertically — wrap is the one flex arrangement whose intrinsic width is a single chip, so nothing upstream is shoved — the tick chip stays first and visible.
 - 18 Aug 2026 — A fixed, paper-coloured, touch-inert strip exactly `env(safe-area-inset-top)` tall sits over the top edge of the page — the session-119 body padding positions only the unscrolled page, since padding scrolls away with the content it wraps, and the account screen mid-scroll slid its text back under the clock — 0px tall in an ordinary browser tab, so it costs nothing there.
 - 18 Aug 2026 — The row glyphs state `width` and `height` attributes as well as carrying the stylesheet rule — an SVG with no stated size is 300×150 by default, and a stylesheet arriving late once is all it takes for two of those to shove a row around — the attribute is the floor, the stylesheet stays the source of the number.
+- 18 Aug 2026 — The list's search query is lowercased before it reaches `matchTier` — the matcher compares against `normalised`, which is lowercase, and a phone keyboard capitalises the first letter of anything, so `Pcb` scored zero against `pcb pin requirement` and search never worked from a phone — the capture box never hit this because its line is normalised inside the engine, which is why the defect survived every desktop test.
+- 18 Aug 2026 — A pick puts no words in the box — his words: *"Selecting a time should not insert any text"* — the box holds what the person typed, the picked words are composed onto the end of the line the engine reads under a `chip_span`, and the tick chip is where the reading shows and where the pick is taken back — a date still arrives one way, through words in the one line, and the engine, the contract's inputs and the key are untouched; proved headlessly before shipping.
+- 18 Aug 2026 — A pick on an empty box joins nothing and waits, previewed on the tick chip — composed immediately, the date words themselves became the title (`Tomorrow morning` as a task), which is a capture of no commitment — the pick joins the line the moment there are words to date.
+- 18 Aug 2026 — The date block is three pieces: a pinned row (tick, Pick date, Pick time) that never scrolls, a date scroller, and the times row — his call that the way into every unlisted date must always be visible — the two pickers left `chip_presets` (a.19): they are screen furniture, not vocabulary.
+- 18 Aug 2026 — Every phrase in `chip_presets` is proved against the engine before it joins, and `day after tomorrow` is out — it reads as `from tomorrow` and strands `day` in the title, so the chip would have corrupted every title it touched — the ten that joined each resolve with a clean title and the expected precision.
+- 18 Aug 2026 — Nothing scrollable cuts a chip or a rung in half; the scroller and the push ladder fade at the bottom edge instead — session 120's half-cut affordance read as a defect on the phone, and a fade says `more below` without amputating anything — the caps sit at whole rows now.
+- 18 Aug 2026 — The header date belongs to the slot: Today wears today, Tomorrow wears tomorrow, Upcoming says where it starts, Ideas and Done wear nothing — a tab called Tomorrow wearing today's date read as a bug, and was one — the date line is recomputed each paint as before.
+- 18 Aug 2026 — **Amends** session 89's quiet rule, quoted as Part 11 requires: *"A duration on every row, a day's load beside each push target, and a push count. All three are collected and none is shown."* On his request each slot now wears its total (`Today · 1h 40m`), the verb's guess where nobody chose one — the ONE place a duration appears, because it is the number that chooses which day to open — rows, push targets and the push count stay quiet exactly as decided.
+- 18 Aug 2026 — The advanced panel runs notes, alarm, repeat, firmness, duration, type — his order, the order a person thinks about a task they are refining — type is last because the engine already guessed it and the chips above the panel already offer the likely three.
+- 18 Aug 2026 — The Back button left screen 2 and the editor's head exists only while a task is bound — the Android gesture asks `__cascadeBack()`, the browser has its own Back, and a save returns on its own, so the word was renting the top of the screen for a fourth way out — the bound-title chip and its ✕ keep the head while editing.
+- 18 Aug 2026 — The account screen draws a Turn on button for `unknown` as well as `off` — a switch the old shell cannot read may still be off, and a person staring at `unknown` with nothing to press is stuck — pressing it on a too-old shell answers with the rebuild sentence beside the button.
+- 18 Aug 2026 — Export inside the Android shell is recorded as broken rather than quietly worked around — the WebView has no blob-download handler, so the fix is a share sheet or a Kotlin write, and both belong to the next Kotlin session — in a browser it lands in Downloads as `cascade-<date>.json`, which answers where it stores.

@@ -206,7 +206,11 @@ export function mountAccount(root, { onBack, onSignedOut } = {}) {
             row.appendChild(el("span", "stat-label", x.label));
             row.appendChild(el("span", "stat-value", known ? (p[x.key] ? "on" : "off") : "unknown"));
             ring.appendChild(row);
-            if (p[x.key] !== false) continue;
+            // A button on `off` AND on `unknown` (session 121, his call): a
+            // switch the old shell cannot read may still be off, and a person
+            // staring at `unknown` with nothing to press is stuck. Pressing it
+            // on a too-old shell answers with the rebuild sentence below.
+            if (p[x.key] === true) continue;
             // The reason sits with the switch rather than in a paragraph above
             // it: a person reading a row wants to know what THIS one costs.
             const note = el("div", "said", x.why);

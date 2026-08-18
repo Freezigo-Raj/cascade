@@ -10,11 +10,11 @@
  * that reason and for no other.
  */
 
-@import url("./mvp.css?v=36");
-@import url("./mvp.account.css?v=36");
-@import url("./mvp.wide.css?v=36");
-@import url("./mvp.chrome.css?v=36");
-@import url("./mvp.web.css?v=36");
+@import url("./mvp.css?v=37");
+@import url("./mvp.account.css?v=37");
+@import url("./mvp.wide.css?v=37");
+@import url("./mvp.chrome.css?v=37");
+@import url("./mvp.web.css?v=37");
 
 /* ------------------------------------------------------------ screen 2
  *
@@ -98,20 +98,25 @@
 .chip.on { background: var(--signal); border-color: var(--signal); color: var(--sheet); }
 .chip.more { letter-spacing: 0.14em; }
 
-/* The date row WRAPS AND SCROLLS DOWN, capped at two rows and a hint of the
-   third (session 120, his call). Session 119 laid it sideways with nowrap, and
-   nowrap chips shrink their picker wrappers until the chips inside overlap —
-   `Pick date` sat on `Pick time` on the phone. Wrapping is what chips already
-   do everywhere else; the cap keeps the capture screen from becoming a wall of
-   twelve, the half-cut row is the scroll affordance since the scrollbar is not
-   drawn, and the tick chip stays first and visible. */
-.taps.dates {
-  max-height: 96px;
+/* THE DATE BLOCK, three pieces (session 121, his shape). The pinned row —
+   tick, Pick date, Pick time — never scrolls: the way into every unlisted
+   date is always on screen. The date scroller wraps and scrolls down past two
+   rows; nothing is cut in half — the block fades at its bottom edge instead,
+   which says "more below" without amputating a chip (session 120's half-cut
+   row read as a defect, and it was). The times row is five chips and needs no
+   cap. */
+.dates-block { margin-top: calc(var(--step) * 3); }
+.dates-block .taps { margin-top: calc(var(--step) * 1.5); }
+.taps.pinned { flex-wrap: nowrap; }
+.taps.scroll-dates {
+  max-height: 84px;
   overflow-y: auto;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
+  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 16px), transparent);
+  mask-image: linear-gradient(to bottom, black calc(100% - 16px), transparent);
 }
-.taps.dates::-webkit-scrollbar { display: none; }
+.taps.scroll-dates::-webkit-scrollbar { display: none; }
 
 /* The two pickers LOOK like what they are (session 119): the way into every
    date and time the strip does not carry. They were grey like the word chips

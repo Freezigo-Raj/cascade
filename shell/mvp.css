@@ -46,7 +46,7 @@
      serving an old stylesheet has now cost three sessions of guessing at what
      had and had not arrived. A number that can be read is worth more than a
      number that has to be trusted. */
-  --css-version: 36;
+  --css-version: 37;
 
   --step: 4px;
   --r-card: 18px;
@@ -382,10 +382,15 @@ html, body {
   flex-direction: column;
   gap: 5px;
   flex-shrink: 0;
-  max-height: 70px;
+  max-height: 56px;
   overflow-y: auto;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
+  /* A fade, not an amputation (session 121): the half-cut rung read as a
+     defect. Every ladder has at least three rungs, so the fade always sits
+     over a real edge and always means "more below". */
+  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 12px), transparent);
+  mask-image: linear-gradient(to bottom, black calc(100% - 12px), transparent);
 }
 .nudges::-webkit-scrollbar { display: none; }
 .nudge {
