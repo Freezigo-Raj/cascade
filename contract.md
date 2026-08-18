@@ -1,6 +1,6 @@
 # Cascade Part A — Contract
 
-Stage 2 deliverable, version 52. Companion to `spec/example.md`; see VERSIONS in spec.md.
+Stage 2 deliverable, version 53. Companion to `spec/example.md`; see VERSIONS in spec.md.
 
 This file says what every piece of information **is**. `spec/example.md` says what one session **was**. Where they disagree, one of them is wrong and the disagreement is a defect.
 
@@ -410,7 +410,7 @@ Every rendered string, with its template. Part 4 applies here too: these spellin
 
 **The list screen's search filters the tab in place.** Same four tiers as the capture screen, exposed through one matcher so the two boxes cannot disagree about what counts as a match. The pool differs: on the capture screen it is open tasks, because a done task is not a duplicate risk, and on the Done tab it is done ones, because finding something finished is why anyone looks there.
 
-**The type chip offers three and hides eleven.** `verb_to_type` maps a verb to exactly one type, so there are no runners-up: the chip shows what the engine derived, marked, beside the three in `type_suggestions`, and the rest sit behind a small button. Alternates guessed from the verb would need a table with no evidence behind it, and a fixed short list is honest where a guessed one would not be.
+**The type control is a dropdown of all fourteen** (session 122, reversing the three-chip decision on his instruction — the drawn design was always `⟨action ▾⟩`). `verb_to_type` still maps a verb to exactly one type, and that one is the dropdown's value; there are still no runners-up and no guessed alternates. The Stage 3 harness keeps the three-and-the-rest arrangement, which is what still reads `type_suggestions`.
 
 **The advanced panel holds what a capture rarely needs.** The full type list and `recurrence` today. It is a second surface on the capture screen rather than a second screen, so nothing about the box or the chips changes when it opens.
 
@@ -606,7 +606,7 @@ Thirty-six objects. Each holds one thing that grows, so a change touches one obj
 | `time_bands` | morning, afternoon, evening, night | half-open windows |
 | `window_bounds` | day, week, span, month | half-open windows |
 | `deadline_bands` | the six `deadline_band` values | — |
-| `type_suggestions` | the three types the chip offers; the other eleven sit behind the advanced button | — |
+| `type_suggestions` | the three types the Stage 3 harness offers first; the MVP's dropdown (session 122) shows all fourteen and does not read this | — |
 | `type_order` | ranking factor 5's order | — |
 | `precision_order` | ranking factor 4's order | — |
 | `firmness_order` | ranking factor 3's order. `hard` sits last because tier 1 separates it before this factor is reached | — |

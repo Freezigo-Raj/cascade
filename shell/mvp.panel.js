@@ -54,10 +54,8 @@ export function splitDuration(minutes, config) {
  *                               setDuration, setFirmness, setNotes }
  */
 export function drawPanel(panel, config, state, on) {
-  const { chosen, repeat, alarmType, leadMin, hasTime } = state;
+  const { repeat, alarmType, leadMin, hasTime } = state;
   const { durationMin, durationTapped, firmness, notes } = state;
-  const three = config.type_suggestions;
-  const rest = config.commitment_types.map((m) => m.id).filter((id) => !three.includes(id));
 
   const group = (label, into) => {
     const wrap = el("div", "group");
@@ -103,8 +101,9 @@ export function drawPanel(panel, config, state, on) {
   } else {
     // Said rather than left blank: the row is missing for a reason and the
     // reason is fixable by typing a time.
-    group("Alarm", el("div", "note",
-      "Add a time to the line and the alarm can be set. A date with no time is due at midnight, and an alarm before midnight is not a reminder about that day."));
+    // Four words (session 122, his edit). The old three sentences explained
+    // midnight; the label's job is only to say what is missing.
+    group("Alarm", el("div", "note", "Needs an exact time."));
   }
 
   if (hasTime && alarmType !== "none") {
@@ -195,10 +194,7 @@ export function drawPanel(panel, config, state, on) {
   // no screen.
   group(durationTapped ? "Takes about" : "Takes about (from the verb)", dur);
   group("", quick);
-  const types = el("div", "taps");
-  for (const id of rest) {
-    types.appendChild(button("chip" + (id === chosen ? " on" : ""), id, () => on.setType(id)));
-  }
-  group("Type", types);
+  // The Type group LEFT this panel in session 122: the dropdown beside the ⋯
+  // now holds all fourteen, so a second copy here was the same control twice.
 
 }

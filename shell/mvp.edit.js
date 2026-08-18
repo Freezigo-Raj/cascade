@@ -365,23 +365,31 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
   function drawTypes(out) {
     typeRow.innerHTML = "";
     panel.innerHTML = "";
-    // A type chip on an empty box offers to change the type of nothing.
+    // A type control on an empty box offers to change the type of nothing.
     if (!out) return;
     const chosen = out.task.commitment_type;
-    const three = partAConfig.type_suggestions;
-    const shown = three.includes(chosen) ? three : [chosen, ...three];
-    for (const id of shown) {
-      const hit = button("chip" + (id === chosen ? " on" : ""), id, () => { typeTap = id; paint(); });
-      hit.setAttribute("aria-pressed", String(id === chosen));
-      typeRow.appendChild(hit);
+    // A DROPDOWN OF ALL FOURTEEN (session 122, his call, reversing his earlier
+    // one — logged). Three chips answered "which of these three"; they could
+    // not answer "what types exist", which is what he asked the screen. The
+    // native select shows the engine's guess as its value, scrolls on its own,
+    // and is the control the design always drew: `⟨action ▾⟩`.
+    const sel = el("select", "type-select");
+    sel.setAttribute("aria-label", "Type");
+    for (const t of partAConfig.commitment_types) {
+      const opt = el("option", "", t.id);
+      opt.value = t.id;
+      if (t.id === chosen) opt.selected = true;
+      sel.appendChild(opt);
     }
+    sel.addEventListener("change", () => { typeTap = sel.value; paint(); });
+    typeRow.appendChild(sel);
     const more = button("chip more" + (advanced ? " on" : ""), "\u22ef", () => { advanced = !advanced; paint(); });
     more.setAttribute("aria-expanded", String(advanced));
     more.title = "Advanced";
     typeRow.appendChild(more);
     if (advanced) {
       drawPanel(panel, partAConfig, {
-        chosen, repeat, alarmType, leadMin,
+        repeat, alarmType, leadMin,
         // The toggle exists only while the line carries a time, and this is the
         // engine's answer to that rather than the screen's guess at it.
         hasTime: Boolean(out.task.has_time),
@@ -390,7 +398,6 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
         firmness: firmTap,
         notes: notesText,
       }, {
-        setType: (id) => { typeTap = id; paint(); },
         setRepeat: (r) => { repeat = r; paint(); },
         setAlarm: (kind) => {
           alarmType = kind;

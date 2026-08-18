@@ -10,11 +10,11 @@
  * that reason and for no other.
  */
 
-@import url("./mvp.css?v=37");
-@import url("./mvp.account.css?v=37");
-@import url("./mvp.wide.css?v=37");
-@import url("./mvp.chrome.css?v=37");
-@import url("./mvp.web.css?v=37");
+@import url("./mvp.css?v=38");
+@import url("./mvp.account.css?v=38");
+@import url("./mvp.wide.css?v=38");
+@import url("./mvp.chrome.css?v=38");
+@import url("./mvp.web.css?v=38");
 
 /* ------------------------------------------------------------ screen 2
  *
@@ -108,15 +108,30 @@
 .dates-block { margin-top: calc(var(--step) * 3); }
 .dates-block .taps { margin-top: calc(var(--step) * 1.5); }
 .taps.pinned { flex-wrap: nowrap; }
-.taps.scroll-dates {
-  max-height: 84px;
+/* ONE ROW VISIBLE, THE REST DOWN THE SCROLL (session 122, his sizing: three
+   or so options showing per group). The affordance is real this time — build
+   37 hid the scrollbar and capped at exactly two rows, so nothing said "more
+   below" and the scroll read as vanished. A thin scrollbar is drawn, the last
+   14px fade, and the scroll stays inside the strip instead of dragging the
+   page. */
+.taps.scroll-dates, .taps.times-row {
+  max-height: 46px;
   overflow-y: auto;
-  scrollbar-width: none;
+  overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 16px), transparent);
-  mask-image: linear-gradient(to bottom, black calc(100% - 16px), transparent);
+  scrollbar-width: thin;
+  scrollbar-color: var(--edge) transparent;
+  padding-right: 6px;
 }
-.taps.scroll-dates::-webkit-scrollbar { display: none; }
+.taps.scroll-dates::-webkit-scrollbar, .taps.times-row::-webkit-scrollbar { width: 3px; }
+.taps.scroll-dates::-webkit-scrollbar-thumb, .taps.times-row::-webkit-scrollbar-thumb {
+  background: var(--edge);
+  border-radius: 2px;
+}
+.taps.scroll-dates {
+  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 14px), transparent);
+  mask-image: linear-gradient(to bottom, black calc(100% - 14px), transparent);
+}
 
 /* The two pickers LOOK like what they are (session 119): the way into every
    date and time the strip does not carry. They were grey like the word chips
@@ -324,3 +339,19 @@
   .box { font-size: 18px; }
   .dorow { flex-wrap: wrap; }
 }
+
+/* The type dropdown (session 122): all fourteen, the engine's guess as the
+   value, drawn as the design drew it — `⟨action ▾⟩`. Chip-shaped so the row
+   keeps its rhythm; the arrow is the browser's own. */
+.type-select {
+  font-family: var(--face-body);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--sunk);
+  border: 1.5px solid transparent;
+  border-radius: var(--r-pill);
+  padding: 7px 12px;
+  max-width: 60%;
+}
+.type-select:focus-visible { border-color: var(--signal); outline: none; }

@@ -40,10 +40,10 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 ## VERSIONS
 
   example      42
-  contract     52
+  contract     53
   config       a.19
   answer_key   28
-  shell        37
+  shell        38
   gate1        signed on example 35
   gate2        signed on contract 32
   gate3        signed on shell 1
@@ -79,42 +79,27 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 
 ## THIS SESSION'S JOB
 
-Eleven reports from build 36, one of them structural: a pick should put no words in the box.
+Build 37 on the phone: the scroll that read as vanished, the type control, and four words for the alarm.
 
-**SEARCH NEVER WORKED FROM A PHONE, and the defect was one case fold.** The matcher compares against
-`normalised`, which is lowercase, and a phone keyboard capitalises the first letter of anything — so
-the query scored zero against the very title it was typed from. The capture box never hit this because
-its line is normalised inside the engine; the list's search box passed the raw query. It is lowercased
-at the call site now.
+**THE SCROLL DID NOT VANISH; ITS AFFORDANCE DID, and that is the same thing.** Build 37 capped the
+date scroller at exactly two rows, hid the scrollbar, and put the fade in the row gap where it painted
+nothing. Two opaque rows with no hint below them is a wall, whatever the overflow property says. His
+sizing now stands: one row of each group visible — about three options — and the rest down a vertical
+scroll that LOOKS scrollable, with a thin drawn scrollbar, a bottom fade over real chips, and the
+scroll contained inside the strip so it does not drag the page.
 
-**A PICK PUTS NO WORDS IN THE BOX.** His words, and an amendment worth being precise about: a date
-still arrives one way, through words in the ONE line the engine reads. What changed is where those
-words live on screen. The box holds what the person typed; a tapped chip's or picker's words are
-composed onto the end of that line before every read, under a `chip_span` so the engine knows they
-were tapped; and the tick chip is where the reading shows and where the pick is taken back. A date
-pick replaces the picked date, a time pick replaces the picked time, and the two coexist — Tonight
-then 9pm reads as tonight at 9pm, proved headlessly. A pick on an empty box joins nothing and waits,
-previewed on the tick, because date words alone would have become a title. The engine, the contract's
-inputs and the key are untouched.
+**THE TYPE CONTROL IS A DROPDOWN OF ALL FOURTEEN, and this reverses session 91 on his instruction.**
+He asked the screen a question it could not answer — how many types are there? — because three chips
+answer "which of these three" and nothing answers "what exists". The native select shows every type,
+wears the engine's guess as its value, scrolls on its own, and is the control the design always drew:
+the example's panel has said `⟨action ▾⟩` since Stage 1, so the chips were the deviation and this is
+the return. What session 91 protected still stands untouched: `verb_to_type` maps a verb to exactly
+one type, there are no runners-up, and nothing is guessed. The Type group left the advanced panel —
+the dropdown holds all fourteen, so a second copy was the same control twice — and the panel now runs
+notes, alarm, repeat, firmness, duration.
 
-**THE DATE BLOCK IS THREE PIECES.** A pinned row — the tick, Pick date, Pick time — that never
-scrolls, because the way into every unlisted date must always be visible (his call). A date scroller
-of ten phrases, every one proved against the engine before joining the config: `day after
-tomorrow` failed the proof — it reads as `from tomorrow` and strands `day` in the title — and is out.
-And the five standard times on their own row. Nothing is cut in half anywhere any more: the scroller
-and the push ladder fade at their bottom edge instead, which says `more below` without amputating a
-chip — the session-120 half-cut affordance read as a defect, and on reflection it was one.
-
-**The rest, briefly.** The header date belongs to the slot: Tomorrow wears tomorrow's date, Upcoming
-says where it starts, Ideas and Done wear nothing. Each slot wears its total load (`Today · 1h 40m`) —
-an amendment to session 89's quiet rule, made on his request, and the ONLY place a duration appears;
-rows and push targets stay quiet. The advanced panel runs in the order a person thinks: notes, alarm,
-repeat, firmness, duration, type last. The Back button left screen 2 — the gesture, the browser's own
-Back and a save's return already cover every exit — and the editor's head now exists only while a task
-is bound. The account screen draws a Turn on button for `unknown` switches as well as `off` ones: a
-switch the old shell cannot read may still be off, and pressing it on a too-old shell answers with the
-rebuild sentence. Export lands in the browser's Downloads folder as `cascade-<date>.json`; inside the
-Android shell the WebView ignores blob downloads, which is recorded under FOUND, NOT FIXED.
+**The alarm's three sentences became four words**: `Needs an exact time.` The old paragraph explained
+midnight to a person who only needed to know what was missing.
 
 ## NEXT THREE JOBS
 
@@ -849,3 +834,7 @@ have landed. That is the price of the single table and it is accepted.
 - 18 Aug 2026 — The Back button left screen 2 and the editor's head exists only while a task is bound — the Android gesture asks `__cascadeBack()`, the browser has its own Back, and a save returns on its own, so the word was renting the top of the screen for a fourth way out — the bound-title chip and its ✕ keep the head while editing.
 - 18 Aug 2026 — The account screen draws a Turn on button for `unknown` as well as `off` — a switch the old shell cannot read may still be off, and a person staring at `unknown` with nothing to press is stuck — pressing it on a too-old shell answers with the rebuild sentence beside the button.
 - 18 Aug 2026 — Export inside the Android shell is recorded as broken rather than quietly worked around — the WebView has no blob-download handler, so the fix is a share sheet or a Kotlin write, and both belong to the next Kotlin session — in a browser it lands in Downloads as `cascade-<date>.json`, which answers where it stores.
+- 18 Aug 2026 — The chip scrollers show one row and draw their scrollbar — build 37 capped at two rows, hid the scrollbar and put the fade in the row gap, so nothing said `more below` and the scroll read as vanished, which it functionally was — a thin scrollbar, a fade over real chips, and `overscroll-behavior: contain` so the strip scrolls instead of the page.
+- 18 Aug 2026 — **Reverses** session 91, quoted as Part 11 requires: *"The type chip offers three and hides eleven behind an advanced panel — `verb_to_type` maps a verb to one type, so there are no runners-up and alternates would have to be guessed from a table with nothing behind it — a fixed short list is honest where a guessed one is not."* Requested directly this session — the three chips could not answer "how many types are there", which is what he asked the screen — the control is a native dropdown of all fourteen with the engine's guess as its value, which is what the example has drawn since Stage 1 (`⟨action ▾⟩`), so the chips were the deviation. Everything the old entry protected stands: one derived type, no runners-up, nothing guessed. `type_suggestions` stays in config; the Stage 3 harness still reads it.
+- 18 Aug 2026 — The Type group left the advanced panel — the dropdown beside the ⋯ holds all fourteen, so a second copy in the panel was the same control drawn twice — the panel runs notes, alarm, repeat, firmness, duration.
+- 18 Aug 2026 — The alarm's missing-time note is four words, `Needs an exact time.` — the old three sentences explained midnight arithmetic to a person who only needed to know what was missing — his edit, near verbatim.

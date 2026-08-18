@@ -46,7 +46,7 @@
      serving an old stylesheet has now cost three sessions of guessing at what
      had and had not arrived. A number that can be read is worth more than a
      number that has to be trusted. */
-  --css-version: 37;
+  --css-version: 38;
 
   --step: 4px;
   --r-card: 18px;

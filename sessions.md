@@ -2790,3 +2790,26 @@ Colour meant one thing and now means three. Accent is pressable, `#c0492b` is ov
 **Save point:** `search works from a phone, picks stay out of the box, nothing is cut in half`
 
 **Next job:** rebuild the APK, then the nine alarm tests.
+
+---
+## Session 122 — 18 August 2026
+
+**Job: build 37 on the phone — the scroll that read as vanished, the type control, four words for the alarm.**
+
+**THE SCROLL DID NOT VANISH; ITS AFFORDANCE DID.** Build 37 capped the date scroller at exactly two rows, hid the scrollbar, and put the fade in the row gap where it painted nothing — two opaque rows with no hint below them is a wall whatever the overflow property says. His sizing stands now: one row visible per group (~3 options), the rest down a vertical scroll with a thin DRAWN scrollbar, a fade over real chips, and `overscroll-behavior: contain` so the strip scrolls instead of the page.
+
+**THE TYPE CONTROL IS A DROPDOWN OF ALL FOURTEEN — a logged reversal of session 91, on his instruction.** Three chips answer "which of these three"; he asked "how many types are there", which they cannot. The native select wears the engine's guess as its value and is what the design always drew (`⟨action ▾⟩` since Stage 1), so the chips were the deviation and this is the return. Session 91's substance stands: one derived type, no runners-up, nothing guessed. The Type group left the advanced panel (same control twice); panel runs notes, alarm, repeat, firmness, duration. `type_suggestions` stays in config — the Stage 3 harness reads it — and the contract says so.
+
+**Alarm note: `Needs an exact time.`** His edit, near verbatim.
+
+**Files changed:** `index.html`, `shell/render.js`, `shell/mvp.edit.js`, `shell/mvp.panel.js`, `shell/mvp.css` (version), `shell/mvp.edit.css`, `contract.md`, `MVP.md`, `spec.md`, `sessions.md`, `log.manifest`
+
+**Versions:** shell 38, contract 53. Config unchanged at a.19 (37 objects), example 42, answer_key 28. No Kotlin change.
+
+**Tests:** all six green; sealed 463.
+
+**Not tested:** the drawn scrollbars, the fade, the dropdown and the one-row caps need the phone. APK rebuild from 119 still pending.
+
+**Save point:** `the scroll shows itself, the type control answers how many, the alarm asks in four words`
+
+**Next job:** rebuild the APK, then the nine alarm tests.

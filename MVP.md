@@ -161,19 +161,19 @@ The box is at the top. The tap buttons are with it. The matching tasks are below
 |---|---|---|
 | Text box | 1 | The only one in Part A. On edit it holds the **title**, never the typed line |
 | Add / Edit | 1 | Reads `Add` when empty, `Edit` when a task is loaded |
-| Date chips | 10 | From `chip_presets` (session 121): This afternoon, This evening, Tonight, Tomorrow morning/afternoon/evening, Weekend, Next weekend, Next week, Next month — every phrase proved against the engine before joining (`day after tomorrow` failed and is out). In a scroller capped at two rows that fades at its bottom edge rather than cutting a chip in half |
+| Date chips | 10 | From `chip_presets` (session 121): This afternoon, This evening, Tonight, Tomorrow morning/afternoon/evening, Weekend, Next weekend, Next week, Next month — every phrase proved against the engine before joining (`day after tomorrow` failed and is out). One row visible, the rest down a vertical scroll with a thin drawn scrollbar and a bottom fade (session 122: build 37 hid the scrollbar and the scroll read as vanished) |
 | Pick date | 1 | A date picker, PINNED beside the tick with Pick time — the way into every unlisted date never scrolls away (session 121) |
 | Pick time | 1 | A time picker, pinned |
-| Time chips | 5 | `9am` `12pm` `3pm` `6pm` `9pm`, their own row below the date scroller |
+| Time chips | 5 | `9am` `12pm` `3pm` `6pm` `9pm`, their own row below the date scroller, capped at one row with the same drawn scrollbar where they wrap |
 
 **A pick puts no words in the box** (session 121). The box holds what the person typed; a tapped chip's or picker's words join the line the engine reads, beside the box and under a `chip_span`, and the tick chip is where the reading shows. Tapping the tick takes the picked words back. A date still arrives one way — through words in the one line — and the engine is untouched. A pick on an empty box waits, previewed on the tick, until there are words to date: date words alone are not a commitment.
 | `✓ <date>` | 1 | The date the engine read. Tapping it removes those words from the box |
-| Type chips | 3 + 1 | The engine's guess, marked, beside `deadline`, `action`, `appointment`. A small button opens the advanced panel |
+| Type | 1 + 1 | A dropdown of all fourteen types (session 122, his call — and what the design always drew: `⟨action ▾⟩`). The engine's guess is its value; changing it is the tap. The ⋯ beside it opens the advanced panel |
 | Advanced | 1 | Opens a panel on the same screen. Everything that corrects what the typing already said, in one place |
 | Takes about | 1 + 3 + 4 | In the advanced panel. A number box and `min` / `hour` / `day`, plus four suggestions. Sets `duration_tap`; the label says whether the number is the person's or the verb's |
 | How firm | 4 | In the advanced panel. `auto` / `normal` / `soft` / `hard`. `auto` gives the marker words their say back, so the tap is undoable |
 | Repeat | 1 | In the advanced panel. An interval: every N days, weeks or months |
-| Alarm | 1 | In the advanced panel, and ONLY while the line carries a time. `none` / `on`. Without a time the row is replaced by one sentence saying a time is what is missing |
+| Alarm | 1 | In the advanced panel, and ONLY while the line carries a time. `none` / `on`. Without a time the row is replaced by four words: `Needs an exact time.` (session 122) |
 | Lead | 1 | Minutes before the task. 15 by default, changed per task. The note under it states the ring length, the auto-snooze interval and the limit |
 | Notes | 1 | In the advanced panel, at the foot of it. Read, never matched: a note reaches neither search nor the duplicate warning |
 | Low / Normal / High | 3 | Normal is the default and is marked |
@@ -306,7 +306,7 @@ The mobile sentence, because a notification is the smallest screen there is. Pus
 
 ## Counts
 
-3 text boxes (capture, the notes, and the list's search). 34 fixed buttons on screens 1 and 2 outside the advanced panel — screen 1: three tabs, `+`, the floating `+`, three slot buttons, the avatar; screen 2: ten date chips, two pickers, five time chips, three type chips, `⋯`, three significance buttons, Add — plus 4 or 5 push buttons per row, plus 3 on screen 3 (export, sign out, back). 1 dialog carrying up to 3 warnings, 1 toast.
+3 text boxes (capture, the notes, and the list's search). 31 fixed buttons on screens 1 and 2 outside the advanced panel — screen 1: three tabs, `+`, the floating `+`, three slot buttons, the avatar; screen 2: ten date chips, two pickers, five time chips, `⋯`, three significance buttons, Add — plus the type dropdown (all fourteen types, session 122) — plus 4 or 5 push buttons per row, plus 3 on screen 3 (export, sign out, back). 1 dialog carrying up to 3 warnings, 1 toast.
 
 ---
 
