@@ -10,11 +10,11 @@
  * that reason and for no other.
  */
 
-@import url("./mvp.css?v=39");
-@import url("./mvp.account.css?v=39");
-@import url("./mvp.wide.css?v=39");
-@import url("./mvp.chrome.css?v=39");
-@import url("./mvp.web.css?v=39");
+@import url("./mvp.css?v=40");
+@import url("./mvp.account.css?v=40");
+@import url("./mvp.wide.css?v=40");
+@import url("./mvp.chrome.css?v=40");
+@import url("./mvp.web.css?v=40");
 
 /* ------------------------------------------------------------ screen 2
  *
@@ -380,3 +380,14 @@
    carries an exact time; the toggle plus the instant it will ring. */
 .alarm-row { display: flex; align-items: center; gap: calc(var(--step) * 3); margin-top: calc(var(--step) * 2); }
 .alarm-when { font-size: 12.5px; color: var(--signal-deep); font-weight: 600; }
+
+/* The repeat group (session 124): the Never button lives beside the label and
+   wears the sentence once a repeat is set; the number and four units fit one
+   line. */
+.group-head { display: flex; align-items: center; gap: calc(var(--step) * 3); margin-bottom: calc(var(--step) * 2); }
+.group-head .label { margin-bottom: 0; }
+.chip.rep-state { max-width: 62%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.taps.rep-line { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+.taps.rep-line::-webkit-scrollbar { display: none; }
+.taps.rep-line .num { width: 48px; flex-shrink: 0; }
+.taps.rep-line .chip { padding-left: 10px; padding-right: 10px; flex-shrink: 0; }

@@ -63,7 +63,9 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
   // carry, then what kind of thing it is, then how much it matters — and only
   // then the press. Add sat above the type chips and asked to be pressed before
   // the last two answers were given.
-  root.append(head, box, dateRow, typeRow, alarmRow, panel, doRow, matches);
+  // The alarm sits directly under the box (session 124, his arrow): the ring
+  // is a property of the line just typed, so it reads before the pickers do.
+  root.append(head, box, alarmRow, dateRow, typeRow, panel, doRow, matches);
 
   // The chip row is built once. It holds two native pickers, and a picker that is
   // rebuilt while it is open closes without returning anything: opening a
@@ -143,8 +145,25 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
     box.focus();
   }
 
+  // The shapes a typed time usually takes. The engine reads more forms than
+  // this; a form the regex misses simply keeps typed-wins, which is the safe
+  // side of the rule.
+  const TIME_TOKEN = /\b(?:[01]?\d|2[0-3]):[0-5]\d\s*(?:am|pm)?\b|\b(?:1[0-2]|0?[1-9])\s*(?:am|pm)\b|\bnoon\b|\bmidnight\b/i;
+
   function pickTime(words) {
-    pickedTime = words;
+    // WHICHEVER CAME LAST WINS (session 124, his rule, near verbatim: "it
+    // should be whatever is typed or click last"). A typed time used to
+    // outrank every later pick because it sat earlier in the composed line;
+    // now a pick REPLACES the typed time token in the line — a logged
+    // amendment to session 121's "picks put no words in the box": replacing
+    // a time the person is superseding is not inserting words they did not
+    // choose.
+    if (TIME_TOKEN.test(box.value)) {
+      box.value = box.value.replace(TIME_TOKEN, words);
+      pickedTime = "";
+    } else {
+      pickedTime = words;
+    }
     compose();
     paint();
     box.focus();
@@ -372,6 +391,26 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
     return h + (m ? ":" + String(m).padStart(2, "0") : "") + half;
   }
 
+  // `rings 4:45pm today` / `on Monday` / `on 20th August` (session 124, his
+  // wording, near verbatim): the clock alone answered when only if you already
+  // knew the day. Weekdays carry the next six days; dates carry the rest. A
+  // repeating task says so, because a ring that will come back is a different
+  // promise from one that will not.
+  function ringSentence(ringMs, rep) {
+    const WD = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const MO = ["January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"];
+    const nth = (n) => n + (n % 10 === 1 && n !== 11 ? "st" : n % 10 === 2 && n !== 12 ? "nd" : n % 10 === 3 && n !== 13 ? "rd" : "th");
+    const d = new Date(ringMs);
+    const t0 = new Date(); t0.setHours(0, 0, 0, 0);
+    const days = Math.floor((ringMs - t0.getTime()) / 86400000);
+    const when = days === 0 ? " today"
+               : days === 1 ? " tomorrow"
+               : days > 1 && days < 7 ? ` on ${WD[d.getDay()]}`
+               : ` on ${nth(d.getDate())} ${MO[d.getMonth()]}`;
+    return "rings " + fmtClock(ringMs) + when + (rep ? " \u00b7 repeats" : "");
+  }
+
   function drawTypes(out) {
     typeRow.innerHTML = "";
     panel.innerHTML = "";
@@ -408,7 +447,7 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
         () => { alarmType = on ? "none" : "on"; paint(); });
       tog.setAttribute("aria-pressed", String(on));
       alarmRow.appendChild(tog);
-      if (on) alarmRow.appendChild(el("span", "alarm-when", "rings " + fmtClock(ringMs)));
+      if (on) alarmRow.appendChild(el("span", "alarm-when", ringSentence(ringMs, repeat)));
     }
     const more = button("chip more" + (advanced ? " on" : ""), "\u22ef", () => { advanced = !advanced; paint(); });
     more.setAttribute("aria-expanded", String(advanced));
@@ -490,7 +529,13 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
   // Everything re-reads on every keystroke: the date, the type, the duration,
   // the matches. The picked words survive typing — they are not in the box, so
   // typing cannot mangle them, and the tick chip is their one way out.
-  box.addEventListener("input", () => { compose(); paint(); });
+  box.addEventListener("input", () => {
+    // Typing a time after picking one takes the pick back: last writer wins
+    // in both directions (session 124).
+    if (pickedTime && TIME_TOKEN.test(box.value)) pickedTime = "";
+    compose();
+    paint();
+  });
 
   // Returned for the same reason screen 1's are: a listener that outlives its
   // screen redraws a screen that is no longer on the page. This one is milder —

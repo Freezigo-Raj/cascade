@@ -137,7 +137,7 @@ export function drawPanel(panel, config, state, on) {
     mins.min = "0";
     mins.max = String(config.alarm_defaults.max_lead_min);
     mins.value = String(leadMin ?? config.alarm_defaults.lead_min);
-    mins.addEventListener("input", () => on.setLead(Math.max(0, Number(mins.value) || 0)));
+    mins.addEventListener("change", () => on.setLead(Math.max(0, Number(mins.value) || 0)));
     lead.appendChild(mins);
     lead.appendChild(el("span", "note",
       `minutes before. It rings for ${Math.round(config.alarm_defaults.ring_sec / 60)} min, then snoozes itself ${config.alarm_defaults.auto_snooze_min} min at a time, up to ${config.alarm_defaults.auto_max} times.`));
@@ -148,13 +148,30 @@ export function drawPanel(panel, config, state, on) {
   //
   // An interval and nothing more. A repeat spawns its next occurrence when this
   // one is marked done, and only then, so the shape needs no start and no end.
-  const rep = el("div", "taps");
-  rep.appendChild(button("chip" + (repeat ? "" : " on"), "never", () => on.setRepeat(null)));
+  // THE NEVER BUTTON SITS IN THE HEADER AND WEARS THE READING (session 124,
+  // his slide): beside `Repeat every`, saying `Never` until a repeat is set,
+  // then the app's own sentence — `every Wednesday at 5pm` — because a control
+  // that echoes its meaning back cannot be silently misread. Tapping it is
+  // always the way back to never. The number and the four units sit in ONE
+  // line below (his sizing).
+  const repHead = el("div", "group-head");
+  repHead.appendChild(el("div", "label", "Repeat every"));
+  const sentence = repeatSentence(repeat, dueAt, hasTime);
+  const nev = button("chip rep-state" + (repeat ? "" : " on"),
+    repeat ? sentence : "Never", () => on.setRepeat(null));
+  nev.setAttribute("aria-pressed", String(!repeat));
+  repHead.appendChild(nev);
+
+  const rep = el("div", "taps rep-line");
   const every = el("input", "num");
   every.type = "number";
   every.min = "1";
   every.value = String(repeat?.every ?? 1);
-  every.addEventListener("input", () => {
+  // `change`, not `input` (session 124, his report): the input listener
+  // repainted the panel on every digit, the rebuilt element never held the
+  // caret, and typing `14` took two focuses. The value lands when the field
+  // is left.
+  every.addEventListener("change", () => {
     const n = Math.max(1, Number(every.value) || 1);
     if (repeat) on.setRepeat({ every: n, unit: repeat.unit });
   });
@@ -164,11 +181,10 @@ export function drawPanel(panel, config, state, on) {
     rep.appendChild(button("chip" + (on_ ? " on" : ""), u + "s", () =>
       on.setRepeat({ every: Math.max(1, Number(every.value) || 1), unit: u })));
   }
-  const repWrap = el("div", "");
+  const repWrap = el("div", "group");
+  repWrap.appendChild(repHead);
   repWrap.appendChild(rep);
-  const sentence = repeatSentence(repeat, dueAt, hasTime);
-  if (sentence) repWrap.appendChild(el("div", "note repeat-said", sentence));
-  group("Repeat every", repWrap);
+  panel.appendChild(repWrap);
 
   // ------------------------------------------------------------------ firmness
   //
@@ -202,7 +218,8 @@ export function drawPanel(panel, config, state, on) {
     const n = Math.max(1, Number(count.value) || 1);
     on.setDuration(Math.min(config.limits.duration_max, n * config.duration_units[unit]));
   };
-  count.addEventListener("input", write);
+  // `change`, not `input` — the same caret-loss the repeat number had.
+  count.addEventListener("change", write);
   dur.appendChild(count);
   for (const [label] of unitsBySize(config).reverse()) {
     const hit = button("chip" + (label === unit ? " on" : ""), label, () => {

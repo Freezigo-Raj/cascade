@@ -2838,3 +2838,32 @@ Colour meant one thing and now means three. Accent is pressable, `#c0492b` is ov
 **Save point:** `the lock screen keeps its word, the alarm shows itself before the panel, the chips know now from later`
 
 **Next job:** his phone pass on build 39; the nine alarm tests, especially 9 (unanswered escalation), now that outcomes actually write.
+
+---
+## Session 124 — 18 August 2026
+
+**Job: his build-39 slide review — nine items.**
+
+**WHICHEVER TIME CAME LAST WINS.** A typed time outranked every later pick by sitting earlier in the composed line, so tapping `6pm` after typing `3pm` did nothing. A time pick now REPLACES the typed time token in the line; typing a time takes a standing pick back. His rule near verbatim ("whatever is typed or click last"). Logged as a Part-11 AMENDMENT to session 121's "picks put no words in the box" — replacing a time the person is superseding is not inserting words they did not choose. Detection regex covers usual typed shapes; a missed form keeps typed-wins, the safe side.
+
+**A SCROLL IS NOT A PRESS.** Dragging the push ladder fired the rung's click. A press travelling >8px is swallowed before any rung hears it.
+
+**A `Today` RUNG LEADS THE LADDER** for time/band/day tasks sitting on a later day — today at the task's own clock time, or now+1h if that has gone (a pull-forward that arrives overdue is a trap). gate4 unchanged — the key does not pin ladders.
+
+**Alarm row sits directly under the box** (his arrow) and states the day: `rings 4:45pm today` / `tomorrow` / `on Monday` (inside six days) / `on 20th August` (beyond), plus `· repeats` when the task does.
+
+**Repeat group redesigned to his slide:** Never button beside the `Repeat every` label, wearing the app's sentence once a repeat is set (`every Wednesday at 5pm`); tapping it always returns to never; number + four units on one line. FOCUS BUG: the panel's number inputs (repeat, lead, duration) repainted per digit via `input`, rebuilding the field out from under the caret — all three now fire on `change`.
+
+**Screen words:** `Later` where the engine says `Upcoming` (records unchanged); no slot lit while a search is on. Slide 1's coloured band was already gone in build 39 (his screenshot was build 38) — verified, nothing further.
+
+**Files changed:** `index.html`, `shell/render.js`, `shell/push.js`, `shell/mvp.edit.js`, `shell/mvp.panel.js`, `shell/mvp.list.js`, `shell/mvp.row.js`, `shell/mvp.css`, `shell/mvp.edit.css`, `spec.md`, `MVP.md`, `sessions.md`, `log.manifest`
+
+**Versions:** shell 40. Contract 54, config a.19, example 42, answer_key 28 all unchanged. No Kotlin change.
+
+**Tests:** all six green; sealed 476.
+
+**Not tested:** every item needs the phone — especially the ladder drag guard and the caret staying put in the number boxes.
+
+**Save point:** `the last time wins, a scroll is not a press, tomorrow can come to today`
+
+**Next job:** his phone pass on build 40; the nine alarm tests remain, especially test 9.

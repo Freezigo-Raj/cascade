@@ -30,6 +30,10 @@ const { SHELL_VERSION } = await import(`./render.js${v}`);
 
 const TABS = ["Tasks", "Ideas", "Done"];
 const SLOTS = ["Today", "Tomorrow", "Upcoming"];
+// THE SCREEN SAYS `Later` WHERE THE ENGINE SAYS `Upcoming` (session 124, his
+// word). The band name in every record and every rule stays `Upcoming`; only
+// the two places a person reads it change.
+const slotWord = (name) => (name === "Upcoming" ? "Later" : name);
 
 // One clock for both screens, in `mvp.clock.js`. It was written here first and
 // copied into screen 2, which is how two functions that have to agree begin to
@@ -219,7 +223,7 @@ export function mountList(root, { openEdit, openAccount, onTasks } = {}) {
   const headBlock = el("div", "head-block");
   const headLeft = el("div", "");
   const kicker = el("div", "kicker", tab);
-  const title = el("h1", "head-title", slot);
+  const title = el("h1", "head-title", slotWord(slot));
   const dateLine = el("div", "head-date", slotDate());
   headLeft.append(kicker, title, dateLine);
   headBlock.appendChild(headLeft);
@@ -309,7 +313,7 @@ export function mountList(root, { openEdit, openAccount, onTasks } = {}) {
     // Recomputed rather than built once: a tab left open past midnight showed
     // yesterday's date under a list that had already rolled over.
     dateLine.textContent = slotDate();
-    title.textContent = tab === "Tasks" ? slot : tab;
+    title.textContent = tab === "Tasks" ? slotWord(slot) : tab;
     tabButtons.forEach((b, i) => b.setAttribute("aria-selected", String(tab === TABS[i])));
     // Each slot wears its total (session 121, his call): the sum of every
     // duration it holds, the verb's guess where nobody chose one. Per-row and
@@ -323,8 +327,11 @@ export function mountList(root, { openEdit, openAccount, onTasks } = {}) {
       .reduce((sum, c) => sum + (byId.get(c.card_id)?.est_duration_min ?? 0), 0));
     slotButtons.forEach((b, i) => {
       const load = loadOf(SLOTS[i]);
-      b.textContent = load ? `${SLOTS[i]} \u00b7 ${load}` : SLOTS[i];
-      b.setAttribute("aria-pressed", String(slot === SLOTS[i]));
+      b.textContent = load ? `${slotWord(SLOTS[i])} \u00b7 ${load}` : slotWord(SLOTS[i]);
+      // NO SLOT WEARS THE MARK WHILE A SEARCH IS ON (session 124): with text
+      // in the box the pool is everything not done, so a lit `Today` would be
+      // claiming a scope the list is not using.
+      b.setAttribute("aria-pressed", String(!filter.trim() && slot === SLOTS[i]));
     });
     slots.style.display = tab === "Tasks" ? "" : "none";
     if (searchBox.value !== filter) searchBox.value = filter;

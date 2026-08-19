@@ -101,6 +101,22 @@ export function rowOf(card, { all, tab, slot, narrow, act, openEdit }) {
   // labels are the engine's own — a band pushes to a band — rather than a
   // fixed `+1h` and `+3d`, which would be two offsets nothing chose.
   const nudges = el("div", "nudges");
+  // A SCROLL IS NOT A PRESS (session 124, his report): dragging the ladder
+  // ended on a rung and the browser fired its click, so scrolling pushed the
+  // task. A press that travelled more than a thumb's wobble is a scroll and
+  // is swallowed before any rung hears it.
+  let touchY = null;
+  let moved = false;
+  nudges.addEventListener("touchstart", (ev) => {
+    touchY = ev.touches[0].clientY;
+    moved = false;
+  }, { passive: true });
+  nudges.addEventListener("touchmove", (ev) => {
+    if (touchY !== null && Math.abs(ev.touches[0].clientY - touchY) > 8) moved = true;
+  }, { passive: true });
+  nudges.addEventListener("click", (ev) => {
+    if (moved) { ev.stopPropagation(); ev.preventDefault(); moved = false; }
+  }, true);
   if (tab !== "Done") {
     (card.push_options ?? []).forEach((o, i) => {
       const b = el("button", "nudge", o.push_label);

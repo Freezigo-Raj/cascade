@@ -89,6 +89,17 @@ function targetsFor(task, now) {
       { label: "Next week", at: today + 7 * DAY + (at % DAY) },
     ];
   }
+  // A TASK ON A LATER DAY CAN COME TO TODAY (session 124, his ask): the
+  // ladders only ever pushed outward, so a tomorrow that freed up could not
+  // be pulled in. The rung lands on today at the task's own clock time; if
+  // that instant has already gone, one hour from now, because a pull-forward
+  // that arrives overdue is a trap, not a favour.
+  const nowMs = Date.parse(now.slice(0, 19) + "Z");
+  const pullIn = [];
+  if (at - (at % DAY) > today && ["time", "band", "day"].includes(task.date_precision)) {
+    const atToday = today + (at % DAY);
+    pullIn.push({ label: "Today", at: atToday > nowMs ? atToday : nowMs + HOUR });
+  }
   // Each set is a STANDARD LADDER at the precision the person gave (session
   // 119): the row scrolls sideways, so four or five rungs cost no height and a
   // push no longer has to be made twice to reach a fortnight. The rules under
@@ -96,7 +107,7 @@ function targetsFor(task, now) {
   // one step beyond the precision, and the load still drops full days.
   switch (task.date_precision) {
     case "time":
-      return [
+      return [...pullIn,
         { label: "+1 hour", at: at + HOUR },
         { label: "+4 hours", at: at + 4 * HOUR },
         { label: "Tomorrow", at: at + DAY },
@@ -104,7 +115,7 @@ function targetsFor(task, now) {
         { label: "Next week", at: at + 7 * DAY },
       ];
     case "band":
-      return [
+      return [...pullIn,
         { label: "Later today", at: at + 4 * HOUR },
         { label: "Tomorrow", at: at + DAY },
         { label: "+2 days", at: at + 2 * DAY },
@@ -112,7 +123,7 @@ function targetsFor(task, now) {
         { label: "+2 weeks", at: at + 14 * DAY },
       ];
     case "day":
-      return [
+      return [...pullIn,
         { label: "Tomorrow", at: at + DAY },
         { label: "+2 days", at: at + 2 * DAY },
         { label: "Next week", at: at + 7 * DAY },

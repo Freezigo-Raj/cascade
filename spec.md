@@ -43,7 +43,7 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
   contract     54
   config       a.19
   answer_key   28
-  shell        39
+  shell        40
   gate1        signed on example 35
   gate2        signed on contract 32
   gate3        signed on shell 1
@@ -79,36 +79,38 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 
 ## THIS SESSION'S JOB
 
-Session 123: the lock screen was ringing and writing nothing, the alarm moves onto the capture
-screen, and his slide review — ten screen items in all.
+Session 124: his build-39 slide review — nine items across both screens.
 
-**EVERY LOCK-SCREEN OUTCOME WAS SILENTLY LOST, and one wrong call signature did it.** The bridge's
-`apply()` passed the changed record alone to `tasks.update(...)`, but the store's contract is
-`update(id, record)`. The store threw `is not here` into a catch, the console warned where no one
-reads it, and Done, Push, Snooze and the unanswered escalation all wrote NOTHING — the alarm rang
-correctly and then forgot everything it decided. All four branches now pass the id. This is exactly
-the kind of defect check_alarm.mjs never sees: it proves the pure functions and never calls
-`apply()`, which is recorded rather than hidden.
+**WHICHEVER TIME CAME LAST WINS.** A typed time outranked every later pick because it sat earlier in
+the composed line, so tapping `6pm` after typing `3pm` did nothing. A time pick now REPLACES the
+typed time token in the line, and typing a time takes a standing pick back — his rule, near
+verbatim: "whatever is typed or click last". This AMENDS session 121's "picks put no words in the
+box": replacing a time the person is superseding is not inserting words they did not choose. The
+regex covers the shapes a typed time usually takes; a form it misses keeps typed-wins, the safe side.
 
-**A LOCK-SCREEN DONE NOW SPAWNS THE REPEAT'S NEXT OCCURRENCE.** Only the in-app press spawned, so
-a weekly task closed from the alarm screen silently ended its series. `apply()` does what the list
-does: write done, then spawn.
+**A SCROLL IS NOT A PRESS.** Dragging the push ladder ended on a rung and the browser fired its
+click, so scrolling pushed the task. A press that travelled more than a thumb's wobble is swallowed
+before any rung hears it.
 
-**THE ALARM LIVES ON THE CAPTURE SCREEN** while the line carries an exact time: a toggle and the
-instant it will ring, `rings 2:45pm`, due minus lead. Setting a ring should not require opening the
-panel, and a toggle that hides its consequence is a guess. No time, no row — the panel's four words
-cover that.
+**A TASK ON A LATER DAY CAN COME TO TODAY.** The ladders only pushed outward; a `Today` rung now
+leads the ladder for time-, band- and day-precision tasks sitting on a later day — today at the
+task's own clock time, or an hour from now if that instant has gone, because a pull-forward that
+arrives overdue is a trap.
 
-**His slides**: the date chips are TWO COLUMNS SIDE BY SIDE, each its own three-chip scroll — near
-phrases (`This …`, `Tonight`) left, later right, so the first glance answers "now or later". The
-repeat states the app's reading as one sentence, `every week on Tuesday at 3pm`, derived from the
-due date the schedule anchors on. `year` joined the repeat units — one line in `step()`, twelve
-months. Number boxes wear a sheet ground and a drawn edge so they read as fields, not one more
-chip. The sticky header wears the paper, so no band sits behind the bound chip. The avatar is three
-dots. The bar's `+` left the narrow layout — the FAB is the same control where a thumb is — and the
-wide layout keeps it. Search covers EVERY task not done (all bands plus Ideas) the moment the box
-has text, says so (`search all tasks`), and a slot or tab press clears it, because a navigation is
-an answer accepted. The push ladder shows three rungs before the fade.
+**The alarm row sits directly under the box** (his arrow) and states the day as well as the clock:
+`rings 4:45pm today` / `tomorrow` / `on Monday` / `on 20th August`, plus `· repeats` when the task
+does — his wording, near verbatim.
+
+**The repeat group**: the Never button lives beside the `Repeat every` label and wears the app's own
+sentence once a repeat is set (`every Wednesday at 5pm`), tapping it is always the way back to
+never; the number and the four units fit one line. The number inputs (repeat, lead, duration) fire
+on `change` rather than `input` — the input listener repainted the panel per digit and the rebuilt
+field never held the caret, which is why typing shifted focus.
+
+**Smaller screen words**: `Later` where the engine says `Upcoming` (band name in records unchanged);
+no slot wears the mark while a search is on, because with text in the box the pool is everything
+not done; the sticky header's coloured band was already gone in build 39 and his slide-1 screenshot
+predates it — verified, nothing further.
 
 ## NEXT THREE JOBS
 
@@ -854,3 +856,9 @@ have landed. That is the price of the single table and it is accepted.
 - 18 Aug 2026 — `year` joined the repeat units — one line in `step()`, `n * 12` months, so 29 Feb rolls to 1 Mar by the arithmetic months already rely on — and the panel states the app's reading of a set repeat as one sentence, `every week on Tuesday at 3pm`, derived from the due date the schedule anchors on, because a control that echoes its meaning back cannot be silently misread.
 - 18 Aug 2026 — Screen dressing from his slides: number inputs wear a sheet ground and a drawn edge (a field, not one more chip); the sticky header wears the paper so no band sits behind the bound chip; the avatar is three dots; the narrow bar's `+` is gone (the FAB is the same control where a thumb is; wide keeps the `+`); the push ladder shows three rungs before the fade.
 - 18 Aug 2026 — With text in the search box the pool is every band plus Ideas rather than the open slot — scoped, a task in Upcoming answered `not in Today`, which reads as `does not exist` — the placeholder says `search all tasks`, Done stays out unless the Done tab is open, and a slot or tab press clears the box because a navigation is an answer accepted.
+- 18 Aug 2026 — **Amends** session 121's "picks put no words in the box", quoted: *"his `selecting a time should not insert any text` — picks no longer appear in the box; picked date/time words compose onto the end of the one line the engine reads"* — a typed time outranked every later pick by sitting earlier in the composed line, so on his direct rule ("whatever is typed or click last") a time pick now replaces the typed time token in the line, and typing a time takes a standing pick back — replacing a time the person is superseding is not inserting words they did not choose — the detection regex covers the usual typed shapes, and a form it misses keeps typed-wins, the safe side.
+- 18 Aug 2026 — A press on the push ladder that travelled more than 8px is a scroll and is swallowed before any rung hears it — dragging the capped ladder ended on a rung and the browser fired its click, so scrolling pushed the task.
+- 18 Aug 2026 — A `Today` rung leads the ladder for time-, band- and day-precision tasks sitting on a later day — the ladders only pushed outward, and a tomorrow that frees up could not be pulled in — it lands today at the task's own clock time, or an hour from now when that instant has gone, because a pull-forward that arrives overdue is a trap.
+- 18 Aug 2026 — The capture-screen alarm sits directly under the box and states the day as well as the clock — `rings 4:45pm today` / `tomorrow` / `on Monday` inside six days / `on 20th August` beyond — plus `· repeats` when the task does, his wording near verbatim.
+- 18 Aug 2026 — The repeat group's Never button lives beside the label and wears the app's sentence once a repeat is set, tapping it always the way back to never; the number and four units fit one line; the panel's number inputs fire on `change` rather than `input` — repainting per digit rebuilt the field out from under the caret, which is what "editing shifts focus with every typed number" was.
+- 18 Aug 2026 — The screen says `Later` where the engine says `Upcoming` — the band name in every record and rule is unchanged — and no slot wears the pressed mark while a search is on, since with text in the box the pool is everything not done.
