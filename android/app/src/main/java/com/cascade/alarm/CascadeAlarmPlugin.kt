@@ -44,6 +44,22 @@ import com.getcapacitor.annotation.CapacitorPlugin
 class CascadeAlarmPlugin : Plugin() {
 
     companion object {
+        /**
+         * Stated once (session 126, moved here in 127 — see below). The lock
+         * screen draws it too, so a number written in two places would be the
+         * account screen and the alarm disagreeing about which shell is
+         * running, which is the confusion this number exists to end.
+         *
+         * IT SITS IN THE COMPANION THE CLASS ALREADY HAD. Session 126 added a
+         * SECOND `companion object` to this file and shipped it: Kotlin allows
+         * exactly one per class, so the build failed with `Conflicting
+         * declarations` — and only on his machine, because nothing in this
+         * project compiles Kotlin. `gate2.py` runs `tsc --strict` over the web
+         * half and there is no equivalent for these six files, which is now
+         * written down as the gap it is rather than found again the same way.
+         */
+        const val SHELL_BUILD = 3
+
         private var live: CascadeAlarmPlugin? = null
         /** Whether a WebView is alive to hear an outcome. */
         fun isLive(): Boolean = live != null
@@ -141,16 +157,6 @@ class CascadeAlarmPlugin : Plugin() {
     @PluginMethod
     fun version(call: PluginCall) {
         call.resolve(JSObject().put("version", SHELL_BUILD))
-    }
-
-    companion object {
-        /**
-         * Stated once (session 126). The lock screen draws it too, so a number
-         * written in two places would be the account screen and the alarm
-         * disagreeing about which shell is running — which is exactly the
-         * confusion this number exists to end.
-         */
-        const val SHELL_BUILD = 3
     }
 
     @PluginMethod
