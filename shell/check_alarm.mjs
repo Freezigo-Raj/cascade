@@ -12,7 +12,7 @@
 // Run: node shell/check_alarm.mjs
 
 import { partAConfig as config } from "./config.js";
-import { canAlarm, alarmOffered, alarmAt, ringAt, readAlarmView, snoozed, unanswered, alarmCleared } from "./alarm.js";
+import { canAlarm, alarmOffered, alarmAt, ringAt, nextRing, readAlarmView, snoozed, unanswered, alarmCleared } from "./alarm.js";
 import { rankKeyFor, readCards } from "./cards.js";
 import { pushed } from "./push.js";
 import { spawn, overtaken } from "./repeat.js";
@@ -243,6 +243,41 @@ console.log("\na length of time, spaced either way");
   const next = spawn({ ...stale, task_state: "cancelled" }, "t11", "2026-09-02T12:00:00+05:30");
   say(next.due_at === "2026-09-07T09:00:00+05:30", "the next occurrence is the next FUTURE one");
   say(next.spawned_from === stale.id, "and it names the occurrence it came from");
+}
+
+// -------------------------------------------- session 126, the ring follows on
+//
+// A REPEAT RINGS ON ITS SCHEDULE (his slide: "people need to know when will it
+// ring next"). The occurrence's own instant goes past and the shell never arms
+// a past instant, so `every day at 1:39pm` rang once and then never again while
+// the screen still said `every day`.
+{
+  const daily = task({
+    due_at: "2026-08-17T17:00:00+05:30", alarm_lead_min: 15,
+    recurrence: { every: 1, unit: "day" },
+  });
+  const after = "2026-08-17T18:00:00+05:30";   // the ring has gone by an hour
+  say(alarmAt(daily, config) === "2026-08-17T16:45:00+05:30", "the derived instant is due minus lead");
+  say(nextRing(daily, config, after) === "2026-08-18T16:45:00+05:30", "a spent ring steps one interval on");
+  say(ringAt(daily, config, after) === "2026-08-18T16:45:00+05:30", "and that is what it will ring at");
+
+  // Untouched: a ring still ahead, and a one-off whose ring has gone.
+  say(nextRing(daily, config, NOW) === "2026-08-17T16:45:00+05:30", "a ring still ahead is left alone");
+  const once = task({ due_at: "2026-08-17T17:00:00+05:30", alarm_lead_min: 15 });
+  say(nextRing(once, config, after) === null, "a one-off has no next ring");
+  say(ringAt(once, config, after) === "2026-08-17T16:45:00+05:30",
+      "and reports the instant it missed, for the screen to say so");
+
+  // A snooze still outranks both, which is the rule it has had since 111.
+  const snoozy = { ...daily, alarm_snoozed_until: "2026-08-17T18:30:00+05:30" };
+  say(ringAt(snoozy, config, after) === "2026-08-17T18:30:00+05:30", "a pending snooze still wins");
+
+  // Several intervals late lands in the future, not on the first step.
+  say(nextRing(daily, config, "2026-08-25T09:00:00+05:30") === "2026-08-25T16:45:00+05:30",
+      "eight days late steps all the way to the next future ring");
+
+  // The record is not touched by any of it.
+  say(daily.due_at === "2026-08-17T17:00:00+05:30", "and the task's own date is left exactly where it was");
 }
 
 console.log(`\n${bad === 0 ? "CHECK ALARM: PASS" : `CHECK ALARM: ${bad} FAILED`}\n`);

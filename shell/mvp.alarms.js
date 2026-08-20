@@ -18,7 +18,7 @@
 // travels in the payload. A screen that listed anything else would be a second
 // opinion about what is going to happen, which is worse than no screen.
 //
-// FIVE CONTROLS, and each one is a thing the row screen cannot do:
+// FOUR CONTROLS, and each one is a thing the row screen cannot do:
 //   Alarm off      — `alarm_type = "none"`. On a repeat this ends the ring for
 //                    the SERIES, because `spawn()` inherits `alarm_type` and
 //                    every later occurrence would arm again. Said on the row.
@@ -31,27 +31,26 @@
 //   Lead           — a slider, 0 to 60, moving the RING and not the date. It is
 //                    the same control as the one beside the Alarm toggle on the
 //                    capture screen and writes the same field.
-//   Move it to     — the push ladder, `readPushOptions()`, moving the DATE.
-//                    The distinction is the one the lock screen already makes:
-//                    a snooze moves the telling, a push moves the task.
+// The push ladder was here and LEFT in session 126, his call: it was the only
+// control on this screen that moved the DATE rather than the ring, and the
+// title already opens the editor. A date is still moved without opening
+// anything from a list row and from the lock screen, which is where that
+// belongs.
 //
 // A PENDING SNOOZE IS DRAWN AND CAN BE TAKEN BACK. It is the one piece of
 // alarm state a person sets without seeing it — pressed at 6am on a lock
 // screen — and until this screen there was nowhere to read it or undo it.
 //
-// WHAT IT DOES NOT DO, on purpose: it never moves a date on its own. A repeat
-// whose ring has already gone says so and stays where it is (see the `gone`
-// sentence below), because inventing a date nobody typed is the thing this
-// project refuses everywhere else.
+// WHAT IT DOES NOT DO, on purpose: it never moves a date. A repeat's RING
+// follows its rule (`nextRing`, session 126) so the screen can always answer
+// "when next"; the record's own date is left exactly where the person put it.
 
 const v = new URL(import.meta.url).search;
 const { partAConfig } = await import(`./config.js${v}`);
 const { tasks, undo, UNDO_ID } = await import(`./store.select.js${v}`);
-const { canAlarm, ringAt, alarmAt, alarmCleared } = await import(`./alarm.js${v}`);
-const { readPushOptions, pushed } = await import(`./push.js${v}`);
+const { canAlarm, ringAt, alarmAt, nextRing, alarmCleared } = await import(`./alarm.js${v}`);
 const { nowLocal } = await import(`./mvp.clock.js${v}`);
 const { el, button } = await import(`./mvp.paint.js${v}`);
-const { tapGuard } = await import(`./mvp.tap.js${v}`);
 
 const WD = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const MO = ["January", "February", "March", "April", "May", "June",
@@ -124,24 +123,29 @@ export function mountAlarms(root, { onBack, openEdit } = {}) {
     const derived = alarmAt(task, partAConfig);
     const ringMs = ring ? ms(ring) : 0;
     const snoozed = Boolean(task.alarm_snoozed_until && ms(task.alarm_snoozed_until) > Date.now());
+    // A ring still in the past means there is no future one at all: a repeat
+    // steps its ring forward through its own rule now (session 126), so only a
+    // one-off whose time has gone lands here.
     const gone = ringMs && ringMs <= Date.now();
 
     const title = button("alarm-title", task.title, () => openEdit && openEdit(task.id));
     row.appendChild(title);
 
+    // PLAIN WORDS (session 126, his slide: "'will not ring again until the date
+    // moves' is hard to understand — keep it simple"). Three shapes and no
+    // clauses: it rings then, it is snoozed until then, or it has passed and is
+    // not going to ring. Everything a sentence used to explain is now either
+    // true by itself or not worth saying.
     const said = el("div", "alarm-said",
-      (snoozed ? "snoozed until " : gone ? "was due to ring " : "rings ") + whenWords(ringMs));
+      snoozed ? `Snoozed until ${whenWords(ringMs)}`
+        : gone ? `Missed ${whenWords(ringMs)}. It will not ring again.`
+        : `Rings ${whenWords(ringMs)}`);
     row.appendChild(said);
 
     const rep = repeatWords(task);
     const notes = [];
     if (rep) notes.push(rep);
     if (task.reminder_fatigue) notes.push(`${task.reminder_fatigue} unanswered`);
-    // AN ALARM IN THE PAST WILL NOT RING, and nothing else in the app said so.
-    // `syncAlarms()` skips an instant that has already gone, so a task whose
-    // ring was slept through is silent until its date moves. The screen states
-    // it rather than the app quietly moving a date nobody typed.
-    if (gone && !snoozed) notes.push("will not ring again until the date moves");
     if (notes.length) row.appendChild(el("div", "alarm-note", notes.join(" \u00b7 ")));
 
     // ------------------------------------------------------------ shift the ring
@@ -159,9 +163,11 @@ export function mountAlarms(root, { onBack, openEdit } = {}) {
     slide.addEventListener("input", () => {
       const n = Number(slide.value) || 0;
       read.textContent = n ? `${n} min before` : "at the time";
-      if (derived) {
-        const at = ms(task.due_at) - n * 60000;
-        said.textContent = (snoozed ? "snoozed until " : "rings ") + whenWords(snoozed ? ringMs : at);
+      if (derived && !snoozed && !gone) {
+        // The reading follows the thumb, and it follows the SCHEDULE'S ring
+        // rather than this occurrence's, which is the number above it.
+        const at = ms(nextRing({ ...task, alarm_lead_min: n }, partAConfig, now) ?? derived);
+        said.textContent = `Rings ${whenWords(at)}`;
       }
     });
     // The write lands when the thumb is let go. A store write per pixel of
@@ -171,37 +177,35 @@ export function mountAlarms(root, { onBack, openEdit } = {}) {
     row.appendChild(leadWrap);
 
     // ---------------------------------------------------------------- the acts
+    //
+    // They read as buttons (session 126, his slide: "have button like feel for
+    // these"). Three words in a row on a card read as a sentence someone forgot
+    // to finish; a pill with an edge reads as a thing to press. Delete keeps
+    // the warn colour and the others do not, which is the one distinction worth
+    // making with colour here.
     const acts = el("div", "alarm-acts");
-    acts.appendChild(button("act", "Alarm off", () =>
+    acts.appendChild(button("act pill", "Alarm off", () =>
       write(task, alarmCleared({ ...task, alarm_type: "none", alarm_lead_min: null }))));
     if (snoozed) {
-      acts.appendChild(button("act", "Clear snooze", () =>
+      acts.appendChild(button("act pill", "Clear snooze", () =>
         write(task, { alarm_snoozed_until: null })));
     }
     if (task.recurrence) {
-      acts.appendChild(button("act", "Stop repeat", () => write(task, { recurrence: null })));
+      acts.appendChild(button("act pill", "Stop repeat", () => write(task, { recurrence: null })));
     }
-    acts.appendChild(button("act danger", "Delete", async () => {
+    acts.appendChild(button("act pill danger", "Delete", async () => {
       await remember("delete", task);
       await tasks.remove(task.id);
       await reload();
     }));
     row.appendChild(acts);
 
-    // ------------------------------------------------------------- move the date
-    const options = readPushOptions(task, all, partAConfig, now);
-    if (options.length) {
-      row.appendChild(el("div", "alarm-label", "Move it to"));
-      const rungs = el("div", "nudges alarm-nudges");
-      tapGuard(rungs);
-      for (const o of options) {
-        const b = el("button", "nudge", o.push_label);
-        b.type = "button";
-        b.addEventListener("click", () => write(task, pushed(task, o.push_to, nowLocal())));
-        rungs.appendChild(b);
-      }
-      row.appendChild(rungs);
-    }
+    // THE PUSH LADDER LEFT THIS SCREEN (session 126, his slide: "remove this
+    // 'move it to' section, adds unnecessary complexity right now — they can
+    // edit inside the task itself"). It was the only control here that moved
+    // the DATE rather than the ring, and every row already opens the editor on
+    // a press. The rungs are still on the list rows and on the lock screen,
+    // which are the two places a date is moved without opening anything.
     return row;
   }
 

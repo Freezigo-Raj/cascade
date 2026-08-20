@@ -37,7 +37,6 @@
 // the rest of the store lives under.
 
 const v = new URL(import.meta.url).search;
-const { tasks } = await import(`./store.select.js${v}`);
 const { overtaken, spawn } = await import(`./repeat.js${v}`);
 const { alarmCleared } = await import(`./alarm.js${v}`);
 const { nowLocal } = await import(`./mvp.clock.js${v}`);
@@ -70,12 +69,19 @@ function derivedId(seed) {
  * Called once at start, before the alarms are armed, so the arming pass sees
  * the occurrence that is actually next rather than the one time forgot.
  *
+ * THE STORE IS HANDED IN, NOT IMPORTED (session 127). While this file imported
+ * `store.select.js`, no check could import this file — and a write path no
+ * check can reach is exactly what cost four lost lock-screen outcomes in
+ * session 123. `check_writes.mjs` hands in a store that records the shape of
+ * every call.
+ *
+ * @param {object} store  the four-call task store: all / add / update / remove.
  * @returns {number} how many series were moved on, for the caller to say or
  *                   ignore. It says nothing itself: a screen is the screen's
  *                   question.
  */
-export async function catchUpRepeats() {
-  const all = await tasks.all();
+export async function catchUpRepeats(store) {
+  const all = await store.all();
   const now = nowLocal();
   let moved = 0;
   for (const task of all) {
@@ -91,8 +97,8 @@ export async function catchUpRepeats() {
     // occurrence is left exactly as it was rather than being closed with
     // nothing to replace it, which would delete a commitment to fix a bug.
     if (!next) continue;
-    await tasks.update(task.id, closed);
-    await tasks.add(next);
+    await store.update(task.id, closed);
+    await store.add(next);
     moved++;
   }
   return moved;

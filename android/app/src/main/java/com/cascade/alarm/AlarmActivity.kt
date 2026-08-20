@@ -194,6 +194,21 @@ class AlarmActivity : Activity() {
             root.addView(prow)
         }
 
+        // THE SHELL SAYS WHICH BUILD IT IS (session 126, his slide: "add a
+        // version number on this as well, if possible"). The web half updates
+        // on every open and this half only when the APK is rebuilt, so a lock
+        // screen that looks wrong is either an old APK or a real defect and
+        // nothing on it could tell the two apart. `SHELL_BUILD` is the same
+        // number `CascadeAlarmPlugin.version()` reports, stated once there and
+        // read here, so the account screen and this screen cannot disagree.
+        root.addView(TextView(this).apply {
+            text = "alarm shell build ${CascadeAlarmPlugin.SHELL_BUILD}"
+            textSize = 11f
+            setTextColor(Color.parseColor("#8c491a"))
+            setPadding(0, 48, 0, 0)
+            gravity = android.view.Gravity.CENTER
+        })
+
         setContentView(root)
     }
 }

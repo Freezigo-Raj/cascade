@@ -31,9 +31,7 @@
 const v = new URL(import.meta.url).search;
 const { partAConfig } = await import(`./config.js${v}`);
 const { tasks } = await import(`./store.select.js${v}`);
-const { canAlarm, alarmAt, ringAt, snoozed, unanswered } = await import(`./alarm.js${v}`);
-const { pushed } = await import(`./push.js${v}`);
-const { spawn } = await import(`./repeat.js${v}`);
+const { canAlarm, alarmAt, ringAt, nextRing } = await import(`./alarm.js${v}`);
 const { listOnly } = await import(`./resolve.js${v}`);
 
 const DEBOUNCE_MS = 2000;
@@ -96,7 +94,15 @@ export function desiredAlarms(all, now) {
   return all
     .filter((t) => canAlarm(t) && t.alarm_type !== "none")
     .map((t) => {
-      const armed = alarmAt(t, partAConfig);
+      // `armedFor` IS THE SCHEDULE'S INSTANT, NOT THIS OCCURRENCE'S (session
+      // 126). A repeat's ring now steps forward through its rule when the
+      // occurrence's own instant has gone, and `armedFor` is what the diff
+      // below compares — so keeping it pinned to `alarmAt()` would mean a
+      // daily alarm looked identical on Tuesday and Wednesday and was never
+      // re-armed. It still distinguishes a snoozed alarm from a stale one,
+      // which is the job it was added for: a snooze changes `at` and leaves
+      // `armedFor` alone.
+      const armed = nextRing(t, partAConfig, now) ?? alarmAt(t, partAConfig);
       const ring = ringAt(t, partAConfig, now);
       return {
         id: t.id,
@@ -166,71 +172,16 @@ export function syncAlarms(all) {
 }
 
 /**
- * A press, or the end of a chain, becomes a record.
- *
- * DONE is stamped past whatever the local copy carries, so newest-wins cannot
- * resurrect a task somebody finished at the lock screen. That is the one place
- * this app writes a time that is not the clock, and the reason is that the
- * alternative is a completed task coming back.
- *
- * SNOOZE and UNANSWERED are ordinary writes at the outcome's own instant. If
- * another device moved the task's date in between, the push cleared the snooze
- * and the marker, and newest-wins settles which of the two happened last. That
- * is the same rule everything else in the store lives under.
+ * A press, or the end of a chain, becomes a record — in `alarm.apply.js`, which
+ * takes the store as an argument and imports none. It left this file in session
+ * 127 for one reason: while it lived here, no check could reach it, because
+ * importing this module means importing the real store. That is why session
+ * 123's `update(record)` for `update(id, record)` cost four silently lost
+ * outcomes with every check green.
  */
 async function apply(id, verb, tsMs) {
-  const all = await tasks.all();
-  const task = all.find((t) => t.id === id);
-  // A task deleted while its alarm was pending. Nothing to write, and the
-  // ringing already stopped.
-  if (!task) return;
-  const now = isoAt(tsMs, task);
-
-  if (verb === "DONE") {
-    const stamp = isoAt(Math.max(tsMs, ms(task.updated_at ?? now) + 1000, Date.now()), task);
-    // update(id, record) — every branch here once passed the record alone, the
-    // store threw `is not here` into a catch, and lock-screen Done, Push,
-    // Snooze and the unanswered escalation all wrote NOTHING (session 123).
-    await tasks.update(task.id, {
-      ...task,
-      task_state: "done",
-      closed_at: now,
-      alarm_snoozed_until: null,
-      alarm_unanswered_at: null,
-      updated_at: stamp,
-    });
-    // A LOCK-SCREEN DONE IS A DONE: a repeat spawns its next occurrence here
-    // exactly as it does from the list (session 123 — before this, only the
-    // in-app press spawned, so a weekly task closed from the alarm screen
-    // silently ended its series).
-    const next = spawn({ ...task, task_state: "done" }, crypto.randomUUID(), now);
-    if (next) await tasks.add(next);
-    return;
-  }
-  if (verb.startsWith("PUSH:")) {
-    // The target travels whole, offset included, because a due date is a local
-    // instant and rebuilding one from epoch milliseconds would drop the zone.
-    const to = verb.slice("PUSH:".length);
-    await tasks.update(task.id, pushed(task, to, now));
-    return;
-  }
-  if (verb.startsWith("SNOOZE")) {
-    const mins = Number(verb.split(":")[1]) || partAConfig.alarm_defaults.auto_snooze_min;
-    await tasks.update(task.id, snoozed(task, mins, now));
-    return;
-  }
-  if (verb === "UNANSWERED") {
-    await tasks.update(task.id, unanswered(task, now));
-  }
-}
-
-/** An epoch instant written at the task's own offset, so a local day survives. */
-function isoAt(t, task) {
-  const off = (task.due_at ?? task.created_at ?? nowIso()).slice(-6);
-  const sign = off[0] === "-" ? -1 : 1;
-  const mins = sign * (Number(off.slice(1, 3)) * 60 + Number(off.slice(4, 6)));
-  const d = new Date(t + mins * 60000);
-  return d.toISOString().slice(0, 19) + off;
+  const { applyOutcome } = await import(`./alarm.apply.js${v}`);
+  return applyOutcome(tasks, id, verb, tsMs, crypto.randomUUID());
 }
 
 /**
@@ -302,7 +253,12 @@ export const PERMISSIONS = [
  * written against, and the account screen draws the difference as the loud
  * sentence it is. An old plugin with no `version()` at all reads as build 1.
  */
-export const ALARM_SHELL_EXPECTED = 2;
+// Build 3 (session 126): the lock screen wears paper instead of ink, and it
+// draws the shell build. Neither changes a method or a reading's shape, so an
+// APK still on build 2 keeps working — but it looks like the old app and says
+// nothing about why, which is the thing the number is for. Raised so the
+// account screen asks for the rebuild rather than leaving him to notice.
+export const ALARM_SHELL_EXPECTED = 3;
 
 export async function alarmShellVersion() {
   const Alarm = plugin();

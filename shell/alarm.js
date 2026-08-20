@@ -43,6 +43,11 @@
 // The first design had no push here at all and made moving a date an unlock.
 // This reverses that, on his instruction, and the staleness is what was bought.
 
+// The one import this file has, and it is a pure function of a date and a rule.
+// A repeat's ring follows the rule (see `nextRing`), and re-deriving the step
+// here would be a second copy of the thing `repeat.js` exists to own.
+import { step } from "./repeat.js";
+
 const MIN = 60 * 1000;
 
 const at = (iso) => Date.parse(iso.slice(0, 19) + "Z");
@@ -82,16 +87,59 @@ export function alarmAt(task, config) {
 }
 
 /**
+ * A REPEAT RINGS ON ITS SCHEDULE, NOT ONLY ON ITS OPEN OCCURRENCE (session 126,
+ * his slide: "people need to know when will it ring next").
+ *
+ * The defect: an occurrence rings once, and if nobody answers, the instant is in
+ * the past. `syncAlarms()` never arms a past instant, and the next occurrence
+ * only exists once this one is closed — so `every day at 1:39pm` rang once and
+ * then never again, while the screen still said `every day`. A repeat is the
+ * one thing in this app a person reads as a promise about the future, and it
+ * was the one thing that stopped.
+ *
+ * So the ring follows the RULE where the record follows the occurrence: the
+ * derived instant is stepped forward through the recurrence until it is ahead
+ * of the clock. The record is untouched — `due_at` still says when this
+ * occurrence was owed, and it still reads as overdue, which is true. Only the
+ * ring moves, and only forward.
+ *
+ * A one-off task is unchanged: its instant has gone, nothing is armed, and the
+ * alarms screen says so in three words.
+ */
+export function nextRing(task, config, now) {
+  const derived = alarmAt(task, config);
+  if (!derived) return null;
+  if (at(derived) > at(now)) return derived;
+  const rule = task.recurrence;
+  if (!rule || !rule.unit || !task.due_at) return null;
+  const offset = offsetOf(task.due_at);
+  const lead = at(task.due_at) - at(derived);
+  let due = at(task.due_at);
+  // A guard on the count rather than on the clock: a rule of `every 0` would
+  // step nowhere and spin here for ever, and a malformed one is a bug to
+  // survive rather than a case to serve.
+  for (let i = 0; i < 5000; i++) {
+    // `step` takes and returns milliseconds, not a Date.
+    due = step(due, rule);
+    if (due - lead > at(now)) return write(due - lead, offset);
+  }
+  return null;
+}
+
+/**
  * When it will actually ring. A pending snooze wins while it is still ahead of
  * the clock; a spent one is ignored rather than cleared, because clearing it
  * would be a write from a render and two devices rendering would write twice.
+ * Past that, the schedule answers (above), and a task with no future ring at
+ * all returns the instant that has gone — the bridge skips it, and the alarms
+ * screen reads it to say when it was missed.
  */
 export function ringAt(task, config, now) {
   const derived = alarmAt(task, config);
   if (!derived) return null;
   const s = task.alarm_snoozed_until;
   if (s && at(s) > at(now)) return s;
-  return derived;
+  return nextRing(task, config, now) ?? derived;
 }
 
 /**

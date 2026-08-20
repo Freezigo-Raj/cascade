@@ -308,7 +308,8 @@ async function start() {
   // cancelled row is on the Done tab for anyone who looks.
   try {
     const { catchUpRepeats } = await import(`./catchup.js${v}`);
-    await catchUpRepeats();
+    const { tasks } = await import(`./store.select.js${v}`);
+    await catchUpRepeats(tasks);
   } catch (e) {
     console.warn("catchup:", e?.message ?? e);
   }

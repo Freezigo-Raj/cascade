@@ -2902,3 +2902,52 @@ Colour meant one thing and now means three. Accent is pressable, `#c0492b` is ov
 **His call on the repeat rule, made this session:** step it forward on open. `overtaken()` asks whether the next scheduled date has itself arrived — one interval, not one minute — and `catchup.js` closes the stranded occurrence as `cancelled` and spawns the schedule's next future date, before the list draws and before the alarms arm. The cancelled row shows on the Done tab, so the miss stays visible. No undo slot is spent and the new id is derived, so two devices opening at once write one row. `mvp.js` crossed the 400-line cap on the way and split by concern: `mvp.truth.js`. **Recorded, not fixed:** `repeatSentence()` reads `due_at` without its offset and `ringSentence()` reads it with one — they agree on every device this has run on, and they are one field with two readings on one screen.
 
 **Still owed:** the nine alarm tests on a device, especially test 9; the APK rebuild, which this session's Kotlin change now needs on its own account; Gates 1–6, all waiting on his hand since session 101.
+
+---
+
+## Session 126 — 20 August 2026
+
+**Job:** His build-41 `UI_review.pptx`, five slides, nine items.
+
+**Stage before / after:** 5 / 5
+
+**Files changed:**
+- `shell/alarm.js` — `nextRing()`: a repeat's ring steps forward through its own rule
+- `shell/alarm.bridge.js` — `armedFor` is the schedule's instant; `ALARM_SHELL_EXPECTED` 3
+- `shell/repeat.js` — `step()` exported, so the ring and the record derive it from one place
+- `shell/mvp.edit.js` — the editor speaks about the date the save will keep; the toggle owns the lead default
+- `shell/mvp.panel.js` — the Alarm group removed
+- `shell/mvp.alarms.js` — three plain sentences, pills, no push ladder
+- `shell/mvp.row.js` — a Done row states its day and carries `Revive`
+- `shell/mvp.chrome.css` — pill acts; the dead ladder rule removed
+- `shell/check_alarm.mjs` — eleven assertions for the schedule-following ring
+- `android/…/AlarmActivity.kt`, `CascadeAlarmPlugin.kt` — the shell build, stated once and drawn
+- `shell/render.js` 42, `index.html`, `shell/mvp.css`, `shell/mvp.edit.css`, `spec.md`, `MVP.md`
+
+**Tests:** all seven green. Log sealed at 498.
+
+**The one that mattered.** His slide asked "people need to know when will it ring next" and the honest answer was that it never would: an occurrence rings once, a spent instant is never armed, and the next occurrence only exists after a Done. A daily alarm rang once and stopped while the screen still said `every day`. The ring follows the rule now and the record is untouched.
+
+**Still owed:** the APK rebuild, now two sessions deep — the paper lock screen and its build number both need it. The nine alarm tests on a device. Gates 1-6, waiting on his hand since session 101.
+
+---
+
+## Session 127 — 20 August 2026
+
+**Job:** Reach the two write paths no check could reach.
+
+**Stage before / after:** 5 / 5
+
+**Files changed:**
+- `shell/alarm.apply.js` — created. `apply()` out of the bridge, taking the store as an argument
+- `shell/check_writes.mjs` — created. The eighth check, 28 assertions
+- `shell/alarm.bridge.js` — delegates; three imports it no longer needs are gone
+- `shell/catchup.js` — takes the store instead of importing it
+- `shell/mvp.js` — hands the store in
+- `shell/render.js` 43 and the five other version sites, `spec.md`, `sessions.md`
+
+**Tests:** all eight green. Log sealed at 500.
+
+**The point.** Session 123's defect was `update(record)` for `update(id, record)` in four branches, and six green checks missed it for four days because every value those branches computed was correct — the bug was in the CALL. A write path that imports the real store cannot be imported by a check at all, so the seam had to move before an assertion was possible. The store this check hands in throws when `update` is given anything but `(id, record)`. Proved by reverting one branch and watching the run fail.
+
+**Still owed:** the APK rebuild, two sessions deep. The nine alarm tests on a device. Gates 1-6.

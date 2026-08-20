@@ -72,13 +72,17 @@ export function splitDuration(minutes, config) {
 /**
  * @param {HTMLElement} panel  emptied and refilled
  * @param {object} config      partAConfig
- * @param {object} state       { chosen, repeat, alarmType, hasTime, dueAt,
+ * @param {object} state       { chosen, repeat, dueAt, hasTime,
  *                               durationMin, durationTapped, firmness, notes }
- * @param {object} on          { setType, setRepeat, setAlarm,
+ * @param {object} on          { setType, setRepeat,
  *                               setDuration, setFirmness, setNotes }
  */
 export function drawPanel(panel, config, state, on) {
-  const { repeat, alarmType, hasTime, dueAt } = state;
+  // `hasTime` is still handed in — the repeat sentence reads it to decide
+  // whether to speak a clock — but nothing here draws an alarm control any
+  // more. Sniffing it off the date string would be this file deciding what a
+  // stated time is, which is the engine's answer and not the screen's.
+  const { repeat, dueAt, hasTime } = state;
   const { durationMin, durationTapped, firmness, notes } = state;
 
   const group = (label, into) => {
@@ -108,27 +112,12 @@ export function drawPanel(panel, config, state, on) {
   note.value = notes ?? "";
   note.addEventListener("input", () => on.setNotes(note.value));
   group("Notes", note);
-  // --------------------------------------------------------------------- alarm
-  //
-  // Two members, drawn only while the line carries a time. `once` and `repeat`
-  // became one `on`: every alarm rings for two minutes, snoozes itself for five
-  // and does that up to five times, so "ring again every" was a second way of
-  // asking for what the alarm already does, and a task that should come back
-  // another day has `Repeat every` above.
-  if (hasTime) {
-    const alarm = el("div", "taps");
-    for (const kind of config.alarm_types) {
-      const on_ = alarmType === kind;
-      alarm.appendChild(button("chip" + (on_ ? " on" : ""), kind, () => on.setAlarm(kind)));
-    }
-    group("Alarm", alarm);
-  } else {
-    // Said rather than left blank: the row is missing for a reason and the
-    // reason is fixable by typing a time.
-    // Four words (session 122, his edit). The old three sentences explained
-    // midnight; the label's job is only to say what is missing.
-    group("Alarm", el("div", "note", "Needs an exact time."));
-  }
+  // THE ALARM LEFT THIS PANEL TOO (session 126, his slide: "remove alarm
+  // section from here, it is already there at the top"). The toggle has sat
+  // under the box since session 123 and this group stayed beside it, which is
+  // one field with two controls — the thing the lead's move was about. The row
+  // above owns all of it now, including the one sentence explaining why there
+  // is no toggle when the line carries no time.
 
   // THE LEAD LEFT THIS PANEL (session 125, his arrow on the slide). It is a
   // slider beside the Alarm toggle on the capture row now, where the sentence

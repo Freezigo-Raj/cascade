@@ -69,22 +69,18 @@
 }
 .alarm-said { font-size: 13.5px; color: var(--signal-deep); font-weight: 600; }
 .alarm-note { font-size: 12.5px; color: var(--quiet); line-height: 1.5; }
-.alarm-label {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--signal-deep);
-  margin-top: var(--step);
+/* THEY READ AS BUTTONS (session 126, his slide). Three words in a row on a card
+   read as a sentence someone forgot to finish; a pill with an edge reads as a
+   thing to press. Delete keeps the warn colour; the rest do not, which is the
+   one distinction worth making with colour on this card. */
+.alarm-acts { display: flex; flex-wrap: wrap; gap: calc(var(--step) * 2); margin-top: var(--step); }
+.alarm-acts .act.pill {
+  border: 1px solid var(--edge);
+  border-radius: var(--r-pill);
+  background: var(--sunk);
+  padding: calc(var(--step) * 2) calc(var(--step) * 3.5);
+  letter-spacing: 0.04em;
+  text-transform: none;
+  font-size: 13px;
 }
-.alarm-acts { display: flex; flex-wrap: wrap; gap: calc(var(--step) * 2); }
-.alarm-acts .act.danger { color: var(--warn); }
-/* The ladder lies flat here. On a row it is a column because the row is short;
-   this card has the width, and a wrapped set of rungs needs no scroll and so
-   cannot be scrolled into by accident. */
-.nudges.alarm-nudges {
-  flex-direction: row;
-  flex-wrap: wrap;
-  max-height: none;
-  overflow: visible;
-}
+.alarm-acts .act.pill.danger { color: var(--warn); border-color: rgba(192, 73, 43, 0.35); }

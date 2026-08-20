@@ -459,13 +459,34 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
     // because a toggle that hides the consequence is a guess. No time, no
     // row: the panel's four words cover that case.
     alarmRow.innerHTML = "";
-    if (out.task.has_time && out.task.due_at) {
+    // AN EDIT DOES NOT LOSE THE ALARM (session 126, his slide: "removes alarm
+    // details when editing a task even when it exists").
+    //
+    // The row read `out.task`, which is the engine's answer to THE LINE IN THE
+    // BOX — and the box holds `title`, which has had its date words removed
+    // since the day titles were built. So opening a task due at 4:25 to change
+    // a word showed no alarm, no ring time and four words in the panel saying
+    // it needed an exact time, for a task that had one.
+    //
+    // The date the screen must speak about is the one SAVE WILL KEEP: the
+    // typed line's date when it has one, and otherwise the stored task's, which
+    // is exactly what `keepDate` writes back. One rule, read in both places.
+    const held = boundId && !dropDate ? all.find((t) => t.id === boundId) : null;
+    const dueAt = out.task.due_at ?? (held?.due_at ?? null);
+    const hasTime = out.task.due_at ? Boolean(out.task.has_time) : Boolean(held?.has_time);
+    if (hasTime && dueAt) {
       const on = alarmType !== "none";
       const lead = leadMin ?? partAConfig.alarm_defaults.lead_min;
-      const ringMs = new Date(out.task.due_at).getTime() - lead * 60000;
+      const ringMs = new Date(dueAt).getTime() - lead * 60000;
       const tog = button("chip alarm-toggle" + (on ? " on" : ""),
         on ? "Alarm on" : "Alarm off",
-        () => { alarmType = on ? "none" : "on"; paint(); });
+        () => {
+          alarmType = on ? "none" : "on";
+          // Turning it on gives it the default lead, which the panel's
+          // `setAlarm` used to do before the group left it.
+          if (!on && leadMin === null) leadMin = partAConfig.alarm_defaults.lead_min;
+          paint();
+        });
       tog.setAttribute("aria-pressed", String(on));
       alarmRow.appendChild(tog);
       if (on) alarmRow.appendChild(el("span", "alarm-when", ringSentence(ringMs, repeat)));
@@ -501,11 +522,17 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
           leadMin = Number(slide.value) || 0;
           read.textContent = leadMin ? `${leadMin} min before` : "at the time";
           alarmRow.querySelector(".alarm-when").textContent =
-            ringSentence(new Date(out.task.due_at).getTime() - leadMin * 60000, repeat);
+            ringSentence(new Date(dueAt).getTime() - leadMin * 60000, repeat);
         });
         wrap.append(slide, read);
         alarmRow.appendChild(wrap);
       }
+    } else {
+      // The panel's four words moved here (session 126, his slide: "remove
+      // alarm section from here, it is already there at the top"). Everything
+      // about the alarm is on this row now — the toggle, the ring time, the
+      // lead, and the one reason there is no toggle to press.
+      alarmRow.appendChild(el("span", "alarm-when quiet", "An alarm needs an exact time."));
     }
     const more = button("chip more" + (advanced ? " on" : ""), "\u22ef", () => { advanced = !advanced; paint(); });
     more.setAttribute("aria-expanded", String(advanced));
@@ -513,22 +540,16 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
     typeRow.appendChild(more);
     if (advanced) {
       drawPanel(panel, partAConfig, {
-        repeat, alarmType,
-        // The toggle exists only while the line carries a time, and this is the
-        // engine's answer to that rather than the screen's guess at it.
-        hasTime: Boolean(out.task.has_time),
-        dueAt: out.task.due_at,
+        repeat,
+        // Both anchor on the date the save will keep, for the same reason the
+        // alarm row above does.
+        dueAt, hasTime,
         durationMin: durTap ?? out.task.est_duration_min,
         durationTapped: durTap !== null,
         firmness: firmTap,
         notes: notesText,
       }, {
         setRepeat: (r) => { repeat = r; paint(); },
-        setAlarm: (kind) => {
-          alarmType = kind;
-          if (kind !== "none" && leadMin === null) leadMin = partAConfig.alarm_defaults.lead_min;
-          paint();
-        },
         setDuration: (n) => { durTap = n; paint(); },
         setFirmness: (f) => { firmTap = f; paint(); },
         // No repaint: the same reason the box itself is built once. Replacing a

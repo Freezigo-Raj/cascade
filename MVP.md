@@ -70,14 +70,15 @@ Every task where `canAlarm()` holds and `alarm_type` is not `none` — the same 
 | Control | Count | What it does |
 |---|---|---|
 | Title | one per row | Opens screen 2 with the task loaded |
-| Sentence | one per row | `rings 4:45pm on Monday`, or `snoozed until …` while a snooze is pending, or `was due to ring …` for one that has gone |
-| Note | 0 or 1 | The repeat in words, the unanswered count, and — for a ring already in the past — `will not ring again until the date moves`. That sentence covers an occurrence overdue by LESS than one interval; past that, the app has already stepped it forward (below) |
+| Sentence | one per row | Three shapes, no clauses (session 126): `Rings 4:45pm on Monday`, `Snoozed until …`, or `Missed …. It will not ring again.` The third only reaches a one-off — a repeat's ring follows its rule |
+| Note | 0 or 1 | The repeat in words and the unanswered count |
 | Lead | one per row | The same 0-to-60 slider as the capture screen, writing the same field. It moves the RING |
-| Alarm off | one per row | `alarm_type = "none"`. On a repeating task this ends the ring for the SERIES, because `spawn()` inherits `alarm_type` |
+| Alarm off | one per row | `alarm_type = "none"`. On a repeating task this ends the ring for the SERIES, because `spawn()` inherits `alarm_type`. Drawn as a pill (session 126, his call: button-like feel) |
 | Clear snooze | 0 or 1 | Only while one is pending. The one piece of alarm state a person sets without seeing it |
 | Stop repeat | 0 or 1 | Only on a repeating task. `recurrence = null`; the date and the alarm are left alone |
 | Delete | one per row | The task, with undo. On a repeat this ends the series: a spawn needs a closed occurrence to count from |
-| Move it to | 0 or more | The push ladder, `readPushOptions()`. It moves the DATE. The distinction the lock screen already makes: a snooze moves the telling, a push moves the task |
+
+**A repeat's ring follows its rule, not its open occurrence** (session 126). When the derived instant has gone, `nextRing()` steps it forward through the recurrence until it is ahead of the clock, so the screen can always answer "when next". The record is untouched: `due_at` still says when this occurrence was owed and it still reads as overdue. A one-off with a spent ring is not armed at all and the row says `Missed …`.
 
 **Repeats the calendar walked past are stepped forward on open** (session 125, his call). An occurrence whose own date plus one whole interval has passed is closed as `cancelled` and the schedule's next future date is spawned, before the list draws and before the alarms are armed. `cancelled` and not `done`, because it was not done: the row keeps `closed_at` and shows on the Done tab beside the finished ones, so the miss is visible and countable. One interval and not one minute — a weekly task an hour late is still this week's task. Nothing else in the app ever moves a date on its own: a one-off is left exactly where it is, however late.
 
@@ -106,6 +107,7 @@ Today  ·  Tomorrow  ·  Upcoming
 | Search box | 1 | Filters the tab you are on, in place |
 | Task row | one per task | Tapping the row opens screen 2 with that task loaded |
 | Done | one per row | The task moves to the Done tab |
+| Revive | one per Done row | A word beside the filled circle, doing the same thing (session 126, his word). The one control drawn twice on purpose: the circle has meant Undone since session 104 and nothing said so |
 | Pin | one per row | A pin glyph, filled while pinned; the word stays for screen readers. Pinned tasks sort above everything |
 | Delete | one per row | A bin glyph; the word stays for screen readers. The row goes for real. One step of undo holds the only copy |
 | Push | 4 or 5 per row | Moves the date without opening the task. Each says only where it lands. A column that scrolls vertically, capped at two and a half rungs |
@@ -143,7 +145,7 @@ Due today. You called this a deadline.
 
 Overdue sits in Today. A task three days late is a thing to deal with now, and a separate place for it means the tab you open first is not your real day.
 
-A Done row is a title alone. `Overdue since Friday` on a finished task is a sentence about a deadline that no longer applies.
+A Done row is a title, the day it was finished — `Done today`, `Done 16th August` (session 126, his ask) — and `Revive`. `Overdue since Friday` on a finished task is a sentence about a deadline that no longer applies, so the reason is still not drawn.
 
 **Pushing.** The targets come from how precisely the date was given, and each carries the load on the day it lands on.
 
@@ -202,7 +204,7 @@ The box is at the top. The tap buttons are with it. The matching tasks are below
 | Takes about | 1 | In the advanced panel. A SLIDER (session 125, his call), reading beside it. It runs a ladder of the durations people actually give — 5 min to 7 days — rather than a linear range, because `limits.duration_max` is 182 days and a linear slider across that cannot land on twenty minutes. Sets `duration_tap`; the label says whether the number is the person's or the verb's. The number box, the three unit chips and the four suggestion chips are gone: seven controls for one number |
 | How firm | 4 | In the advanced panel. `auto` / `normal` / `soft` / `hard`. `auto` gives the marker words their say back, so the tap is undoable |
 | Repeat | 1 | In the advanced panel. An interval: every N days, weeks, months or years (`year` added session 123), the number and units on one line (session 124). The Never button sits beside the label and wears the app's reading once a repeat is set — `every Wednesday at 5pm` — tapping it always the way back to never. Marking one done spawns the next, from the list AND from the lock screen (session 123) |
-| Alarm | 2 | ON THE CAPTURE SCREEN, directly under the box, while the line carries an exact time (sessions 123-124): a toggle plus the instant it will ring with its day — `rings 4:45pm today` / `tomorrow` / `on Monday` / `on 20th August` — and `· repeats` when the task does. The lead slider sits on the same row (session 125); without a time the panel row is four words: `Needs an exact time.` (session 122) |
+| Alarm | 1 | ON THE CAPTURE SCREEN AND NOWHERE ELSE (the panel's group left in session 126, his call — one field, one control), directly under the box, while the line carries an exact time (sessions 123-124): a toggle plus the instant it will ring with its day — `rings 4:45pm today` / `tomorrow` / `on Monday` / `on 20th August` — and `· repeats` when the task does. The lead slider sits on the same row (session 125); without a time the row says `An alarm needs an exact time.` and there is nothing to press. While editing, the row speaks about the date the SAVE WILL KEEP, not the date in the box — the box holds `title` and its date words are gone (session 126) |
 | Lead | 1 | A SLIDER beside the Alarm toggle, 0 to 60 minutes, reading its own value (session 125, his ask). 15 by default. It LEFT the advanced panel in the same session: one field, one control. Cost stated — `alarm_defaults.max_lead_min` is a week and this reaches an hour, so a longer lead is still honoured and can no longer be set |
 | Notes | 1 | In the advanced panel, at the foot of it. Read, never matched: a note reaches neither search nor the duplicate warning |
 | Low / Normal / High | 3 | Normal is the default and is marked |

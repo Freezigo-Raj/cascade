@@ -140,7 +140,17 @@ class CascadeAlarmPlugin : Plugin() {
      */
     @PluginMethod
     fun version(call: PluginCall) {
-        call.resolve(JSObject().put("version", 2))
+        call.resolve(JSObject().put("version", SHELL_BUILD))
+    }
+
+    companion object {
+        /**
+         * Stated once (session 126). The lock screen draws it too, so a number
+         * written in two places would be the account screen and the alarm
+         * disagreeing about which shell is running — which is exactly the
+         * confusion this number exists to end.
+         */
+        const val SHELL_BUILD = 3
     }
 
     @PluginMethod

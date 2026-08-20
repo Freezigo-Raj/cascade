@@ -33,7 +33,7 @@ Run app:   py -m http.server 8000, then http://localhost:8000/  (both screens, w
            /shell/ and still draws every field
            (live: every keystroke
            re-resolves; no build step, shell/config.js is checked against config.ts by gate2.py)
-Run tests: python3 gate2.py && python3 selftest.py && node gate4.mjs && node shell/check_render.mjs && node shell/check_loud.mjs && node shell/check_alarm.mjs && node shell/check_search.mjs
+Run tests: python3 gate2.py && python3 selftest.py && node gate4.mjs && node shell/check_render.mjs && node shell/check_loud.mjs && node shell/check_alarm.mjs && node shell/check_search.mjs && node shell/check_writes.mjs
 Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section B for one section,
            --placeholder to run the current key against the frozen Stage 3 file under the Stage 4 reading)
 
@@ -43,7 +43,7 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
   contract     54
   config       a.19
   answer_key   28
-  shell        41
+  shell        43
   gate1        signed on example 35
   gate2        signed on contract 32
   gate3        signed on shell 1
@@ -79,108 +79,34 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 
 ## THIS SESSION'S JOB
 
-Session 125: his build-40 UI review (four slides), plus a flowchart of the due date, the alarm, the
-repeat, the snooze and the push read off the code alone, and every inconsistency that reading found.
+Session 127: the write paths, and the check that could have caught session 123.
 
-**A PRESS IS A PRESS AND A DRAG IS A SCROLL, EVERYWHERE.** Session 124 put the guard on the push
-ladder alone: touch only, the Y axis only, no time bound. His slide says it still selects by mistake,
-and the ladder was never the only scroller — the two date columns and the times row had nothing at
-all. The rule moved into `shell/mvp.tap.js` and every scrolling strip wears the same one. Three
-tests: more than 8px on EITHER axis is a drag; a touch held longer than 600ms is a scroll coming to
-rest; a mouse and a keyboard are exempt from the time test, because a slow deliberate click is still
-a click and neither carries a strip along with it. 600ms is mine — "a few milliseconds", his words,
-is a number no thumb could pass — and it is the one to move if a real press is still eaten.
+**THE LESSON, PLAINLY.** Session 123: every branch of the alarm's `apply()` called `update(record)`
+where the store's contract is `update(id, record)`. The store threw, the throw landed in a catch,
+and lock-screen Done, Push, Snooze and the unanswered escalation wrote NOTHING for four days. Six
+checks were green throughout, and they could not have been anything else: every value those branches
+computed was correct. THE BUG WAS IN THE CALL, NOT IN THE VALUES, and nothing in this project had
+ever asserted a call.
 
-**`Plant` FOUND NOTHING AND `Plants` FOUND TWO.** The prefix tier compared the query against the
-START OF THE WHOLE TITLE, so a prefix of any word but the first fell through to the fuzzy tier, and
-`plant` against `water plants` scores 0.42 against a 0.5 threshold — a miss by four hundredths. The
-tier is per word now. A word beginning with what was typed is what a person means by searching. A
-whole-title prefix still outranks a word prefix inside one, which is the 0.9 factor on the score.
-`shell/check_search.mjs` is the SEVENTH CHECK and the second bite anything has taken out of the
-largest untested surface.
+Two things had to change before such a check could exist. `apply()` LEFT `alarm.bridge.js` as
+`shell/alarm.apply.js` and `catchUpRepeats()` stopped importing the store — both take the store as
+an ARGUMENT now. While a write path imports the real store, no check can import that module at all,
+which is why both were recorded as reached by nothing.
 
-**THE REPEAT SENTENCE WAS BEING CUT AT THE HOUR.** `.chip.rep-state` was capped at 62% of the row
-with an ellipsis, so `every month on the 23rd at 3:30pm` — the one thing on the screen that says
-what the repeat MEANS — lost its time. It wraps.
+**`check_writes.mjs` IS THE EIGHTH CHECK**, and the store it hands in is a witness: `update`
+asserts that its first argument is a string and its second is a record, `add` that its argument
+carries an id. Twenty-eight assertions over the four alarm outcomes and the repeat catch-up.
+PROVED BY BREAKING IT: reverting one branch to `update(record)` fails the run, which is the whole
+claim this file makes.
 
-**THE LEAD LEFT THE PANEL AND BECAME A SLIDER BESIDE THE ALARM TOGGLE**, 0 to 60 minutes, reading
-its own value, his ask. It is the same control moved and not a second one: the panel's number input
-is gone, because one field with two controls is how two controls come to disagree, paid for four
-times. Cost stated: `max_lead_min` is a week and the slider reaches an hour, so a longer stored lead
-still rings and can no longer be set. Every entry in `alarm_lead_by_type` is fifteen minutes.
+The two honest gaps this closes were both written down before they were closed — `apply()` since
+session 123, the catch-up since session 125. What remains in that surface: the two dialogs,
+`push_options` as a set, and the ordering inside `rank_key` beyond the three overrides
+`check_alarm.mjs` reaches.
 
-**THE DURATION IS A SLIDER**, his ask, replacing a number box, three unit chips and four suggestion
-chips — seven controls for one number. It runs a LADDER rather than a linear range: `duration_max`
-is 182 days, and a linear slider across that spends its whole travel between four and five months
-and cannot land on twenty minutes.
-
-**ADDING IS FINISHED WHEN IT IS ADDED**, his words. A save has returned to the list since session
-112 and an add did not, so the press that happens twenty times a day left a person looking at an
-empty box holding a toast about a task no longer in front of them. The toast TRAVELS with the back
-rather than the screen staying open to hold it, so the Undo offer survives the navigation.
-
-**SCREEN 4, THE ALARMS**, reached by a button after `Done` — his ask, and a screen rather than a
-fourth tab because the three tabs answer "when is this owed" and share one row shape, one toggle and
-one search, where a row here answers "when will this ring". It lists exactly what the shell will arm
-— `canAlarm()` and `alarm_type !== "none"`, sorted by `ringAt()` — because a screen listing anything
-else is a second opinion about what is going to happen. Alarm off (which ends the ring for a SERIES,
-since `spawn()` inherits `alarm_type`), Stop repeat, Delete, Clear snooze, the lead slider which
-moves the RING, and the push ladder which moves the DATE.
-
-**THE LOCK SCREEN IS PAPER**, his words: "UI for alarm needs to be same colour/theme". It was ink on
-dark while every other screen is paper, so the one surface a person meets half asleep was the one
-that did not look like the app. NEEDS AN APK REBUILD, like every Kotlin change.
-
-**FOUR DEFECTS THE FLOWCHART FOUND, FIXED:**
-
-1. The in-app Done left `alarm_snoozed_until` and `alarm_unanswered_at` set where the lock-screen
-   Done cleared both, so an Undone brought a spent snooze and an unanswered marker back into the top
-   ranking tier. It calls `alarmCleared()` now.
-2. A saved edit that moved the due date cleared neither, and `ringAt()` PREFERS a snooze still ahead
-   of the clock — so the alarm rang at the time the task no longer had. `alarm.js` has said since
-   session 111 that a push, a completion and a date edit all clear them; two of the three did.
-3. `nextDue()` stepped from `due_at`, which `pushed()` overwrites — so rent due the 1st and paid on
-   the 4th repeated on the 4th for ever, the exact drift `repeat.js` says it prevents. It anchors on
-   `first_due_at || due_at` now, which needs no new field: `first_due_at` is where the occurrence
-   started before any push moved it. A saved edit that moves the date CLEARS it, because a restated
-   date is a new start where a push is a temporary move away from one.
-4. `alarmCleared()` and `alarmOffered()` were exported and called by nothing while the rule they
-   hold was hand-copied into three files. Two of the copies were the defects above. `alarmCleared()`
-   is called by the list, the editor and the alarms screen now.
-
-**AN OVERDUE REPEAT IS STEPPED FORWARD ON OPEN — his call, made this session** after the three
-options were put to him. The defect: `syncAlarms()` never arms an instant that has gone, and the
-next occurrence only exists after a Done, so one unanswered chain ended a series in silence with
-nothing on any screen able to say when it would next ring.
-
-`overtaken()` in `repeat.js` is the test and it asks ONE INTERVAL, NOT ONE MINUTE: an occurrence is
-only left behind once the NEXT scheduled date has itself arrived, because a weekly task an hour late
-is still this week's task and moving it would take away a row a person meant to clear. `catchup.js`
-runs at `start()`, before the list draws and before the alarms are armed, and for each one it closes
-the occurrence as `cancelled` — not `done`, because it was not done — and spawns the schedule's next
-future date. A cancelled row carries `closed_at` and shows on the Done tab beside the finished ones
-(`cards.js` reads both states), so the miss stays visible rather than being quietly deleted.
-
-Three costs, all accepted and stated: it takes NO UNDO SLOT, because undo holds one entry and that
-entry belongs to the last thing a PERSON did — so this write cannot be undone by pressing Undo, and
-the cancelled row is the way back. The new occurrence's id is DERIVED from the closed one and its
-new date rather than random, so two devices opening at the same moment write one row rather than
-two under newest-wins. And no check reaches `catchUpRepeats()` itself: `check_alarm.mjs` proves
-`overtaken()` and `spawn()`, which are pure, and the write path is driven from `start()` — the same
-honest gap `apply()` had until session 123, recorded rather than implied.
-
-The alarms screen still says `will not ring again until the date moves` for the case this does not
-cover: an occurrence overdue by less than one interval, which is a row a person is expected to
-clear rather than one the calendar has left behind.
-
-**mvp.js CROSSED THE 400-LINE CAP** adding the catch-up, and split by concern: the stylesheet-version
-repair and the loud line left as `shell/mvp.truth.js`, handed the root and the breakpoint rather
-than reaching for either. Nothing in it routes and nothing that routes needs to know how a
-stylesheet version is read.
-
-**ALSO RECORDED, NOT FIXED:** `repeatSentence()` reads `due_at` without its offset and
-`ringSentence()` reads it with the offset — one field, two readings, on one screen. They agree while
-the device and the record share a zone, which is every device this app has run on so far.
+**NOTHING A PERSON CAN SEE CHANGED.** No screen, no rule, no record shape. Shell 43 because the
+module graph moved, and a graph that moves without a version is the cache defect this project has
+paid for four times.
 
 ## NEXT THREE JOBS
 
@@ -946,3 +872,13 @@ have landed. That is the price of the single table and it is accepted.
 - 20 Aug 2026 — An occurrence the schedule has already overtaken is closed as `cancelled` on app open and the next scheduled date is spawned, his call from three options — a repeat only advances on a Done, and a past instant is never armed, so one unanswered chain ended a series in silence — `cancelled` rather than `done` because it was not done, and the row stays on the Done tab so the miss is visible; the test is one whole interval, not one minute, so a task a person still means to clear is never moved.
 - 20 Aug 2026 — The catch-up takes no undo slot and derives the new occurrence's id from the closed one and its date — the single undo entry belongs to the last thing a person did, and two devices opening at once would otherwise add two rows — so this one write cannot be undone by pressing Undo, and the cancelled row is the way back.
 - 20 Aug 2026 — `mvp.js` split at the 400-line cap: the stylesheet repair and the loud line left as `mvp.truth.js`, handed the root and the breakpoint — a router does not need to know how a stylesheet states its version — the four loud states are unchanged and still reachable only by hand.
+- 20 Aug 2026 — A repeat's alarm follows its RULE rather than its open occurrence: `nextRing()` steps the derived instant forward until it is ahead of the clock — a spent instant is never armed and the next occurrence only exists after a Done, so a daily alarm rang once and never again while the screen still said `every day` — the record is untouched and still reads overdue, which is true; only the ring moves, and only forward.
+- 20 Aug 2026 — `armedFor` in the payload is the schedule's instant, not `alarmAt()` — it is the diff key, so a daily alarm would have looked identical on two days and never re-armed — it still tells a snoozed alarm from a stale one, which is what it was added for.
+- 20 Aug 2026 — The alarms screen speaks in three shapes and no clauses: rings, snoozed until, missed — `will not ring again until the date moves` was his slide's example of hard to understand, and for a repeat it is no longer true.
+- 20 Aug 2026 — The editor speaks about the date the SAVE WILL KEEP rather than the date in the box — the box holds `title`, whose date words are gone, so editing a task with an alarm showed no alarm and told him it needed an exact time — one rule, and `keepDate` already wrote it.
+- 20 Aug 2026 — The Alarm group left the advanced panel, his call — the toggle has been under the box since session 123 and this was the same field with a second control — everything about an alarm is on one row now, including why there is no toggle.
+- 20 Aug 2026 — The push ladder left the alarms screen, his call — it was the only control there that moved the date rather than the ring, and the title opens the editor — rungs stay on list rows and the lock screen, and the acts wear pills so they read as buttons.
+- 20 Aug 2026 — A Done row states the day it was finished and carries a `Revive` button, both his — `closed_at` is a fact rather than a guess so the quiet rule stands, and the filled circle has meant Undone since session 104 with nothing on screen saying so.
+- 20 Aug 2026 — The lock screen draws the alarm shell's build, stated once as `CascadeAlarmPlugin.SHELL_BUILD` and read by `version()` too — a number in two places would be the account screen and the alarm disagreeing about which shell is running — raised to 3 with `ALARM_SHELL_EXPECTED`, so an un-rebuilt APK asks for the rebuild instead of just looking wrong.
+- 20 Aug 2026 — `apply()` left `alarm.bridge.js` as `alarm.apply.js` and takes the store as an argument, and `catchUpRepeats()` stopped importing one — a write path that imports the real store cannot be imported by any check, which is why session 123's four lost outcomes ran green for four days — the seam is the fix, not the assertions on top of it.
+- 20 Aug 2026 — `check_writes.mjs` is the eighth check and it asserts the SHAPE OF THE CALL, not only the value: its store throws when `update` is handed anything but `(id, record)` — every value session 123 computed was correct and the defect was in the call — proved by reverting one branch and watching the run fail.

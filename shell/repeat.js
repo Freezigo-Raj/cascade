@@ -37,7 +37,7 @@ function write(t, offset) {
 /** One step of the interval, from an instant. Months keep the day of the
  * month; years keep the date (session 123 added `year` — 29 Feb steps to
  * 1 Mar by the same Date.UTC rollover months already rely on). */
-function step(at, rule) {
+export function step(at, rule) {
   const n = rule.every ?? 1;
   if (rule.unit === "day") return at + n * DAY;
   if (rule.unit === "week") return at + n * 7 * DAY;

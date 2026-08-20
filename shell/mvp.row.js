@@ -16,6 +16,28 @@ const { tapGuard } = await import(`./mvp.tap.js${v}`);
 const PIN_PATH = "M9.5 1.5l5 5-1.2 1.2-.6-.2-3 3 .4 2.6-1 1-3.1-3.1L2 15l-1-1 4-4L1.9 6.9l1-1 2.6.4 3-3-.2-.6z";
 const BIN_PATH = "M3 4h10M6.5 4V2.5h3V4M4.5 4l.7 9a1 1 0 001 .9h3.6a1 1 0 001-.9l.7-9M6.8 6.5v5M9.2 6.5v5";
 
+const MONTHS = ["January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"];
+const nth = (n) => n + (n % 10 === 1 && n !== 11 ? "st" : n % 10 === 2 && n !== 12 ? "nd" : n % 10 === 3 && n !== 13 ? "rd" : "th");
+
+/**
+ * `today`, `yesterday`, `16th August`. A local calendar day against a local
+ * calendar day, which is why the offset is cut off rather than parsed:
+ * `closed_at` is already written in the zone it happened in, and turning it
+ * into an instant only to turn it back would be two conversions to arrive
+ * where it started.
+ */
+function dayWords(iso) {
+  const d = new Date(iso.slice(0, 19));
+  const midnight = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const days = Math.round((midnight - today) / 86400000);
+  if (days === 0) return "today";
+  if (days === -1) return "yesterday";
+  return `${nth(d.getDate())} ${MONTHS[d.getMonth()]}`;
+}
+
 function glyph(path, filled) {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.setAttribute("viewBox", "0 0 16 16");
@@ -71,6 +93,16 @@ export function rowOf(card, { all, tab, slot, narrow, act, openEdit }) {
     said.replace(/\.$/, "").toLowerCase() === `due ${slot.toLowerCase()}`;
   if (said && !echo && tab !== "Done") body.appendChild(el("div", "said", said));
 
+  // WHEN IT WAS FINISHED (session 126, his slide: add "today", "16th August").
+  // A Done row was a title alone, which answered "was it done" and nothing
+  // else — and a Done tab of forty struck-through titles in no readable order
+  // is a list where you cannot find the one you closed this morning. The date
+  // is `closed_at`, a fact rather than a guess, so the quiet-fields rule is
+  // untouched. No clock: the day is what a person looks for.
+  if (tab === "Done" && task?.closed_at) {
+    body.appendChild(el("div", "said", `Done ${dayWords(task.closed_at)}`));
+  }
+
   const acts = el("div", "acts");
   const button = (label, fn, cls) => {
     const b = el("button", "act" + (cls ? " " + cls : ""), label);
@@ -94,6 +126,17 @@ export function rowOf(card, { all, tab, slot, narrow, act, openEdit }) {
     // targets, so a fifth control here contradicted the written rule, and a
     // dead word on every row is a heavier price than one WIP entry. Workflow
     // keeps its two marked places: the rail and the detail panel.
+  } else {
+    // REVIVE (session 126, his word). Undone has been the filled circle since
+    // session 104 and nothing on the row said so — a circle that means "undo
+    // this" looks exactly like a circle that means "done", and the only way to
+    // find out was to press it. The word sits beside it and does the same
+    // thing, which is the one place in this app a control is drawn twice on
+    // purpose: the glyph is the target a thumb already knows, and the word is
+    // the only thing that says what the target does.
+    const revive = button("Revive", () => act(card.card_id, "undone"));
+    revive.title = "Bring it back to the list";
+    acts.appendChild(revive);
   }
   body.appendChild(acts);
   row.appendChild(body);
