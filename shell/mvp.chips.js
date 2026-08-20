@@ -37,6 +37,7 @@
 const v = new URL(import.meta.url).search;
 const { el, button } = await import(`./mvp.paint.js${v}`);
 const { dateWords, timeWords } = await import(`./mvp.words.js${v}`);
+const { tapGuard } = await import(`./mvp.tap.js${v}`);
 
 const PICKERS = new Set(["Pick date", "Pick time"]);
 
@@ -131,6 +132,10 @@ export function makeDates(row, config, on) {
     const today = preset.startsWith("This") || preset === "Tonight";
     (today ? near : later).appendChild(button("chip", preset, () => on.pickWords(preset)));
   }
+  // Both columns scroll, so both are judged (session 125): a flick down the
+  // date column used to end on whatever chip it stopped over and set that date.
+  tapGuard(near);
+  tapGuard(later);
   cols.append(near, later);
   row.appendChild(cols);
 
@@ -139,6 +144,7 @@ export function makeDates(row, config, on) {
   for (const t of config.time_suggestions ?? []) {
     tscroll.appendChild(button("chip time", t, () => on.pickTime(t)));
   }
+  tapGuard(tscroll);
   row.appendChild(tscroll);
 
   return {

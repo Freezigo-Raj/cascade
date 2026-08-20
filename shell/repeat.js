@@ -65,8 +65,15 @@ function step(at, rule) {
 export function nextDue(task, now) {
   const rule = task.recurrence;
   if (!rule || !rule.unit || !task.due_at) return null;
-  const offset = offsetOf(task.due_at);
-  let at = parse(task.due_at);
+  // THE SCHEDULE IS THE ANCHOR, AND A PUSH IS NOT THE SCHEDULE (session 125).
+  // This function stepped from `due_at`, which `pushed()` had already
+  // overwritten, so rent due the 1st and pushed to the 4th repeated on the 4th
+  // for ever — the exact drift the paragraph above says this file prevents.
+  // `first_due_at` is the date the occurrence was given before any push moved
+  // it, so it is the schedule's own date and needs no new field.
+  const anchor = task.first_due_at || task.due_at;
+  const offset = offsetOf(anchor);
+  let at = parse(anchor);
   const limit = parse(now);
   // A guard, not a rule: a malformed interval must not spin here.
   for (let i = 0; i < 500; i++) {
@@ -106,4 +113,27 @@ export function spawn(closed, newId, now) {
     created_at: now,
     updated_at: now,
   };
+}
+
+/**
+ * THE SCHEDULE HAS ALREADY MOVED ON. True when this occurrence's own date plus
+ * one interval has passed, which means the series has produced a later
+ * occurrence while this one sat open.
+ *
+ * WHY THIS EXISTS (session 125, his call). A repeat that is never marked done
+ * never advances, and `syncAlarms()` never arms an instant that has gone — so
+ * one slept-through chain ended a weekly series in silence. Nothing in the app
+ * could say when the next ring was, because there was no next occurrence.
+ *
+ * ONE INTERVAL AND NOT ONE MINUTE. A weekly task overdue by an hour is still
+ * this week's task, and moving it would take away a row a person meant to
+ * clear. Only when the NEXT scheduled date has itself arrived is this
+ * occurrence a thing the schedule has left behind.
+ */
+export function overtaken(task, now) {
+  const rule = task?.recurrence;
+  if (!rule || !rule.unit || !task.due_at) return false;
+  if (task.task_state !== "ready" || task.archived) return false;
+  const anchor = task.first_due_at || task.due_at;
+  return step(parse(anchor), rule) <= parse(now);
 }

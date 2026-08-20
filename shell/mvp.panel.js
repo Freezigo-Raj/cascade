@@ -72,13 +72,13 @@ export function splitDuration(minutes, config) {
 /**
  * @param {HTMLElement} panel  emptied and refilled
  * @param {object} config      partAConfig
- * @param {object} state       { chosen, repeat, alarmType, leadMin, hasTime,
+ * @param {object} state       { chosen, repeat, alarmType, hasTime, dueAt,
  *                               durationMin, durationTapped, firmness, notes }
- * @param {object} on          { setType, setRepeat, setAlarm, setLead,
+ * @param {object} on          { setType, setRepeat, setAlarm,
  *                               setDuration, setFirmness, setNotes }
  */
 export function drawPanel(panel, config, state, on) {
-  const { repeat, alarmType, leadMin, hasTime, dueAt } = state;
+  const { repeat, alarmType, hasTime, dueAt } = state;
   const { durationMin, durationTapped, firmness, notes } = state;
 
   const group = (label, into) => {
@@ -130,19 +130,10 @@ export function drawPanel(panel, config, state, on) {
     group("Alarm", el("div", "note", "Needs an exact time."));
   }
 
-  if (hasTime && alarmType !== "none") {
-    const lead = el("div", "taps");
-    const mins = el("input", "num");
-    mins.type = "number";
-    mins.min = "0";
-    mins.max = String(config.alarm_defaults.max_lead_min);
-    mins.value = String(leadMin ?? config.alarm_defaults.lead_min);
-    mins.addEventListener("change", () => on.setLead(Math.max(0, Number(mins.value) || 0)));
-    lead.appendChild(mins);
-    lead.appendChild(el("span", "note",
-      `minutes before. It rings for ${Math.round(config.alarm_defaults.ring_sec / 60)} min, then snoozes itself ${config.alarm_defaults.auto_snooze_min} min at a time, up to ${config.alarm_defaults.auto_max} times.`));
-    group("Lead", lead);
-  }
+  // THE LEAD LEFT THIS PANEL (session 125, his arrow on the slide). It is a
+  // slider beside the Alarm toggle on the capture row now, where the sentence
+  // it changes already sits. A second copy here would be the same field with
+  // two controls, which is the thing this project has paid for four times.
 
   // -------------------------------------------------------------------- repeat
   //
@@ -157,6 +148,10 @@ export function drawPanel(panel, config, state, on) {
   const repHead = el("div", "group-head");
   repHead.appendChild(el("div", "label", "Repeat every"));
   const sentence = repeatSentence(repeat, dueAt, hasTime);
+  // The chip wears the whole sentence (session 125, his slide: "not showing
+  // full text"). It was capped at 62% of the row with an ellipsis, so
+  // `every month on the 23rd at 3:30pm` — the one thing on the screen that
+  // says what the repeat MEANS — was cut at the hour. It wraps instead.
   const nev = button("chip rep-state" + (repeat ? "" : " on"),
     repeat ? sentence : "Never", () => on.setRepeat(null));
   nev.setAttribute("aria-pressed", String(!repeat));
@@ -201,44 +196,54 @@ export function drawPanel(panel, config, state, on) {
 
   // ------------------------------------------------------------------ duration
   //
-  // A number and a unit, read together and written as one number of minutes.
-  // Until this row was tapped the duration was a per-verb default: `call` is 15
+  // One number of minutes. Until this row was touched the duration was a per-verb default: `call` is 15
   // minutes because the lexicon says so, not because anything measured it. The
   // clash warning, the day load that chooses push targets and the whole order
   // of the Ideas list are all sums of that guess, which is why a person's own
   // number outranks it and the record says `selected` when it does.
-  const dur = el("div", "taps");
-  const shown = splitDuration(durationMin ?? 0, config);
-  const count = el("input", "num");
-  count.type = "number";
-  count.min = "1";
-  count.value = String(shown.count || "");
-  let unit = shown.unit;
-  const write = () => {
-    const n = Math.max(1, Number(count.value) || 1);
-    on.setDuration(Math.min(config.limits.duration_max, n * config.duration_units[unit]));
+  const dur = el("div", "dur-line");
+  // A SLIDER, NOT BUTTONS (session 125, his words: "task timer should be a
+  // slider instead of buttons"). The number field, the three unit chips and
+  // the four suggestion chips were seven controls for one number.
+  //
+  // IT IS A LADDER, NOT A RANGE. `limits.duration_max` is 182 days, and a
+  // linear slider across that spends its whole travel between four and five
+  // months and cannot land on twenty minutes. The rungs are the durations a
+  // person actually gives, close together where the guesses are and far apart
+  // where nobody is precise, and the reading beside it says which one it is.
+  const LADDER = [5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240, 360, 480, 720, 1440, 2880, 4320, 10080];
+  const nearest = (m) => {
+    let best = 0;
+    for (let i = 0; i < LADDER.length; i++) if (Math.abs(LADDER[i] - m) < Math.abs(LADDER[best] - m)) best = i;
+    return best;
   };
-  // `change`, not `input` — the same caret-loss the repeat number had.
-  count.addEventListener("change", write);
-  dur.appendChild(count);
-  for (const [label] of unitsBySize(config).reverse()) {
-    const hit = button("chip" + (label === unit ? " on" : ""), label, () => {
-      unit = label;
-      write();
-    });
-    dur.appendChild(hit);
-  }
-  // Suggestions, in minutes. Not a vocabulary: tapping one fills the box.
-  const quick = el("div", "taps quiet");
-  for (const m of config.duration_suggestions) {
+  const say = (m) => {
     const s = splitDuration(m, config);
-    quick.appendChild(button("chip", `${s.count} ${s.unit}`, () => on.setDuration(m)));
-  }
+    return `${s.count} ${s.unit}${s.count === 1 ? "" : s.unit === "min" ? "" : "s"}`;
+  };
+  const slide = el("input", "dur");
+  slide.type = "range";
+  slide.min = "0";
+  slide.max = String(LADDER.length - 1);
+  slide.step = "1";
+  slide.value = String(nearest(durationMin ?? 30));
+  slide.setAttribute("aria-label", "Takes about");
+  const read = el("span", "dur-read", say(LADDER[Number(slide.value)]));
+  // `input` here and `change` on the two number fields, and the difference is
+  // the control rather than the rule: a range holds no caret, so repainting it
+  // mid-drag cannot lose one. The reading has to move with the thumb or the
+  // slider is a number nobody can see.
+  slide.addEventListener("input", () => {
+    read.textContent = say(LADDER[Number(slide.value)]);
+  });
+  slide.addEventListener("change", () => {
+    on.setDuration(Math.min(config.limits.duration_max, LADDER[Number(slide.value)]));
+  });
+  dur.append(slide, read);
   // The word is `about` on purpose. It sets the day's load and nothing on any
   // row ever shows it, so an exact number would claim a precision that changes
   // no screen.
   group(durationTapped ? "Takes about" : "Takes about (from the verb)", dur);
-  group("", quick);
   // The Type group LEFT this panel in session 122: the dropdown beside the ⋯
   // now holds all fourteen, so a second copy here was the same control twice.
 

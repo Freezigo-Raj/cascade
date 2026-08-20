@@ -35,3 +35,56 @@
   border: 0;
   cursor: pointer;
 }
+
+/* ------------------------------------------------------------------ alarms */
+/* Screen 4 (session 125). It borrows the row grammar rather than inventing one:
+   a title you can press, a sentence under it, and the same push ladder the list
+   rows carry. What is new here is the lead slider and the four acts, and those
+   are drawn as the panel draws its groups. */
+
+.tab-alarms { margin-left: auto; }
+
+[data-screen="alarms"] .head-block { margin-bottom: calc(var(--step) * 4); }
+.alarm-list { display: flex; flex-direction: column; gap: calc(var(--step) * 4); }
+
+.alarm-item {
+  background: var(--sheet);
+  border: 1px solid var(--edge);
+  border-radius: var(--r-card);
+  padding: calc(var(--step) * 4);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--step) * 2);
+}
+.alarm-title {
+  font-family: var(--face-display);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+.alarm-said { font-size: 13.5px; color: var(--signal-deep); font-weight: 600; }
+.alarm-note { font-size: 12.5px; color: var(--quiet); line-height: 1.5; }
+.alarm-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--signal-deep);
+  margin-top: var(--step);
+}
+.alarm-acts { display: flex; flex-wrap: wrap; gap: calc(var(--step) * 2); }
+.alarm-acts .act.danger { color: var(--warn); }
+/* The ladder lies flat here. On a row it is a column because the row is short;
+   this card has the width, and a wrapped set of rungs needs no scroll and so
+   cannot be scrolled into by accident. */
+.nudges.alarm-nudges {
+  flex-direction: row;
+  flex-wrap: wrap;
+  max-height: none;
+  overflow: visible;
+}

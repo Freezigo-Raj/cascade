@@ -20,6 +20,7 @@ const { tasks, undo, UNDO_ID, mode, sync } = await import(`./store.select.js${v}
 const { pushed } = await import(`./push.js${v}`);
 const { matchTier } = await import(`./search.js${v}`);
 const { spawn } = await import(`./repeat.js${v}`);
+const { alarmCleared } = await import(`./alarm.js${v}`);
 const { nowLocal } = await import(`./mvp.clock.js${v}`);
 const { readClashes, readClashDialog, readDeadlineClashes, readDeadlineDialog } =
   await import(`./clash.js${v}`);
@@ -45,7 +46,7 @@ const now = nowLocal;
 // screen's question and not the engine's.
 const narrow = window.matchMedia("(max-width: 600px)");
 
-export function mountList(root, { openEdit, openAccount, onTasks } = {}) {
+export function mountList(root, { openEdit, openAccount, openAlarms, onTasks } = {}) {
   let tab = "Tasks";
   let slot = "Today";
   let filter = "";
@@ -88,7 +89,13 @@ export function mountList(root, { openEdit, openAccount, onTasks } = {}) {
 
     if (what === "done") {
       await remember("done", task);
-      await tasks.update(id, { ...task, task_state: "done", closed_at: now(), updated_at: now() });
+      // `alarmCleared()` rather than three fields written by hand (session
+      // 125): the lock-screen Done cleared the snooze and the unanswered
+      // marker and this one did not, so a task finished in the app kept a
+      // snooze that outlived it and came back at the top of the list the
+      // moment Undone was pressed. One function, called by everything that
+      // ends or moves an alarm.
+      await tasks.update(id, alarmCleared({ ...task, task_state: "done", closed_at: now(), updated_at: now() }));
       // A repeat spawns its next occurrence here and only here, so there is
       // never more than one open at a time.
       const next = spawn({ ...task, task_state: "done" }, crypto.randomUUID(), now());
@@ -250,6 +257,15 @@ export function mountList(root, { openEdit, openAccount, onTasks } = {}) {
     bar.appendChild(b);
     return b;
   });
+
+  // A BUTTON AFTER `Done` (session 125, his words): every alarm the app has
+  // armed, on one screen. It is not a fourth tab — the rows there answer to a
+  // ring rather than to a slot, and a toggle over them would have one position.
+  const alarmsBtn = el("button", "tab tab-alarms", "Alarms");
+  alarmsBtn.type = "button";
+  alarmsBtn.title = "Every alarm";
+  alarmsBtn.addEventListener("click", () => openAlarms && openAlarms());
+  bar.appendChild(alarmsBtn);
 
   const searchBox = el("input", "search");
   searchBox.type = "search";

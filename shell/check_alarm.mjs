@@ -15,7 +15,7 @@ import { partAConfig as config } from "./config.js";
 import { canAlarm, alarmOffered, alarmAt, ringAt, readAlarmView, snoozed, unanswered, alarmCleared } from "./alarm.js";
 import { rankKeyFor, readCards } from "./cards.js";
 import { pushed } from "./push.js";
-import { spawn } from "./repeat.js";
+import { spawn, overtaken } from "./repeat.js";
 import { resolve, lemmaReady } from "./resolve.js";
 await lemmaReady; // the model loads lazily; a check must not race it
 
@@ -178,6 +178,71 @@ console.log("\na length of time, spaced either way");
   say(at("pay vendor in 5mins") === "2026-08-17T16:05:00+05:30", "in 5mins, joined");
   say(at("pay vendor in 2hours") === "2026-08-17T18:00:00+05:30", "in 2hours, joined");
   say(at("pay vendor in 5 minutes") === "2026-08-17T16:05:00+05:30", "the long unit still reads");
+}
+
+// --------------------------------------------------------------- session 125
+//
+// THE THREE BEHAVIOUR CHANGES THIS SESSION MADE, each with the defect it
+// closes named, so a later session cannot reintroduce one with every check
+// still green. Session 123 recorded that this file proves pure functions only
+// and never calls `apply()`; that is still true, and these are pure.
+{
+  // A PUSH MUST NOT MOVE THE SERIES. `nextDue()` stepped from `due_at`, which
+  // `pushed()` overwrites, so rent due the 1st and paid on the 4th repeated on
+  // the 4th for ever — the exact drift repeat.js says it prevents.
+  const monthly = task({
+    due_at: "2026-09-01T10:00:00+05:30", recurrence: { every: 1, unit: "month" },
+  });
+  const moved = pushed(monthly, "2026-09-04T10:00:00+05:30", "2026-09-01T11:00:00+05:30");
+  const next = spawn({ ...moved, task_state: "done" }, "t9", "2026-09-04T12:00:00+05:30");
+  say(next.due_at === "2026-10-01T10:00:00+05:30", "a pushed occurrence repeats on the SCHEDULE, not the push");
+  say(moved.first_due_at === "2026-09-01T10:00:00+05:30", "the push records where the occurrence started");
+
+  // An occurrence never pushed still counts from its own date.
+  const clean = spawn({ ...monthly, task_state: "done" }, "t10", "2026-09-01T12:00:00+05:30");
+  say(clean.due_at === "2026-10-01T10:00:00+05:30", "an unpushed occurrence steps from its due date");
+
+  // A DONE MUST LEAVE NO SNOOZE BEHIND, wherever it was pressed. The list
+  // screen wrote three fields by hand and missed these two, so an Undone
+  // brought a spent snooze and an unanswered marker back to the top tier.
+  const stale = task({
+    alarm_snoozed_until: "2026-08-17T17:30:00+05:30",
+    alarm_unanswered_at: "2026-08-17T15:00:00+05:30", reminder_fatigue: 2,
+  });
+  const closed = alarmCleared({ ...stale, task_state: "done", closed_at: NOW, updated_at: NOW });
+  say(closed.alarm_snoozed_until === null && closed.alarm_unanswered_at === null,
+      "alarmCleared() empties both markers");
+  say(closed.reminder_fatigue === 2, "and never touches the history count");
+}
+
+// -------------------------------------------------- session 125, the catch-up
+//
+// A REPEAT THE CALENDAR WALKED PAST (his call). The pure half is `overtaken()`;
+// the write half lives in `catchup.js` and is driven from `start()`, which no
+// check reaches — the same honest gap `apply()` had until session 123 and it is
+// recorded here rather than implied.
+{
+  const weekly = (over) => task({
+    due_at: "2026-08-10T09:00:00+05:30",
+    recurrence: { every: 1, unit: "week" }, ...over,
+  });
+  say(overtaken(weekly(), "2026-08-12T09:00:00+05:30") === false,
+      "two days late on a weekly repeat is still this week's task");
+  say(overtaken(weekly(), "2026-08-17T09:00:00+05:30") === true,
+      "past the next scheduled date, the schedule has moved on");
+  say(overtaken(weekly({ task_state: "done", closed_at: NOW }), "2026-09-01T09:00:00+05:30") === false,
+      "a closed occurrence is never rolled forward");
+  say(overtaken(weekly({ archived: true }), "2026-09-01T09:00:00+05:30") === false,
+      "nor an archived one");
+  say(overtaken(task({ due_at: "2026-01-01T09:00:00+05:30" }), NOW) === false,
+      "a one-off task is left where it is, however late");
+
+  // The row it hands on skips every occurrence in between and lands in the
+  // future, and the one it closes keeps its own date.
+  const stale = weekly();
+  const next = spawn({ ...stale, task_state: "cancelled" }, "t11", "2026-09-02T12:00:00+05:30");
+  say(next.due_at === "2026-09-07T09:00:00+05:30", "the next occurrence is the next FUTURE one");
+  say(next.spawned_from === stale.id, "and it names the occurrence it came from");
 }
 
 console.log(`\n${bad === 0 ? "CHECK ALARM: PASS" : `CHECK ALARM: ${bad} FAILED`}\n`);

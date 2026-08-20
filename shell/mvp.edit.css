@@ -10,11 +10,11 @@
  * that reason and for no other.
  */
 
-@import url("./mvp.css?v=40");
-@import url("./mvp.account.css?v=40");
-@import url("./mvp.wide.css?v=40");
-@import url("./mvp.chrome.css?v=40");
-@import url("./mvp.web.css?v=40");
+@import url("./mvp.css?v=41");
+@import url("./mvp.account.css?v=41");
+@import url("./mvp.wide.css?v=41");
+@import url("./mvp.chrome.css?v=41");
+@import url("./mvp.web.css?v=41");
 
 /* ------------------------------------------------------------ screen 2
  *
@@ -378,15 +378,54 @@
 
 /* The alarm on the capture screen (session 123): drawn only while the line
    carries an exact time; the toggle plus the instant it will ring. */
-.alarm-row { display: flex; align-items: center; gap: calc(var(--step) * 3); margin-top: calc(var(--step) * 2); }
+.alarm-row {
+  /* It wraps now (session 125): the toggle, the sentence and the lead slider
+     do not fit one phone line, and a slider that has to be scrolled sideways
+     to reach is a slider that gets dragged by accident. */
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--step) * 3);
+  margin-top: calc(var(--step) * 2);
+}
 .alarm-when { font-size: 12.5px; color: var(--signal-deep); font-weight: 600; }
+
+/* THE LEAD SLIDER (session 125, his ask: a slider from 0 to 60 minutes showing
+   the lead). It sits beside the Alarm toggle here and on every row of the
+   alarms screen, one rule for both, because it is one control writing one
+   field. The reading is not decoration: a slider with no number is a promise
+   nobody can check. */
+.lead-wrap { display: flex; align-items: center; gap: calc(var(--step) * 2); flex: 1 1 100%; }
+.lead-read { font-size: 12.5px; color: var(--quiet); white-space: nowrap; }
+input[type="range"].lead, input[type="range"].dur {
+  flex: 1 1 auto;
+  min-width: 120px;
+  accent-color: var(--signal);
+  height: 28px;
+}
+
+/* The duration ladder (session 125, his ask: a slider instead of buttons). One
+   line, the reading on the right, no unit chips and no suggestion row. */
+.dur-line { display: flex; align-items: center; gap: calc(var(--step) * 2); }
+.dur-read { font-size: 13px; color: var(--signal-deep); font-weight: 600; white-space: nowrap; min-width: 6ch; }
 
 /* The repeat group (session 124): the Never button lives beside the label and
    wears the sentence once a repeat is set; the number and four units fit one
    line. */
 .group-head { display: flex; align-items: center; gap: calc(var(--step) * 3); margin-bottom: calc(var(--step) * 2); }
 .group-head .label { margin-bottom: 0; }
-.chip.rep-state { max-width: 62%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* NOT CUT SHORT (session 125, his slide "not showing full text"): the chip was
+   capped at 62% of the row with an ellipsis, so the one thing on the screen
+   that says what the repeat MEANS — `every month on the 23rd at 3:30pm` — was
+   losing its time. It wraps and takes the width it needs. */
+.chip.rep-state {
+  max-width: 100%;
+  white-space: normal;
+  text-align: left;
+  line-height: 1.35;
+  border-radius: 14px;
+}
+.group-head { flex-wrap: wrap; }
 .taps.rep-line { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
 .taps.rep-line::-webkit-scrollbar { display: none; }
 .taps.rep-line .num { width: 48px; flex-shrink: 0; }

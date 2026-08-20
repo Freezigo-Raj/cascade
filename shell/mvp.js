@@ -20,7 +20,6 @@ const v = new URL(import.meta.url).search;
 const { configured } = await import(`./env.js${v}`);
 const { account, recoveryInUrl } = await import(`./auth.js${v}`);
 const { mountGate } = await import(`./gate.js${v}`);
-const { SHELL_VERSION } = await import(`./render.js${v}`);
 
 const app = document.getElementById("app");
 const rail = document.getElementById("rail");
@@ -49,6 +48,11 @@ let bar = null;       // the left rail, wide only
 let detail = null;    // the selected task, in `#aside`, wide only
 let picked = null;    // the task id the detail panel is showing
 let route = "list";   // where a narrow layout would be
+// A word the next list mount should say. An add on the narrow layout now
+// returns to the list (session 125), and the toast it drew belonged to the
+// screen it just left — so the message travels rather than the screen staying
+// open to hold it. The undo entry outlives both either way.
+let pending = null;
 
 async function put(into, mod, name, args) {
   if (into === screen) { here?.unmount?.(); here = null; }
@@ -85,6 +89,7 @@ window.addEventListener("popstate", (e) => {
   const name = e.state?.screen ?? "list";
   if (name === "list") { showList(); return; }
   if (name === "account") { showAccount(); return; }
+  if (name === "alarms") { showAlarms(); return; }
   showList();
 });
 
@@ -116,12 +121,14 @@ async function showList() {
   const { mountList } = await import(`./mvp.list.js${v}`);
   route = "list";
   mark("list", false);
-  await put(screen, mountList, "list", {
+  const list = await put(screen, mountList, "list", {
     openEdit: openTask,
     openAccount: showAccount,
+    openAlarms: showAlarms,
     onTasks: (tasks) => { bar?.setTasks(tasks); detail?.draw(); },
     onGo: null,
   });
+  if (pending) { list?.say?.(pending); pending = null; }
   if (ROOMY.matches) await openPanel(null, { keepFocus: true });
   if (WIDE.matches) await wideFrame();
 }
@@ -178,7 +185,11 @@ async function openTask(taskId) {
   mark("edit", true);
   // `onBack` unwinds through the phone's own history rather than jumping to the
   // list, so the drawn button and the gesture cannot end up one entry apart.
-  await put(screen, mountEdit, "edit", { taskId, onBack: () => history.back() });
+  await put(screen, mountEdit, "edit", {
+    taskId,
+    // The message an add wants to leave behind travels with the back.
+    onBack: (msg) => { pending = msg || null; history.back(); },
+  });
 }
 
 /**
@@ -200,6 +211,24 @@ function closeWide() {
   bar?.unmount?.(); bar = null; rail.innerHTML = "";
   detail?.unmount?.(); detail = null; aside.innerHTML = "";
   picked = null;
+}
+
+/**
+ * Screen 4. It takes the whole window in both layouts, for the same reason the
+ * account does: it is a place you go to settle something, not a thing you work
+ * beside, and every control on it changes a task the list is showing.
+ */
+async function showAlarms() {
+  const { mountAlarms } = await import(`./mvp.alarms.js${v}`);
+  route = "alarms";
+  mark("alarms", true);
+  closeWide();
+  await put(screen, mountAlarms, "alarms", {
+    onBack: () => history.back(),
+    // Straight to the editor, pushed over this screen, so a back from there
+    // lands on the alarms again rather than on the list.
+    openEdit: (id) => openTask(id),
+  });
 }
 
 async function showAccount() {
@@ -265,83 +294,34 @@ window.addEventListener("keydown", (e) => {
  *
  * It draws nothing when everything agrees, which is the normal case.
  */
-/**
- * THE STYLESHEET REPAIRS ITSELF BEFORE ANYTHING IS SAID ABOUT IT.
- *
- * `index.html` is the only file in this app carrying no cache-buster of its own.
- * Everything it loads is versioned and it is not, so a browser that has the page
- * cached serves an OLD index.html, whose `<link>` still points at the previous
- * version of the stylesheet, while `mvp.js` is imported under a timestamp and is
- * always fresh. New JavaScript, old HTML, old CSS, and the version behind is
- * always exactly one. That is the shape it showed twice: v29 against v30, then
- * v30 against v31. Closing the app cannot fix it, because nothing ever asks for
- * a new copy of the page.
- *
- * FOURTH APPEARANCE of the cache defect and the first fix that does not depend
- * on remembering something. Sessions 96, 98 and 105 each added a `?v=` to a
- * thing that had been missed. The page itself cannot carry one, so the app sets
- * the link's version from `SHELL_VERSION` instead: the number lives in the code
- * that reads it, and a stale page corrects itself on the next paint.
- *
- * What remains loud is the case this cannot repair: the stylesheet fetched AT
- * the right version still saying the wrong one, which means the repository is
- * disagreeing with itself rather than the browser being behind.
- */
-function readCssVersion() {
-  const style = getComputedStyle(document.documentElement);
-  return {
-    css: Number(style.getPropertyValue("--css-version").trim() || 0),
-    wide: style.getPropertyValue("--wide").trim() === "1",
-  };
-}
-
-/** Re-point the sheet at this build. Resolves when the new one has painted. */
-function refetchStylesheet() {
-  const link = document.querySelector('link[rel="stylesheet"][href*="mvp.edit.css"]');
-  if (!link) return Promise.resolve(false);
-  const href = link.getAttribute("href").split("?")[0] + `?v=${SHELL_VERSION}`;
-  if (link.getAttribute("href") === href) return Promise.resolve(false);
-  return new Promise((done) => {
-    const fresh = link.cloneNode();
-    fresh.setAttribute("href", href);
-    // The old sheet stays until the new one has loaded, so the screen never
-    // flashes unstyled on the way through.
-    fresh.addEventListener("load", () => { link.remove(); done(true); }, { once: true });
-    fresh.addEventListener("error", () => { fresh.remove(); done(false); }, { once: true });
-    link.parentNode.insertBefore(fresh, link.nextSibling);
-  });
-}
-
-async function tellTheTruth() {
-  let { css, wide } = readCssVersion();
-  // One repair attempt, and only when the sheet is behind. A sheet that is
-  // absent entirely is a different fault and re-pointing a link that is not
-  // there fixes nothing.
-  if (css && css !== SHELL_VERSION && await refetchStylesheet()) {
-    ({ css, wide } = readCssVersion());
-  }
-  const say = [];
-  if (!css) say.push("No stylesheet loaded at all.");
-  else if (css !== SHELL_VERSION) say.push(`Stylesheet is v${css}, app is v${SHELL_VERSION}, and refetching it at v${SHELL_VERSION} still returned v${css}. That is the repository disagreeing with itself, not your browser.`);
-  if (css === SHELL_VERSION && ROOMY.matches && !wide) say.push("The wide layout stylesheet did not load, so this is the phone layout in a large window.");
-  const old = document.getElementById("truth");
-  if (old) old.remove();
-  if (!say.length) return;
-  const strip = document.createElement("div");
-  strip.id = "truth";
-  strip.className = "truth";
-  strip.textContent = say.join(" ");
-  app.prepend(strip);
-}
-
 async function start() {
   if (started) return;
   started = true;
   gateEl.style.display = "none";
   app.style.display = "";
   whoEmail = (await account.current())?.email ?? "";
+  // BEFORE THE LIST IS DRAWN AND BEFORE THE ALARMS ARE ARMED (session 125, his
+  // call). A repeat the calendar walked past is closed as cancelled and its
+  // next scheduled occurrence is spawned, so the list shows the row that is
+  // actually next and the arming pass has a future instant to arm against.
+  // Silent on purpose: nothing was asked for, so nothing is announced, and the
+  // cancelled row is on the Done tab for anyone who looks.
+  try {
+    const { catchUpRepeats } = await import(`./catchup.js${v}`);
+    await catchUpRepeats();
+  } catch (e) {
+    console.warn("catchup:", e?.message ?? e);
+  }
   await showList();
-  await tellTheTruth();
+  // The build's own honesty check, in `mvp.truth.js` since session 125. It is
+  // handed the root and the breakpoint rather than reaching for them: this
+  // file owns both.
+  try {
+    const { tellTheTruth } = await import(`./mvp.truth.js${v}`);
+    await tellTheTruth(app, ROOMY);
+  } catch (e) {
+    console.warn("truth:", e?.message ?? e);
+  }
   // The alarms, last. Off the Android shell every call in here is a no-op, so
   // this line is the whole of what the web app knows about ringing. It runs
   // after the list because the first thing it does is drain presses that

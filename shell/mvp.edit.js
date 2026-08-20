@@ -24,6 +24,7 @@ const { drawPanel } = await import(`./mvp.panel.js${v}`);
 const { removeSpans } = await import(`./mvp.words.js${v}`);
 const { el, button } = await import(`./mvp.paint.js${v}`);
 const { makeDates, storedWhen, when } = await import(`./mvp.chips.js${v}`);
+const { alarmCleared } = await import(`./alarm.js${v}`);
 
 export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {}) {
   let line = "";
@@ -294,10 +295,23 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
         : {};
       await undo.remove(UNDO_ID);
       await undo.add({ id: UNDO_ID, action: "edit", task_id: old.id, prior_state: old, created_at: nowLocal() });
+      // A MOVED DATE ENDS WHAT THE OLD ONE LEFT (session 125). `alarm.js` has
+      // said since session 111 that a push, a completion and a date edit all
+      // clear the snooze and the unanswered marker; the first two did and this
+      // one did not, so a saved edit left `alarm_snoozed_until` pointing at the
+      // old ring — and `ringAt()` prefers a snooze that is still ahead, so the
+      // alarm rang at the time the task no longer had.
+      //
+      // `first_due_at` goes with it: it is where THIS occurrence started, a
+      // push is a temporary move away from that, and a restated date is a new
+      // start. Leaving it would let a push made last week keep anchoring a
+      // repeat whose date has since been typed again.
+      const moved = (out.task.due_at ?? null) !== (old.due_at ?? null) && !keepDate.due_at;
       await tasks.update(boundId, {
         ...out.task, ...keepDate, ...advancedFields(),
+        ...(moved ? { alarm_snoozed_until: null, alarm_unanswered_at: null } : {}),
         push_count: old.push_count ?? 0,
-        first_due_at: old.first_due_at ?? null,
+        first_due_at: moved ? null : (old.first_due_at ?? null),
         spawned_from: old.spawned_from ?? null,
         id: old.id, created_at: old.created_at, pinned: old.pinned,
         task_state: old.task_state, closed_at: old.closed_at, archived: old.archived,
@@ -329,6 +343,13 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
     unbind();
     await reload();
     say(`Added "${task.title}"` + (said ? ` \u00b7 ${said}` : ""));
+    // ADDING IS FINISHED WHEN IT IS ADDED (session 125, his words: "once a
+    // task is added, go back to home screen"). A save has returned since
+    // session 112 and an add did not, so the one press that happens twenty
+    // times a day left you looking at an empty box with a toast about a task
+    // you could no longer see. In the wide layout `onBack` is null and the
+    // list is already beside the box, so nothing moves there.
+    if (onBack) onBack(`Added "${task.title}"` + (said ? ` \u00b7 ${said}` : ""));
   }
 
   async function undoLast() {
@@ -448,6 +469,43 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
       tog.setAttribute("aria-pressed", String(on));
       alarmRow.appendChild(tog);
       if (on) alarmRow.appendChild(el("span", "alarm-when", ringSentence(ringMs, repeat)));
+      // THE LEAD MOVED OUT OF THE PANEL AND ON TO THIS ROW (session 125, his
+      // arrow and his words: "lead time should be changeable besides the alarm
+      // button ... a slider with range of 0mins to 60mins, displaying the lead
+      // time"). It is the SAME control moved, not a second one: the panel's
+      // number input is gone, because two controls for one field is how two
+      // controls come to disagree, and this project has paid for that four
+      // times.
+      //
+      // COST, STATED: `alarm_defaults.max_lead_min` is a week and this slider
+      // reaches an hour. A stored lead above 60 still rings correctly and the
+      // slider shows it pinned at its top, but it cannot be set from here any
+      // more. Nothing in the app offered a week's warning before, and every
+      // lead in `alarm_lead_by_type` is fifteen minutes.
+      if (on) {
+        const wrap = el("div", "lead-wrap");
+        const slide = el("input", "lead");
+        slide.type = "range";
+        slide.min = "0";
+        slide.max = "60";
+        slide.step = "5";
+        slide.value = String(Math.min(60, lead));
+        slide.setAttribute("aria-label", "Lead, minutes before");
+        const read = el("span", "lead-read", lead ? `${lead} min before` : "at the time");
+        // `input`, not `change`: the sentence beside the toggle is the whole
+        // reason the number is visible, and a reading that arrives after the
+        // thumb is lifted is a reading nobody watched. A range control holds
+        // no caret, so repainting it mid-drag costs nothing — the defect that
+        // put the panel's three number fields on `change` cannot happen here.
+        slide.addEventListener("input", () => {
+          leadMin = Number(slide.value) || 0;
+          read.textContent = leadMin ? `${leadMin} min before` : "at the time";
+          alarmRow.querySelector(".alarm-when").textContent =
+            ringSentence(new Date(out.task.due_at).getTime() - leadMin * 60000, repeat);
+        });
+        wrap.append(slide, read);
+        alarmRow.appendChild(wrap);
+      }
     }
     const more = button("chip more" + (advanced ? " on" : ""), "\u22ef", () => { advanced = !advanced; paint(); });
     more.setAttribute("aria-expanded", String(advanced));
@@ -455,7 +513,7 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
     typeRow.appendChild(more);
     if (advanced) {
       drawPanel(panel, partAConfig, {
-        repeat, alarmType, leadMin,
+        repeat, alarmType,
         // The toggle exists only while the line carries a time, and this is the
         // engine's answer to that rather than the screen's guess at it.
         hasTime: Boolean(out.task.has_time),
@@ -471,7 +529,6 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
           if (kind !== "none" && leadMin === null) leadMin = partAConfig.alarm_defaults.lead_min;
           paint();
         },
-        setLead: (n) => { leadMin = n; },
         setDuration: (n) => { durTap = n; paint(); },
         setFirmness: (f) => { firmTap = f; paint(); },
         // No repaint: the same reason the box itself is built once. Replacing a

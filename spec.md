@@ -33,7 +33,7 @@ Run app:   py -m http.server 8000, then http://localhost:8000/  (both screens, w
            /shell/ and still draws every field
            (live: every keystroke
            re-resolves; no build step, shell/config.js is checked against config.ts by gate2.py)
-Run tests: python3 gate2.py && python3 selftest.py && node gate4.mjs && node shell/check_render.mjs && node shell/check_loud.mjs && node shell/check_alarm.mjs
+Run tests: python3 gate2.py && python3 selftest.py && node gate4.mjs && node shell/check_render.mjs && node shell/check_loud.mjs && node shell/check_alarm.mjs && node shell/check_search.mjs
 Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section B for one section,
            --placeholder to run the current key against the frozen Stage 3 file under the Stage 4 reading)
 
@@ -43,7 +43,7 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
   contract     54
   config       a.19
   answer_key   28
-  shell        40
+  shell        41
   gate1        signed on example 35
   gate2        signed on contract 32
   gate3        signed on shell 1
@@ -79,38 +79,108 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 
 ## THIS SESSION'S JOB
 
-Session 124: his build-39 slide review — nine items across both screens.
+Session 125: his build-40 UI review (four slides), plus a flowchart of the due date, the alarm, the
+repeat, the snooze and the push read off the code alone, and every inconsistency that reading found.
 
-**WHICHEVER TIME CAME LAST WINS.** A typed time outranked every later pick because it sat earlier in
-the composed line, so tapping `6pm` after typing `3pm` did nothing. A time pick now REPLACES the
-typed time token in the line, and typing a time takes a standing pick back — his rule, near
-verbatim: "whatever is typed or click last". This AMENDS session 121's "picks put no words in the
-box": replacing a time the person is superseding is not inserting words they did not choose. The
-regex covers the shapes a typed time usually takes; a form it misses keeps typed-wins, the safe side.
+**A PRESS IS A PRESS AND A DRAG IS A SCROLL, EVERYWHERE.** Session 124 put the guard on the push
+ladder alone: touch only, the Y axis only, no time bound. His slide says it still selects by mistake,
+and the ladder was never the only scroller — the two date columns and the times row had nothing at
+all. The rule moved into `shell/mvp.tap.js` and every scrolling strip wears the same one. Three
+tests: more than 8px on EITHER axis is a drag; a touch held longer than 600ms is a scroll coming to
+rest; a mouse and a keyboard are exempt from the time test, because a slow deliberate click is still
+a click and neither carries a strip along with it. 600ms is mine — "a few milliseconds", his words,
+is a number no thumb could pass — and it is the one to move if a real press is still eaten.
 
-**A SCROLL IS NOT A PRESS.** Dragging the push ladder ended on a rung and the browser fired its
-click, so scrolling pushed the task. A press that travelled more than a thumb's wobble is swallowed
-before any rung hears it.
+**`Plant` FOUND NOTHING AND `Plants` FOUND TWO.** The prefix tier compared the query against the
+START OF THE WHOLE TITLE, so a prefix of any word but the first fell through to the fuzzy tier, and
+`plant` against `water plants` scores 0.42 against a 0.5 threshold — a miss by four hundredths. The
+tier is per word now. A word beginning with what was typed is what a person means by searching. A
+whole-title prefix still outranks a word prefix inside one, which is the 0.9 factor on the score.
+`shell/check_search.mjs` is the SEVENTH CHECK and the second bite anything has taken out of the
+largest untested surface.
 
-**A TASK ON A LATER DAY CAN COME TO TODAY.** The ladders only pushed outward; a `Today` rung now
-leads the ladder for time-, band- and day-precision tasks sitting on a later day — today at the
-task's own clock time, or an hour from now if that instant has gone, because a pull-forward that
-arrives overdue is a trap.
+**THE REPEAT SENTENCE WAS BEING CUT AT THE HOUR.** `.chip.rep-state` was capped at 62% of the row
+with an ellipsis, so `every month on the 23rd at 3:30pm` — the one thing on the screen that says
+what the repeat MEANS — lost its time. It wraps.
 
-**The alarm row sits directly under the box** (his arrow) and states the day as well as the clock:
-`rings 4:45pm today` / `tomorrow` / `on Monday` / `on 20th August`, plus `· repeats` when the task
-does — his wording, near verbatim.
+**THE LEAD LEFT THE PANEL AND BECAME A SLIDER BESIDE THE ALARM TOGGLE**, 0 to 60 minutes, reading
+its own value, his ask. It is the same control moved and not a second one: the panel's number input
+is gone, because one field with two controls is how two controls come to disagree, paid for four
+times. Cost stated: `max_lead_min` is a week and the slider reaches an hour, so a longer stored lead
+still rings and can no longer be set. Every entry in `alarm_lead_by_type` is fifteen minutes.
 
-**The repeat group**: the Never button lives beside the `Repeat every` label and wears the app's own
-sentence once a repeat is set (`every Wednesday at 5pm`), tapping it is always the way back to
-never; the number and the four units fit one line. The number inputs (repeat, lead, duration) fire
-on `change` rather than `input` — the input listener repainted the panel per digit and the rebuilt
-field never held the caret, which is why typing shifted focus.
+**THE DURATION IS A SLIDER**, his ask, replacing a number box, three unit chips and four suggestion
+chips — seven controls for one number. It runs a LADDER rather than a linear range: `duration_max`
+is 182 days, and a linear slider across that spends its whole travel between four and five months
+and cannot land on twenty minutes.
 
-**Smaller screen words**: `Later` where the engine says `Upcoming` (band name in records unchanged);
-no slot wears the mark while a search is on, because with text in the box the pool is everything
-not done; the sticky header's coloured band was already gone in build 39 and his slide-1 screenshot
-predates it — verified, nothing further.
+**ADDING IS FINISHED WHEN IT IS ADDED**, his words. A save has returned to the list since session
+112 and an add did not, so the press that happens twenty times a day left a person looking at an
+empty box holding a toast about a task no longer in front of them. The toast TRAVELS with the back
+rather than the screen staying open to hold it, so the Undo offer survives the navigation.
+
+**SCREEN 4, THE ALARMS**, reached by a button after `Done` — his ask, and a screen rather than a
+fourth tab because the three tabs answer "when is this owed" and share one row shape, one toggle and
+one search, where a row here answers "when will this ring". It lists exactly what the shell will arm
+— `canAlarm()` and `alarm_type !== "none"`, sorted by `ringAt()` — because a screen listing anything
+else is a second opinion about what is going to happen. Alarm off (which ends the ring for a SERIES,
+since `spawn()` inherits `alarm_type`), Stop repeat, Delete, Clear snooze, the lead slider which
+moves the RING, and the push ladder which moves the DATE.
+
+**THE LOCK SCREEN IS PAPER**, his words: "UI for alarm needs to be same colour/theme". It was ink on
+dark while every other screen is paper, so the one surface a person meets half asleep was the one
+that did not look like the app. NEEDS AN APK REBUILD, like every Kotlin change.
+
+**FOUR DEFECTS THE FLOWCHART FOUND, FIXED:**
+
+1. The in-app Done left `alarm_snoozed_until` and `alarm_unanswered_at` set where the lock-screen
+   Done cleared both, so an Undone brought a spent snooze and an unanswered marker back into the top
+   ranking tier. It calls `alarmCleared()` now.
+2. A saved edit that moved the due date cleared neither, and `ringAt()` PREFERS a snooze still ahead
+   of the clock — so the alarm rang at the time the task no longer had. `alarm.js` has said since
+   session 111 that a push, a completion and a date edit all clear them; two of the three did.
+3. `nextDue()` stepped from `due_at`, which `pushed()` overwrites — so rent due the 1st and paid on
+   the 4th repeated on the 4th for ever, the exact drift `repeat.js` says it prevents. It anchors on
+   `first_due_at || due_at` now, which needs no new field: `first_due_at` is where the occurrence
+   started before any push moved it. A saved edit that moves the date CLEARS it, because a restated
+   date is a new start where a push is a temporary move away from one.
+4. `alarmCleared()` and `alarmOffered()` were exported and called by nothing while the rule they
+   hold was hand-copied into three files. Two of the copies were the defects above. `alarmCleared()`
+   is called by the list, the editor and the alarms screen now.
+
+**AN OVERDUE REPEAT IS STEPPED FORWARD ON OPEN — his call, made this session** after the three
+options were put to him. The defect: `syncAlarms()` never arms an instant that has gone, and the
+next occurrence only exists after a Done, so one unanswered chain ended a series in silence with
+nothing on any screen able to say when it would next ring.
+
+`overtaken()` in `repeat.js` is the test and it asks ONE INTERVAL, NOT ONE MINUTE: an occurrence is
+only left behind once the NEXT scheduled date has itself arrived, because a weekly task an hour late
+is still this week's task and moving it would take away a row a person meant to clear. `catchup.js`
+runs at `start()`, before the list draws and before the alarms are armed, and for each one it closes
+the occurrence as `cancelled` — not `done`, because it was not done — and spawns the schedule's next
+future date. A cancelled row carries `closed_at` and shows on the Done tab beside the finished ones
+(`cards.js` reads both states), so the miss stays visible rather than being quietly deleted.
+
+Three costs, all accepted and stated: it takes NO UNDO SLOT, because undo holds one entry and that
+entry belongs to the last thing a PERSON did — so this write cannot be undone by pressing Undo, and
+the cancelled row is the way back. The new occurrence's id is DERIVED from the closed one and its
+new date rather than random, so two devices opening at the same moment write one row rather than
+two under newest-wins. And no check reaches `catchUpRepeats()` itself: `check_alarm.mjs` proves
+`overtaken()` and `spawn()`, which are pure, and the write path is driven from `start()` — the same
+honest gap `apply()` had until session 123, recorded rather than implied.
+
+The alarms screen still says `will not ring again until the date moves` for the case this does not
+cover: an occurrence overdue by less than one interval, which is a row a person is expected to
+clear rather than one the calendar has left behind.
+
+**mvp.js CROSSED THE 400-LINE CAP** adding the catch-up, and split by concern: the stylesheet-version
+repair and the loud line left as `shell/mvp.truth.js`, handed the root and the breakpoint rather
+than reaching for either. Nothing in it routes and nothing that routes needs to know how a
+stylesheet version is read.
+
+**ALSO RECORDED, NOT FIXED:** `repeatSentence()` reads `due_at` without its offset and
+`ringSentence()` reads it with the offset — one field, two readings, on one screen. They agree while
+the device and the record share a zone, which is every device this app has run on so far.
 
 ## NEXT THREE JOBS
 
@@ -862,3 +932,17 @@ have landed. That is the price of the single table and it is accepted.
 - 18 Aug 2026 — The capture-screen alarm sits directly under the box and states the day as well as the clock — `rings 4:45pm today` / `tomorrow` / `on Monday` inside six days / `on 20th August` beyond — plus `· repeats` when the task does, his wording near verbatim.
 - 18 Aug 2026 — The repeat group's Never button lives beside the label and wears the app's sentence once a repeat is set, tapping it always the way back to never; the number and four units fit one line; the panel's number inputs fire on `change` rather than `input` — repainting per digit rebuilt the field out from under the caret, which is what "editing shifts focus with every typed number" was.
 - 18 Aug 2026 — The screen says `Later` where the engine says `Upcoming` — the band name in every record and rule is unchanged — and no slot wears the pressed mark while a search is on, since with text in the box the pool is everything not done.
+- 20 Aug 2026 — The press-vs-scroll rule left `mvp.row.js` for `mvp.tap.js` and every scrolling strip wears it — 8px on either axis, and a touch held past 600ms — the session-124 guard was ladder-only, touch-only, Y-only and unbounded in time, and the date columns and times row had none at all — 600ms is a chosen number and not a measured one.
+- 20 Aug 2026 — The search prefix tier matches the start of ANY WORD, not only the start of the title, scored 0.9 of a whole-title prefix — `Plant` found nothing while `Plants` found two, because `water plants` does not begin with `plant` and the fuzzy tier scores that pair 0.42 against a 0.5 threshold — a query is now a prefix question about words rather than about titles, which is looser than the duplicate rule and deliberately so.
+- 20 Aug 2026 — `check_search.mjs` is the seventh check — no key case can name `results`, because the key runs `resolve()` over a typed line and a search tier compares that line to stored tasks — the largest untested surface is one file smaller.
+- 20 Aug 2026 — The lead is a 0–60 slider beside the Alarm toggle and LEFT the advanced panel, his ask — one field with two controls is how two controls come to disagree — a stored lead above an hour still rings and can no longer be set from any screen.
+- 20 Aug 2026 — The duration is a slider over a ladder of real durations rather than a linear range, his ask, replacing seven controls with one — a linear slider across `duration_max`'s 182 days cannot land on twenty minutes — the ladder's rungs are a choice and the values between them are unreachable.
+- 20 Aug 2026 — An add returns to the list on the narrow layout and its toast travels with it, his words — a save has returned since session 112 and the twenty-times-a-day press had not — the Undo offer moves screens with the message rather than dying with the screen that drew it.
+- 20 Aug 2026 — Screen 4 lists every armed alarm, reached by a button after `Done`, his ask — a row there answers "when will this ring" where a tab answers "when is this owed", and the set is exactly `desiredAlarms()`'s so the screen cannot hold a second opinion — `Alarm off` on a repeating task ends the ring for the whole series, because `spawn()` inherits `alarm_type`, and the row says so.
+- 20 Aug 2026 — `nextDue()` anchors on `first_due_at || due_at` — it stepped from `due_at`, which a push overwrites, so a pushed occurrence moved the whole series, the drift `repeat.js` says it prevents — a saved edit that moves the date clears `first_due_at`, because a restated date is a new start and a push is a temporary move away from one.
+- 20 Aug 2026 — Everything that ends or moves an alarm calls `alarmCleared()` — it was exported and called by nothing while its rule was hand-copied into three files, and the two places that missed it were the in-app Done and the saved edit, so a completion kept a live snooze and an edited date rang at the old time — one function, and `check_alarm.mjs` now names it.
+- 20 Aug 2026 — The Android lock screen wears paper, ink and signal instead of ink-on-dark, his words — the one surface a person meets half asleep was the only one that did not look like the app — it needs an APK rebuild, and the palette is now duplicated in two languages rather than one.
+- 20 Aug 2026 — An overdue repeat is left where it is and the alarms screen says `will not ring again until the date moves` — a past instant is never armed and the next occurrence only exists after a Done, so one unanswered chain ends a series quietly — moving a date the app invented is refused, and the real fix is a rule about repeats that is his to make.
+- 20 Aug 2026 — An occurrence the schedule has already overtaken is closed as `cancelled` on app open and the next scheduled date is spawned, his call from three options — a repeat only advances on a Done, and a past instant is never armed, so one unanswered chain ended a series in silence — `cancelled` rather than `done` because it was not done, and the row stays on the Done tab so the miss is visible; the test is one whole interval, not one minute, so a task a person still means to clear is never moved.
+- 20 Aug 2026 — The catch-up takes no undo slot and derives the new occurrence's id from the closed one and its date — the single undo entry belongs to the last thing a person did, and two devices opening at once would otherwise add two rows — so this one write cannot be undone by pressing Undo, and the cancelled row is the way back.
+- 20 Aug 2026 — `mvp.js` split at the 400-line cap: the stylesheet repair and the loud line left as `mvp.truth.js`, handed the root and the breakpoint — a router does not need to know how a stylesheet states its version — the four loud states are unchanged and still reachable only by hand.

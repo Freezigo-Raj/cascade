@@ -73,17 +73,21 @@ class AlarmActivity : Activity() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
-            // The R2 tokens: ink, paper, signal. Stated here as literals because
-            // an Activity cannot read a stylesheet, and named in spec.md as the
-            // one place the palette is duplicated.
-            setBackgroundColor(Color.parseColor("#201e1d"))
+            // THE SAME GROUND AS THE APP (session 125, his words: "UI for
+            // alarm needs to be same colour/theme"). This screen was ink on
+            // dark while every other screen is paper, so the one surface a
+            // person meets half asleep was the one surface that did not look
+            // like the app. Paper, ink and signal, the R2 tokens, stated here
+            // as literals because an Activity cannot read a stylesheet — and
+            // named in spec.md as the one place the palette is duplicated.
+            setBackgroundColor(Color.parseColor("#f5ead8"))
             setPadding(56, 56, 56, 56)
         }
 
         root.addView(TextView(this).apply {
             text = alarm?.title ?: "Reminder"
             textSize = 26f
-            setTextColor(Color.parseColor("#f5ead8"))
+            setTextColor(Color.parseColor("#201e1d"))
             typeface = Typeface.DEFAULT_BOLD
             gravity = Gravity.CENTER
         })
@@ -93,7 +97,7 @@ class AlarmActivity : Activity() {
             root.addView(TextView(this).apply {
                 text = alarm!!.reason
                 textSize = 16f
-                setTextColor(Color.parseColor("#c67139"))
+                setTextColor(Color.parseColor("#8c491a"))
                 gravity = Gravity.CENTER
                 setPadding(0, 12, 0, 0)
             })
@@ -118,7 +122,7 @@ class AlarmActivity : Activity() {
             }
         }
 
-        root.addView(bigButton("Done", "#3d472b", "DONE", 0))
+        root.addView(bigButton("Done", "#3d472b", "DONE", 0))  // `good`, the one dark block
 
         // One button per interval, in config order. The row is built from the
         // payload, so changing the four numbers is a config edit and no more.
@@ -150,7 +154,7 @@ class AlarmActivity : Activity() {
         root.addView(TextView(this).apply {
             text = "Snooze"
             textSize = 13f
-            setTextColor(Color.parseColor("#eee7db"))
+            setTextColor(Color.parseColor("#8c491a"))
             setPadding(0, 32, 0, 0)
         })
         root.addView(row)
@@ -163,7 +167,7 @@ class AlarmActivity : Activity() {
             root.addView(TextView(this).apply {
                 text = "Move it to"
                 textSize = 13f
-                setTextColor(Color.parseColor("#eee7db"))
+                setTextColor(Color.parseColor("#8c491a"))
                 setPadding(0, 28, 0, 0)
             })
             val prow = LinearLayout(this).apply {
@@ -177,8 +181,8 @@ class AlarmActivity : Activity() {
                 prow.addView(Button(this).apply {
                     text = label
                     textSize = 16f
-                    setTextColor(Color.WHITE)
-                    setBackgroundColor(Color.parseColor("#4a4643"))
+                    setTextColor(Color.parseColor("#201e1d"))
+                    setBackgroundColor(Color.parseColor("#eee7db"))
                     layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
                         .apply { marginEnd = 12 }
                     setOnClickListener {

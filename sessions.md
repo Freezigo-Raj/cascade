@@ -2867,3 +2867,38 @@ Colour meant one thing and now means three. Accent is pressable, `#c0492b` is ov
 **Save point:** `the last time wins, a scroll is not a press, tomorrow can come to today`
 
 **Next job:** his phone pass on build 40; the nine alarm tests remain, especially test 9.
+
+---
+
+## Session 125 — 20 August 2026
+
+**Job:** His build-40 `UI_review.pptx` (four slides), a flowchart of the due date / alarm / repeat / snooze / push journey read off the code alone, and every inconsistency that reading found.
+
+**Stage before / after:** 5 / 5
+
+**Files changed:**
+- `shell/catchup.js` — created. Repeats the calendar walked past, stepped forward on open
+- `shell/mvp.truth.js` — created. The stylesheet repair and the loud line, out of `mvp.js` at the cap
+- `shell/mvp.tap.js` — created. The press-vs-scroll rule, once, for every scrolling strip
+- `shell/mvp.alarms.js` — created. Screen 4, every armed alarm
+- `shell/check_search.mjs` — created. The seventh check
+- `shell/mvp.row.js`, `shell/mvp.chips.js` — the shared guard on the ladder, both date columns and the times row
+- `shell/search.js` — the prefix tier is per word
+- `shell/repeat.js` — `nextDue()` anchors on `first_due_at || due_at`
+- `shell/mvp.list.js` — Done calls `alarmCleared()`; the `Alarms` button after the `Done` tab
+- `shell/mvp.edit.js` — the lead slider beside the Alarm toggle; an add returns to the list carrying its toast; a saved edit that moves the date clears the alarm's leftovers and `first_due_at`
+- `shell/mvp.panel.js` — the Lead group removed; the duration is a ladder slider; the repeat sentence is not truncated
+- `shell/mvp.js` — the `alarms` route, and the toast that travels with a back
+- `shell/mvp.edit.css`, `shell/mvp.chrome.css` — the two sliders, the wrapping repeat chip, screen 4
+- `shell/check_alarm.mjs` — five assertions for this session's three behaviour changes
+- `android/…/AlarmActivity.kt` — paper, ink and signal instead of ink on dark
+- `shell/render.js` 41, `index.html`, `shell/mvp.css`, `shell/mvp.edit.css` — the six version sites
+- `spec.md`, `MVP.md` — screen 4, the two sliders, eleven decision-log entries
+
+**Tests:** all seven green. gate2 PASS, selftest 28/28, gate4 142/142, check_render exact, check_loud 6/6, check_alarm PASS (twelve new assertions), check_search PASS (eleven). Log sealed at 490. Honest gap recorded: no check reaches `catchUpRepeats()` itself, only the pure functions under it.
+
+**What the flowchart found.** Ten inconsistencies, four fixed in code, two recorded. The four: the in-app Done left a spent snooze and an unanswered marker behind where the lock-screen Done cleared both; a saved edit that moved the due date cleared neither, and `ringAt()` prefers a snooze still ahead, so the alarm rang at a time the task no longer had; `nextDue()` stepped from `due_at` after a push had overwritten it, so a pushed occurrence moved the whole series; and `alarmCleared()` — the function stating the rule all three of those break — was exported and called by nothing.
+
+**His call on the repeat rule, made this session:** step it forward on open. `overtaken()` asks whether the next scheduled date has itself arrived — one interval, not one minute — and `catchup.js` closes the stranded occurrence as `cancelled` and spawns the schedule's next future date, before the list draws and before the alarms arm. The cancelled row shows on the Done tab, so the miss stays visible. No undo slot is spent and the new id is derived, so two devices opening at once write one row. `mvp.js` crossed the 400-line cap on the way and split by concern: `mvp.truth.js`. **Recorded, not fixed:** `repeatSentence()` reads `due_at` without its offset and `ringSentence()` reads it with one — they agree on every device this has run on, and they are one field with two readings on one screen.
+
+**Still owed:** the nine alarm tests on a device, especially test 9; the APK rebuild, which this session's Kotlin change now needs on its own account; Gates 1–6, all waiting on his hand since session 101.

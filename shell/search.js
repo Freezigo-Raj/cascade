@@ -55,7 +55,15 @@ function diceWords(a, b) {
 function tierOf(query, target, threshold) {
   if (!query || !target) return { tier: 0, score: 0 };
   if (query === target) return { tier: 1, score: 1 };
+  // THE PREFIX TIER IS PER WORD (session 125, his slides): `Plant` found
+  // nothing while `Plants` found two, because the tier only ever compared the
+  // START OF THE WHOLE TITLE. `water plants` does not begin with `plant`, so a
+  // typed prefix of any word but the first fell through to the fuzzy tier and
+  // usually missed it — 0.42 against a 0.5 threshold for that exact pair.
+  // A word beginning with what was typed is what a person means by searching.
   if (target.startsWith(query)) return { tier: 2, score: query.length / target.length };
+  if (tokens(target).some((w) => w.startsWith(query)))
+    return { tier: 2, score: (query.length / target.length) * 0.9 };
   const shared = diceWords(query, target);
   if (shared > 0) return { tier: 3, score: shared };
   const fuzzy = Math.max(diceBags(query, target), shared);

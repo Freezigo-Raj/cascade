@@ -57,7 +57,35 @@ D-1: **Typing the thought is the whole of the work.**
 
 **Screen 1 — the list.** Three tabs, a toggle inside the first, and a search box.
 **Screen 2 — capture and edit.** The same screen for both. Reached by `+` from the list, or by tapping a task.
+**Screen 4 — the alarms.** Reached by `Alarms`, after `Done` in the tab row. Every alarm the shell will arm, in the order they will ring, with the controls a row cannot carry.
+
 **Screen 3 — the account.** Reached by `ACCOUNT` on the list. Who is signed in, four counts, an export, and a sign-out. It exists because sign-out had a screen for signing in and no control anywhere for leaving.
+
+---
+
+## Screen 4, the alarms
+
+Every task where `canAlarm()` holds and `alarm_type` is not `none` — the same filter the bridge arms against, sorted by `ringAt()`, the same instant that travels in the payload. A screen that listed anything else would be a second opinion about what is going to happen.
+
+| Control | Count | What it does |
+|---|---|---|
+| Title | one per row | Opens screen 2 with the task loaded |
+| Sentence | one per row | `rings 4:45pm on Monday`, or `snoozed until …` while a snooze is pending, or `was due to ring …` for one that has gone |
+| Note | 0 or 1 | The repeat in words, the unanswered count, and — for a ring already in the past — `will not ring again until the date moves`. That sentence covers an occurrence overdue by LESS than one interval; past that, the app has already stepped it forward (below) |
+| Lead | one per row | The same 0-to-60 slider as the capture screen, writing the same field. It moves the RING |
+| Alarm off | one per row | `alarm_type = "none"`. On a repeating task this ends the ring for the SERIES, because `spawn()` inherits `alarm_type` |
+| Clear snooze | 0 or 1 | Only while one is pending. The one piece of alarm state a person sets without seeing it |
+| Stop repeat | 0 or 1 | Only on a repeating task. `recurrence = null`; the date and the alarm are left alone |
+| Delete | one per row | The task, with undo. On a repeat this ends the series: a spawn needs a closed occurrence to count from |
+| Move it to | 0 or more | The push ladder, `readPushOptions()`. It moves the DATE. The distinction the lock screen already makes: a snooze moves the telling, a push moves the task |
+
+**Repeats the calendar walked past are stepped forward on open** (session 125, his call). An occurrence whose own date plus one whole interval has passed is closed as `cancelled` and the schedule's next future date is spawned, before the list draws and before the alarms are armed. `cancelled` and not `done`, because it was not done: the row keeps `closed_at` and shows on the Done tab beside the finished ones, so the miss is visible and countable. One interval and not one minute — a weekly task an hour late is still this week's task. Nothing else in the app ever moves a date on its own: a one-off is left exactly where it is, however late.
+
+**The catch-up takes no undo slot.** Undo holds one entry and it belongs to the last thing a person did. The cancelled row is the way back.
+
+**It is a screen and not a fourth tab.** The three tabs answer "when is this owed" and share one row shape, one toggle and one search. A row here answers "when will this ring", which is a different question about a smaller set.
+
+**The empty state is the one exception to "an empty list screen shows nothing".** `Alarms` is a button a person pressed on purpose, and a blank answer to a press reads as broken rather than empty. It says what makes an alarm and stops.
 
 ---
 
@@ -82,6 +110,7 @@ Today  ·  Tomorrow  ·  Upcoming
 | Delete | one per row | A bin glyph; the word stays for screen readers. The row goes for real. One step of undo holds the only copy |
 | Push | 4 or 5 per row | Moves the date without opening the task. Each says only where it lands. A column that scrolls vertically, capped at two and a half rungs |
 | Undone | one per Done row | Brings the task back |
+| Alarms | 1 | After `Done` in the tab row (session 125, his ask). Not a tab: it opens screen 4, which lists every armed alarm |
 | `+` | 2 | Opens screen 2 empty. One in the bar; one floats 60px at the bottom right on the narrow layout (session 119), where a thumb is. The wide layouts hide the float because the capture box is already on screen |
 
 **A row is a title and a sentence.** No badge, no verb, no minutes.
@@ -170,11 +199,11 @@ The box is at the top. The tap buttons are with it. The matching tasks are below
 | `✓ <date>` | 1 | The date the engine read. Tapping it removes those words from the box |
 | Type | 1 + 1 | A dropdown of all fourteen types (session 122, his call — and what the design always drew: `⟨action ▾⟩`). The engine's guess is its value; changing it is the tap. The ⋯ beside it opens the advanced panel |
 | Advanced | 1 | Opens a panel on the same screen. Everything that corrects what the typing already said, in one place |
-| Takes about | 1 + 3 + 4 | In the advanced panel. A number box and `min` / `hour` / `day`, plus four suggestions. Sets `duration_tap`; the label says whether the number is the person's or the verb's |
+| Takes about | 1 | In the advanced panel. A SLIDER (session 125, his call), reading beside it. It runs a ladder of the durations people actually give — 5 min to 7 days — rather than a linear range, because `limits.duration_max` is 182 days and a linear slider across that cannot land on twenty minutes. Sets `duration_tap`; the label says whether the number is the person's or the verb's. The number box, the three unit chips and the four suggestion chips are gone: seven controls for one number |
 | How firm | 4 | In the advanced panel. `auto` / `normal` / `soft` / `hard`. `auto` gives the marker words their say back, so the tap is undoable |
 | Repeat | 1 | In the advanced panel. An interval: every N days, weeks, months or years (`year` added session 123), the number and units on one line (session 124). The Never button sits beside the label and wears the app's reading once a repeat is set — `every Wednesday at 5pm` — tapping it always the way back to never. Marking one done spawns the next, from the list AND from the lock screen (session 123) |
-| Alarm | 2 | ON THE CAPTURE SCREEN, directly under the box, while the line carries an exact time (sessions 123-124): a toggle plus the instant it will ring with its day — `rings 4:45pm today` / `tomorrow` / `on Monday` / `on 20th August` — and `· repeats` when the task does. The panel keeps the Lead input; without a time the panel row is four words: `Needs an exact time.` (session 122) |
-| Lead | 1 | Minutes before the task. 15 by default, changed per task. The note under it states the ring length, the auto-snooze interval and the limit |
+| Alarm | 2 | ON THE CAPTURE SCREEN, directly under the box, while the line carries an exact time (sessions 123-124): a toggle plus the instant it will ring with its day — `rings 4:45pm today` / `tomorrow` / `on Monday` / `on 20th August` — and `· repeats` when the task does. The lead slider sits on the same row (session 125); without a time the panel row is four words: `Needs an exact time.` (session 122) |
+| Lead | 1 | A SLIDER beside the Alarm toggle, 0 to 60 minutes, reading its own value (session 125, his ask). 15 by default. It LEFT the advanced panel in the same session: one field, one control. Cost stated — `alarm_defaults.max_lead_min` is a week and this reaches an hour, so a longer lead is still honoured and can no longer be set |
 | Notes | 1 | In the advanced panel, at the foot of it. Read, never matched: a note reaches neither search nor the duplicate warning |
 | Low / Normal / High | 3 | Normal is the default and is marked |
 | `⟨ task ✕ ⟩` | 1 | Only while editing. The ✕ leaves without saving |
