@@ -131,6 +131,27 @@ export function mountList(root, { openEdit, openAccount, openAlarms, onTasks } =
       await remember("pin", task);
       await tasks.update(id, { ...task, pinned: !task.pinned, updated_at: now() });
     } else if (what === "delete") {
+      // A DELETE IS A CANCELLATION (session 130, his ask: "deleted tasks should
+      // also show as Cancelled in the Done tab").
+      //
+      // The bin used to erase the row, and a task that leaves no trace is a
+      // task nobody can answer a question about: what was that thing I dropped
+      // last Tuesday, and did I drop it on purpose. Cancelled says both. It is
+      // also the same state the catch-up and the lock screen already write, so
+      // the Done tab holds one kind of closed row and not two.
+      //
+      // Undo still restores it whole, and now so does Revive, which is the
+      // difference between the two: undo is for the press you regret in the
+      // next ten seconds, Revive is for the one you regret next week.
+      await remember("delete", task);
+      await tasks.update(id, alarmCleared({
+        ...task, task_state: "cancelled", closed_at: now(), updated_at: now(),
+      }));
+      say(`Cancelled "${task.title}"`);
+    } else if (what === "purge") {
+      // THE ONE PATH THAT STILL ERASES, and it is only reachable from a row
+      // that is already closed. Without it nothing could ever leave the store,
+      // and a list you cannot clean is one you stop reading.
       await remember("delete", task);
       await tasks.remove(id);
       say(`Deleted "${task.title}"`);

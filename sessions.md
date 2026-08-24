@@ -3000,3 +3000,47 @@ Colour meant one thing and now means three. Accent is pressable, `#c0492b` is ov
 **On his item 4** — a revived task with an alarm, then edited, going missing — the cause is almost certainly the same catch-up collision as Revive, since a revived stale repeat was being cancelled on the next open whether or not it had been edited. Worth re-running on 45 before anything else is built for it.
 
 **Still owed:** the APK rebuild to alarm shell build 4. The nine alarm tests. Gates 1-6.
+
+---
+
+## Session 130 — 20 August 2026
+
+**Job:** Two reports from his build-45 pass.
+
+**Stage before / after:** 5 / 5
+
+**Files changed:**
+- `shell/alarm.apply.js` — the instant parse reads its offset
+- `shell/check_writes.mjs` — drift assertions at two offsets, with a fresh fixture
+- `shell/mvp.list.js` — the bin cancels; `purge` is the only erase
+- `shell/mvp.row.js` — `Delete for good` on a Done row; the bin says `Cancel`
+- `shell/mvp.alarms.js` — `Delete` is `Cancel task` on both views
+- `shell/render.js` 46 and the five other version sites, `spec.md`, `MVP.md`
+
+**Tests:** all eight green.
+
+**The one that mattered.** One line read a local wall clock as UTC. On +05:30 that put every lock-screen Done's `updated_at` five and a half hours in the future, and the database's newest-wins trigger then refused every later write to that task in silence. Revive was never broken. Two sessions were spent looking at the wrong half of it — the catch-up collision in 129 was real and also a cause, which is what made this one hard to see.
+
+**Still owed:** the APK rebuild to alarm shell build 4. The nine alarm tests. Gates 1-6.
+
+---
+
+## Session 131 — 20 August 2026
+
+**Job:** His `UI_review_R2.pptx`, re-uploaded with new contents. Five items, three of which session 130 never saw.
+
+**Stage before / after:** 5 / 5
+
+**Files changed:**
+- `shell/mvp.edit.js` — `||` not `??`: the stored-date fallback, finally reached
+- `shell/mvp.account.js` — the APK link opens externally and is drawn once
+- `shell/alarm.bridge.js` — four rungs to the lock screen; expected shell 5
+- `android/…/AlarmActivity.kt` — the pickers on their own line, `Pick time` added
+- `android/…/CascadeAlarmPlugin.kt` — shell build 5
+- `shell/render.js` 47 and the five other version sites, `spec.md`, `MVP.md`
+
+**Tests:** all eight green.
+
+**Process failure, recorded.** Session 130 was handed this file and did not open it, answering only the two items he had also typed in chat. Three items sat unread in the deck. A re-uploaded file with a familiar name is a new file.
+
+**Still owed:** the nine alarm tests. Gates 1-6.

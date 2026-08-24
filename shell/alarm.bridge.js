@@ -83,11 +83,13 @@ export function desiredAlarms(all, now) {
     // the push targets, which are load-aware and therefore need every task.
     for (const c of listOnly(all, partAConfig, now).cards) {
       cards.set(c.card_id, c.card_reason_short);
-      // FIVE, IN A ROW THAT SCROLLS (session 128, his slide). Two was right
-      // while the row was a fixed pair of wide buttons; a sideways scroller
-      // costs the same height whatever it holds, and two rungs meant a push
-      // that could not reach tomorrow without opening the app.
-      targets.set(c.card_id, (c.push_options ?? []).slice(0, 5));
+      // FOUR (session 131, his slide: "remove tomorrow"). Five reached
+      // `Tomorrow` on a task with an exact time, and a decision to move
+      // something to another day is one worth being awake for — the lock screen
+      // is for delaying by hours, and the two pickers beside the rungs cover
+      // everything further out. On a coarser task the first four are its own
+      // first four, unchanged but for the one that fell off the end.
+      targets.set(c.card_id, (c.push_options ?? []).slice(0, 4));
     }
   } catch (e) {
     // A sentence is decoration. A missing one must not stop an alarm ringing.
@@ -259,15 +261,18 @@ export const PERMISSIONS = [
  * written against, and the account screen draws the difference as the loud
  * sentence it is. An old plugin with no `version()` at all reads as build 1.
  */
-// Build 4 (session 128): two new verbs, `CANCEL` and `DISMISS`, a `repeats`
-// flag in the payload, and a date-and-time picker on the lock screen. An APK on
-// build 3 still rings and still answers Done, Snooze and Push — the two new
-// buttons simply are not there — so the account screen asks for the rebuild
-// rather than leaving the buttons quietly missing.
+// Build 5 (session 131): the two pickers sit on their own line below the rungs
+// and `Pick time` is a one-dialog answer for the same day. Nothing about the
+// payload changed, so an APK on build 4 rings correctly and simply wears the
+// older arrangement.
+//
+// Build 4 (session 128): two new verbs, `CANCEL` and `DISMISS`, and a `repeats`
+// flag in the payload. An APK below build 4 answers Done, Snooze and Push and
+// has no cancel buttons at all.
 //
 // Build 3 (session 126): the lock screen wears paper instead of ink and draws
 // the shell build.
-export const ALARM_SHELL_EXPECTED = 4;
+export const ALARM_SHELL_EXPECTED = 5;
 
 /**
  * What the phone's alarm shell is holding right now, straight from `list()`.

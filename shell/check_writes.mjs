@@ -224,5 +224,40 @@ const adds = (s) => s.calls.filter((c) => c[0] === "add");
   say(adds(store).length === 0, "nothing is spawned");
 }
 
+// ------------------------------------- session 130, the stamp that blocked sync
+//
+// `DONE` stamps `updated_at` past the local copy so newest-wins cannot
+// resurrect a finished task. It read the stored instant WITHOUT its offset, so
+// on +05:30 every stamp landed five and a half hours in the future — and
+// `schema.sql`'s trigger drops any later write carrying a smaller timestamp.
+// Reviving that task worked, reached the server, and was silently refused; the
+// next pull put it back in Done, for as long as it took the clock to catch up.
+//
+// THE FIXTURE HAS TO BE FRESH, and that is the whole reason this went unseen:
+// the stamp is `max(tsMs, stored + 1000, now)`, so a task last written days ago
+// hides the fault behind `now`. It only bites when the task was touched inside
+// the offset's own width — which is exactly a Done followed by a Revive.
+//
+// The assertion is on the DRIFT, because the value never looked wrong: an
+// ordinary ISO string, five and a half hours out.
+const isoAtOffset = (t, off) => {
+  const sign = off[0] === "-" ? -1 : 1;
+  const mins = sign * (Number(off.slice(1, 3)) * 60 + Number(off.slice(4, 6)));
+  return new Date(t + mins * 60000).toISOString().slice(0, 19) + off;
+};
+
+for (const off of ["+05:30", "-08:00"]) {
+  const fresh = isoAtOffset(Date.now(), off);
+  const store = fakeStore([task({
+    due_at: fresh, created_at: fresh, updated_at: fresh,
+  })]);
+  await applyOutcome(store, "t1", "DONE", Date.now(), "t2");
+  const drift = Date.parse(store.rows()[0].updated_at) - Date.now();
+  say(drift < 60_000,
+      `a DONE stamp on a task just written at ${off} is not in the future — an offset dropped here blocks every later write`);
+  say(drift > -60_000, `and not in the past at ${off}, or newest-wins could resurrect it`);
+}
+
+
 console.log(`\n${bad === 0 ? "CHECK WRITES: PASS" : `CHECK WRITES: ${bad} FAILED`}\n`);
 process.exit(bad ? 1 : 0);

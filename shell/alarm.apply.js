@@ -26,7 +26,30 @@ const { pushed } = await import(`./push.js${v}`);
 const { spawn } = await import(`./repeat.js${v}`);
 const { nowLocal } = await import(`./mvp.clock.js${v}`);
 
-const ms = (iso) => Date.parse(iso.slice(0, 19) + "Z");
+/**
+ * A stored instant as epoch milliseconds, OFFSET INCLUDED.
+ *
+ * IT USED TO DROP THE OFFSET (session 130, his report: "Revive works, but after
+ * syncing it comes back to Done"). `Date.parse(iso.slice(0,19) + "Z")` reads a
+ * local wall clock as if it were UTC, which for +05:30 lands five and a half
+ * hours LATE. `DONE` stamps `updated_at` with
+ * `max(tsMs, ms(updated_at) + 1000, Date.now())`, so every lock-screen Done
+ * wrote a timestamp five and a half hours in the future — and `schema.sql`'s
+ * `cascade_task_newer_wins` trigger drops any later write carrying a smaller
+ * one. The revive was correct, reached the server, and was silently returned as
+ * OLD; the next pull put the task back in Done. Every write to that task was
+ * blocked until the clock caught up, and each Done pushed the wall further out.
+ *
+ * The bridge and the alarms screen have always read the offset. This file was
+ * the one place that did not, and it is the one place whose number goes into a
+ * comparison the database makes.
+ */
+const ms = (iso) => {
+  const off = iso.slice(-6);
+  const sign = off[0] === "-" ? -1 : 1;
+  const mins = sign * (Number(off.slice(1, 3)) * 60 + Number(off.slice(4, 6)));
+  return Date.parse(iso.slice(0, 19) + "Z") - mins * 60000;
+};
 
 /**
  * A press, or the end of a chain, becomes a record.

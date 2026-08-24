@@ -483,7 +483,17 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
     // typed line's date when it has one, and otherwise the stored task's, which
     // is exactly what `keepDate` writes back. One rule, read in both places.
     const held = boundId && !dropDate ? heldTask : null;
-    const dueAt = out.task.due_at ?? (held?.due_at ?? null);
+    // `||` AND NOT `??`, AND THAT ONE CHARACTER PAIR IS THE WHOLE DEFECT
+    // (session 131, his slide: a task with an alarm still reading "An alarm
+    // needs an exact time").
+    //
+    // `resolve()` returns `due_at: ""` for a line with no date — an empty
+    // string, not null. `??` only falls through on null and undefined, so
+    // `dueAt` came out as `""`, the fallback to the stored date never ran, and
+    // `if (hasTime && dueAt)` failed on the empty string while `hasTime` was
+    // perfectly true. Sessions 126 and 129 each fixed a real half of this and
+    // both were reading past this line.
+    const dueAt = out.task.due_at || held?.due_at || null;
     const hasTime = out.task.due_at ? Boolean(out.task.has_time) : Boolean(held?.has_time);
     if (hasTime && dueAt) {
       const on = alarmType !== "none";

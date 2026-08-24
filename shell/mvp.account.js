@@ -204,7 +204,22 @@ export function mountAccount(root, { onBack, onSignedOut } = {}) {
           // reason to want it is having no APK at all.
           const apk = el("a", "act apk-link", "Download the alarm APK");
           apk.href = "https://freezigo-raj.github.io/cascade/app-debug.apk";
-          apk.setAttribute("download", "");
+          // `data-perm` IS WHAT MAKES IT ONE BUTTON (session 131, his slide:
+          // "it also shows 2 buttons sometimes"). This block redraws whenever
+          // the app comes back from a system settings screen, and it clears the
+          // rows it owns by removing every `[data-perm]` node first. A node
+          // without the mark survived that sweep and a second copy was appended
+          // beside it. It is not decoration on the other rows; it is the sweep.
+          apk.dataset.perm = "apk";
+          // `_blank`, NOT `download` (session 131, his slide: "download does not
+          // work, it should run the file after downloading"). The `download`
+          // attribute is ignored across origins, and a WebView asked to navigate
+          // to an APK on its own host does nothing at all — no download, no
+          // error, no sound. `target="_blank"` is the one signal Capacitor
+          // treats as "this is not for me": the link leaves for the system
+          // browser, which downloads it and offers to open it, which is where
+          // Android's installer lives.
+          apk.target = "_blank";
           apk.rel = "noopener";
           ring.appendChild(apk);
           const p = await bridge.alarmPermissionStatus();

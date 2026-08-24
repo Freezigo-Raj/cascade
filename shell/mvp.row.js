@@ -123,8 +123,11 @@ export function rowOf(card, { all, tab, slot, narrow, act, openEdit }) {
     pin.appendChild(glyph(PIN_PATH, !!task?.pinned));
     acts.appendChild(pin);
     const bin = button("", () => act(card.card_id, "delete"), "icon");
-    bin.title = "Delete";
-    bin.setAttribute("aria-label", "Delete");
+    // The glyph is a bin and the word is `Cancel`, because that is what it does
+    // now (session 130): the row closes as cancelled and keeps its place on the
+    // Done tab. `Delete for good` on that row is the only thing that erases.
+    bin.title = "Cancel";
+    bin.setAttribute("aria-label", "Cancel this task");
     bin.appendChild(glyph(BIN_PATH, false));
     acts.appendChild(bin);
     // The `Workflow` tag LEFT the row (session 119). MVP.md has said since
@@ -143,6 +146,11 @@ export function rowOf(card, { all, tab, slot, narrow, act, openEdit }) {
     const revive = button("Revive", () => act(card.card_id, "undone"));
     revive.title = "Bring it back to the list";
     acts.appendChild(revive);
+    // The only control in the app that erases a task, and it lives here because
+    // this row is already closed (session 130). The bin on an open row cancels.
+    const purge = button("Delete for good", () => act(card.card_id, "purge"), "danger");
+    purge.title = "Remove it from the store";
+    acts.appendChild(purge);
   }
   body.appendChild(acts);
   row.appendChild(body);

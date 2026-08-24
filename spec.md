@@ -43,7 +43,7 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
   contract     54
   config       a.19
   answer_key   28
-  shell        45
+  shell        47
   gate1        signed on example 35
   gate2        signed on contract 32
   gate3        signed on shell 1
@@ -79,52 +79,42 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 
 ## THIS SESSION'S JOB
 
-Session 129: his build-44 phone pass — seven reports, and the first is that alarms stopped ringing.
+Session 131: his `UI_review_R2.pptx`, re-uploaded with new contents. THE DECK WAS READ THIS TIME.
+Session 130 answered the two items he had typed in chat and never opened the file, and three of its
+five items were only in the file — a stated failure, and the reason the first thing this session did
+was dump every `<a:t>` in every slide rather than trusting a filename.
 
-**A VERSIONLESS IMPORT, AND IT IS THE ONE THING THIS PROJECT'S CACHE SCHEME FORBIDS.** Session 126
-wrote `import { step } from "./repeat.js"` in `alarm.js` — no `?v=`. Every other import in the shell
-passes its own version down the graph; that one edge opted out, so the browser answers it from
-whatever it already had. A page on build 44 can be running a `repeat.js` from build 40, and if the
-cached copy has no `step` export the module fails to LINK — which takes down `alarm.js` and
-everything importing it, the bridge included. It is the best candidate for a phone that stopped
-ringing and nothing else changed in the arming pass.
+**ONE CHARACTER PAIR HELD A DEFECT OPEN THROUGH THREE SESSIONS.** His slide: a task with an alarm
+still reading `An alarm needs an exact time`.
 
-`gate2.py` refuses one now. Two engine files are a stated warning rather than a failure —
-`resolve.js` and `resolve.stage3.js` are imported as plain modules by `gate4.mjs`, `check_render.mjs`
-and the key runner, which have no version to pass. They are the next thing to convert.
+`resolve()` returns `due_at: ""` for a line with no date — an EMPTY STRING, not null. The alarm row
+read `out.task.due_at ?? held?.due_at`, and `??` falls through on null and undefined only. So `dueAt`
+came out as `""`, the fallback to the stored date never ran, and `if (hasTime && dueAt)` failed on
+the empty string while `hasTime` was perfectly true. Session 126 wrote the fallback rule and session
+129 fixed its timing; both were correct and both read straight past this. It is `||` now.
 
-**AND THE SCREEN NOW SAYS WHAT THE PHONE ACTUALLY HOLDS.** Every alarm view until now drew what the
-app INTENDED to arm. A silent phone has three possible causes — a missing permission, an APK too
-old, or the arming pass itself — and no screen could separate them. `armedAlarms()` reads the shell's
-own `list()`, and a row the shell does not hold says `NOT armed on this phone`.
+**THE PICKERS SIT ON THEIR OWN LINE**, his slide, and there are TWO. Inside the scrolling rung row
+`Pick…` was reachable only by scrolling past every approximation of the answer. `Pick time` is one
+dialog for the common case — same day, different hour — and a time already gone means TOMORROW,
+because 9am chosen at 6pm can only be the morning and a push that lands overdue is a trap.
+`Pick date & time` is the whole thing. Both are drawn whatever the payload carried: they invent no
+date, the person is typing one.
 
-**BACK FROM SCREEN 4 WAS A LOOP.** A back gesture out of the editor landed in `popstate` with
-`screen: "alarms"`, and `showAlarms()` pushed a FRESH history entry every time — so going back put
-the alarms screen on top of itself, and the next back popped into the same place again. Restoring a
-screen is not navigating to it: `popstate` passes `push: false`.
+**`Tomorrow` LEFT THE LOCK SCREEN**, his slide. Four rungs rather than five. Moving something to
+another day is a decision worth being awake for; the lock screen is for delaying by hours, and the
+pickers cover everything further out.
 
-**REVIVE WORKED PERFECTLY AND WAS UNDONE BEFORE HE COULD SEE IT.** Not the sync, his guess, and a
-fair one: `catchup.js` runs on every open and closes any repeat the calendar has walked past, so
-reviving a week-old weekly task put a stale occurrence back and the next open cancelled it again.
-A revived repeat now lands on the next date its own rule gives, with `first_due_at` cleared — a
-repeat only exists in the future, and a push that moved the occurrence being closed has nothing to
-say about the one being reopened. A one-off is reopened exactly where it was, overdue and visibly so.
+**THE APK LINK DID NOTHING, AND THERE WERE SOMETIMES TWO OF IT.** Both his, and they are unrelated
+bugs in one line of code. The `download` attribute is ignored across origins, and a WebView asked to
+navigate to an APK on its own host does nothing at all — no download, no error, no sound.
+`target="_blank"` is the one signal Capacitor reads as "this is not for me", so the link leaves for
+the system browser, which downloads it and offers to open it. And the account screen's alarm block
+redraws whenever the app returns from a system settings screen, clearing the rows it owns by
+removing every `[data-perm]` node first — the link carried no such mark, survived the sweep, and a
+second copy was appended beside it.
 
-**THE EDITOR LOST THE ALARM AGAIN, AND SESSION 126'S FIX WAS HALF OF ONE.** The row falls back to
-the STORED date when the typed line carries none — and it looked that record up with
-`all.find(...)`, where `all` is filled by `reload()`, which lands AFTER `bind()`. On the first paint
-the list was empty, the fallback found nothing, and nothing repaints an untouched screen. The screen
-keeps the record it was handed.
-
-**CANCELLED IS NOT DONE.** The Done tab has held both states since the catch-up was built and every
-row said `Done`, so a task the calendar walked past read as an achievement.
-
-**REPEATS ARE A SECOND VIEW ON SCREEN 4**, his ask: "otherwise removing them becomes hard". The two
-lists overlap and neither contains the other — a repeat with no alarm is invisible on the first, a
-one-off alarm invisible on the second. Stop repeat, Alarm off and Delete on every row.
-
-**AND THE APK IS A LINK ON THE ACCOUNT SCREEN**, next to the sentence that tells a person the shell
-is too old. That sentence was only ever useful to the person who could build it.
+**Shell build 5.** Nothing about the payload changed, so an APK on build 4 rings correctly and
+simply wears the older arrangement of the same buttons.
 
 ## NEXT THREE JOBS
 
@@ -913,3 +903,11 @@ have landed. That is the price of the single table and it is accepted.
 - 20 Aug 2026 — A cancelled row says `Cancelled`, not `Done` — the tab has held both states since the catch-up was built — a task the calendar walked past was reading as an achievement.
 - 20 Aug 2026 — Screen 4 has a second view listing everything that repeats, alarm or not, his ask — the two lists overlap and neither contains the other, so a repeat with no alarm had nowhere to be removed from.
 - 20 Aug 2026 — The account screen links the APK at freezigo-raj.github.io/cascade/app-debug.apk, his ask — the sentence asking for a rebuild was only useful to the person who could build one — an anchor rather than a button, so it copies and long-presses like an address.
+- 20 Aug 2026 — `alarm.apply.js` reads a stored instant WITH its offset — it dropped one, so every lock-screen Done stamped `updated_at` five and a half hours into the future and the database's newest-wins trigger silently refused every later write to that task, including a Revive — the bridge and the alarms screen always read the offset; this was the one place whose number is compared by Postgres.
+- 20 Aug 2026 — `check_writes.mjs` asserts the DRIFT of a Done stamp at a positive and a negative offset, against a task written seconds ago — the stamp is `max(stored + 1s, now)`, so a stale fixture hides the fault behind `now` and the first version of the assertion passed against the broken line.
+- 20 Aug 2026 — The bin cancels rather than erases, his ask — a task that leaves no trace is one nobody can answer a question about later — it writes the same `cancelled` state the catch-up and the lock screen write, so the Done tab holds one kind of closed row.
+- 20 Aug 2026 — `Delete for good` on a Done row is the only control that erases a task — without one the store can never be cleaned — it is reachable only from a row that is already closed, so erasing costs two decisions instead of one.
+- 20 Aug 2026 — The alarm row falls back to the stored date with `||` and not `??` — `resolve()` returns `due_at: ""` for a dateless line, an empty string that `??` passes straight through — sessions 126 and 129 each fixed a real half of this defect and both read past the operator.
+- 20 Aug 2026 — The lock screen carries four rungs and two pickers on a line of their own, his slides — `Pick…` inside the scroller sat behind four approximations of the exact answer, and moving a task to another day is a decision worth being awake for — `Pick time` is one dialog and sends a time already gone to tomorrow.
+- 20 Aug 2026 — The APK link is `target="_blank"` and carries `data-perm` — `download` is ignored across origins and a WebView navigating to an APK on its own host does nothing at all, and the account's alarm block sweeps `[data-perm]` nodes on every redraw so an unmarked link was duplicated on the way back from a settings screen.
+- 20 Aug 2026 — A re-uploaded file with the same name is a NEW file — session 130 answered the two items typed in chat and never opened `UI_review_R2.pptx`, and three of its five items existed only in the deck — every slide's text is dumped before anything is built.

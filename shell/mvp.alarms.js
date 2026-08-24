@@ -222,11 +222,12 @@ export function mountAlarms(root, { onBack, openEdit } = {}) {
     if (task.recurrence) {
       acts.appendChild(button("act pill", "Stop repeat", () => write(task, { recurrence: null })));
     }
-    acts.appendChild(button("act pill danger", "Delete", async () => {
-      await remember("delete", task);
-      await tasks.remove(task.id);
-      await reload();
-    }));
+    // Cancel, not erase (session 130): the same rule the bin on a list row
+    // follows, so a task removed here is still answerable for on the Done tab.
+    acts.appendChild(button("act pill danger", "Cancel task", () =>
+      write(task, alarmCleared({
+        ...task, task_state: "cancelled", closed_at: nowLocal(),
+      }))));
     row.appendChild(acts);
 
     // THE PUSH LADDER LEFT THIS SCREEN (session 126, his slide: "remove this
@@ -257,11 +258,10 @@ export function mountAlarms(root, { onBack, openEdit } = {}) {
       acts.appendChild(button("act pill", "Alarm off", () =>
         write(task, alarmCleared({ ...task, alarm_type: "none", alarm_lead_min: null }))));
     }
-    acts.appendChild(button("act pill danger", "Delete", async () => {
-      await remember("delete", task);
-      await tasks.remove(task.id);
-      await reload();
-    }));
+    acts.appendChild(button("act pill danger", "Cancel task", () =>
+      write(task, alarmCleared({
+        ...task, task_state: "cancelled", closed_at: nowLocal(),
+      }))));
     row.appendChild(acts);
     return row;
   }

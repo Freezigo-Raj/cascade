@@ -78,7 +78,7 @@ Every task where `canAlarm()` holds and `alarm_type` is not `none` — the same 
 | Stop repeat | 0 or 1 | Only on a repeating task. `recurrence = null`; the date and the alarm are left alone |
 | Delete | one per row | The task, with undo. On a repeat this ends the series: a spawn needs a closed occurrence to count from |
 
-**The lock screen carries two cancels** (session 128). `Cancel alarm` ends this ring and touches nothing else, so a repeat rings again on its own schedule. `Cancel this one` / `Cancel task` closes the occurrence as `cancelled` and hands a repeat its next occurrence. The wording follows the payload's `repeats` flag; the shell cannot see the record. It also carries five push targets in a sideways scroller and a `Pick…` button opening a date then a time dialog, which is the one place the Android shell composes a date.
+**The lock screen carries four push rungs, two pickers and two cancels** (sessions 128 and 131). The rungs scroll sideways; `Tomorrow` and beyond are not offered there, because moving a task to another day is a decision worth being awake for. `Pick time` is one dialog for the same day and sends a time already gone to tomorrow; `Pick date & time` is two. Both sit on their own line below the rungs. `Cancel alarm` ends this ring and touches nothing else, so a repeat rings again on its own schedule. `Cancel this one` / `Cancel task` closes the occurrence as `cancelled` and hands a repeat its next occurrence. The wording follows the payload's `repeats` flag; the shell cannot see the record. It also carries five push targets in a sideways scroller and a `Pick…` button opening a date then a time dialog, which is the one place the Android shell composes a date.
 
 **A repeat's ring follows its rule, not its open occurrence** (session 126). When the derived instant has gone, `nextRing()` steps it forward through the recurrence until it is ahead of the clock, so the screen can always answer "when next". The record is untouched: `due_at` still says when this occurrence was owed and it still reads as overdue. A one-off with a spent ring is not armed at all and the row says `Missed …`.
 
@@ -111,6 +111,7 @@ Today  ·  Tomorrow  ·  Upcoming
 | Search box | 1 | Filters the tab you are on, in place |
 | Task row | one per task | Tapping the row opens screen 2 with that task loaded |
 | Done | one per row | The task moves to the Done tab |
+| Delete for good | one per Done row | The only control in the app that erases a task. Reachable only from a row already closed, so erasing costs two decisions |
 | Revive | one per Done row | A word beside the filled circle, doing the same thing (session 126, his word). The one control drawn twice on purpose: the circle has meant Undone since session 104 and nothing said so |
 | Pin | one per row | A pin glyph, filled while pinned; the word stays for screen readers. Pinned tasks sort above everything |
 | Delete | one per row | A bin glyph; the word stays for screen readers. The row goes for real. One step of undo holds the only copy |

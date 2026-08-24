@@ -198,26 +198,6 @@ class AlarmActivity : Activity() {
                     }
                 })
             }
-            // PICK A DATE AND A TIME (session 128, his slide: "need ability to
-            // select time and date as well here"). The rungs are the fast
-            // answers and this is the exact one, at the end of the same row
-            // because it answers the same question.
-            //
-            // IT IS THE ONE PLACE THIS SHELL COMPOSES A DATE, and it does it
-            // the way the store does: local wall clock, with the device's own
-            // offset written on the end, never epoch milliseconds — a due date
-            // is a local instant and rebuilding one from epoch drops the zone.
-            prow.addView(Button(this).apply {
-                text = "Pick…"
-                textSize = 16f
-                setTextColor(Color.parseColor("#201e1d"))
-                setBackgroundColor(Color.parseColor("#eee7db"))
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                )
-                setOnClickListener { pickDateAndTime(id) }
-            })
             root.addView(HorizontalScrollView(this).apply {
                 isHorizontalScrollBarEnabled = false
                 layoutParams = LinearLayout.LayoutParams(
@@ -227,6 +207,43 @@ class AlarmActivity : Activity() {
                 addView(prow)
             })
         }
+
+        // THE PICKERS SIT ON THEIR OWN LINE, BELOW THE RUNGS (session 131, his
+        // slide). Inside the scroller they were reachable only by scrolling
+        // past every rung, and a person who wants an exact time is not going to
+        // find it hiding behind four approximations of one.
+        //
+        // TWO OF THEM, his ask. `Pick time` is the common case by a distance —
+        // same day, different hour — and it is ONE dialog rather than two, so
+        // the answer costs one press and one confirmation. `Pick date & time`
+        // is the whole thing for anything further out.
+        //
+        // A time already gone goes to TOMORROW. Choosing 9am at 6pm can only
+        // mean the morning, and a push that lands overdue is a trap rather than
+        // a favour — the same rule `push.js` uses for its own pull-in rung.
+        //
+        // These are drawn whatever the payload carried, because they invent no
+        // date: the person is typing one. The rungs above need targets computed
+        // by the app and are drawn only when it sent some.
+        val pickRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = 12 }
+        }
+        fun pickButton(label: String, both: Boolean) = Button(this).apply {
+            text = label
+            textSize = 16f
+            setTextColor(Color.parseColor("#201e1d"))
+            setBackgroundColor(Color.parseColor("#eee7db"))
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                .apply { marginEnd = 12 }
+            setOnClickListener { if (both) pickDateAndTime(id) else pickTimeOnly(id) }
+        }
+        pickRow.addView(pickButton("Pick time", false))
+        pickRow.addView(pickButton("Pick date & time", true))
+        root.addView(pickRow)
 
         // TWO CANCELS, AND THEY MEAN DIFFERENT THINGS (session 128, his slide).
         // `Cancel alarm` stops this ring and touches nothing else, so a repeat
@@ -288,6 +305,23 @@ class AlarmActivity : Activity() {
      * long as they like over it in silence. Dismissing either dialog leaves the
      * task exactly where it was, which is the right answer to a change of mind.
      */
+    private fun pickTimeOnly(id: String) {
+        val c = Calendar.getInstance()
+        TimePickerDialog(this@AlarmActivity, { _, hour, minute ->
+            val at = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, hour)
+                set(Calendar.MINUTE, minute)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+                // Already gone means tomorrow. 9am chosen at 6pm can only be the
+                // morning, and a push that lands overdue is a trap.
+                if (timeInMillis <= System.currentTimeMillis()) add(Calendar.DAY_OF_MONTH, 1)
+            }
+            AlarmActionReceiver.handle(this@AlarmActivity, id, "PUSH:" + isoLocal(at))
+            finish()
+        }, c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), false).show()
+    }
+
     private fun pickDateAndTime(id: String) {
         val c = Calendar.getInstance()
         DatePickerDialog(this@AlarmActivity, { _, year, month, day ->
