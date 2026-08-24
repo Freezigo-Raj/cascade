@@ -43,7 +43,7 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
   contract     54
   config       a.19
   answer_key   28
-  shell        43
+  shell        44
   gate1        signed on example 35
   gate2        signed on contract 32
   gate3        signed on shell 1
@@ -79,34 +79,52 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 
 ## THIS SESSION'S JOB
 
-Session 127: the write paths, and the check that could have caught session 123.
+Session 128: his `UI_review_R2.pptx`. Slide 2 is a build-41 shot of two things builds 42 and 43
+already fixed — verified, nothing done. Slide 3 is the lock screen, working, paper, saying
+`alarm shell build 3`, with four new asks on it.
 
-**THE LESSON, PLAINLY.** Session 123: every branch of the alarm's `apply()` called `update(record)`
-where the store's contract is `update(id, record)`. The store threw, the throw landed in a catch,
-and lock-screen Done, Push, Snooze and the unanswered escalation wrote NOTHING for four days. Six
-checks were green throughout, and they could not have been anything else: every value those branches
-computed was correct. THE BUG WAS IN THE CALL, NOT IN THE VALUES, and nothing in this project had
-ever asserted a call.
+**TWO CANCELS, AND THEY MEAN DIFFERENT THINGS.** His words: a button to cancel the task instance
+where "repeat instances of the task will still stay", and an option to cancel the alarm where
+"repeat instances of task with alarm still ring". Two verbs, and the difference between them is the
+whole point.
 
-Two things had to change before such a check could exist. `apply()` LEFT `alarm.bridge.js` as
-`shell/alarm.apply.js` and `catchUpRepeats()` stopped importing the store — both take the store as
-an ARGUMENT now. While a write path imports the real store, no check can import that module at all,
-which is why both were recorded as reached by nothing.
+`CANCEL` closes THIS OCCURRENCE as `cancelled` — not `done`, because it was not done — and hands a
+repeat its next occurrence straight away. It is the catch-up's move made by hand. Calling off
+tonight's run does not end the habit, and the cancelled row shows on the Done tab so the miss stays
+countable.
 
-**`check_writes.mjs` IS THE EIGHTH CHECK**, and the store it hands in is a witness: `update`
-asserts that its first argument is a string and its second is a record, `add` that its argument
-carries an id. Twenty-eight assertions over the four alarm outcomes and the repeat catch-up.
-PROVED BY BREAKING IT: reverting one branch to `update(record)` fails the run, which is the whole
-claim this file makes.
+`DISMISS` ends THIS RING and touches nothing else. Not `alarm_type`, which would end the series; not
+the date, which would move a commitment to silence a noise. The shell cancels the pending alarm and
+the next occurrence arms itself on the next sync, because a repeat's ring follows its rule
+(session 126). A one-off simply goes quiet.
 
-The two honest gaps this closes were both written down before they were closed — `apply()` since
-session 123, the catch-up since session 125. What remains in that surface: the two dialogs,
-`push_options` as a set, and the ordering inside `rank_key` beyond the three overrides
-`check_alarm.mjs` reaches.
+The lock screen words the second button off the payload's new `repeats` flag — `Cancel this one` for
+a repeat, `Cancel task` otherwise — because the shell cannot see the record and guessing is how two
+halves come to say different things.
 
-**NOTHING A PERSON CAN SEE CHANGED.** No screen, no rule, no record shape. Shell 43 because the
-module graph moved, and a graph that moves without a version is the cache defect this project has
-paid for four times.
+**FOUR HOURS, ONE RUNG EACH**, his slide: "+1hr, +2hrs, +3hrs, +4hrs". The `time` ladder held +1 and
++4, so the middle two were reachable only by pushing twice. Widened in `push.js`, which is the one
+place a push target is decided, so the list rows gained them too. The lock screen carries FIVE
+targets now rather than two, in a row that scrolls sideways: two was right while the row split its
+width between fixed buttons, and five equal slices on a phone are five unreadable ones.
+
+**A DATE AND TIME PICKER ON THE LOCK SCREEN**, his ask. `Pick…` at the end of the same row, because
+it answers the same question the rungs answer. Two dialogs, date then time — Android has no combined
+picker and a hand-built one would be this shell deciding what a date looks like. IT IS THE ONE PLACE
+THE SHELL COMPOSES A DATE, and it does it the way the store does: local wall clock with the offset
+read from the calendar itself, never epoch milliseconds. The ringing has already stopped by then, so
+the choice is made in silence, and dismissing either dialog leaves the task where it was.
+
+**Shell build 4**, and `ALARM_SHELL_EXPECTED` with it. An APK on build 3 still rings and still
+answers Done, Snooze and Push; the two new buttons are simply absent, which is exactly the kind of
+quiet gap the number exists to announce.
+
+**THE GAP THIS SESSION RUNS ON.** Nothing in this project compiles Kotlin — `gate2.py` runs
+`tsc --strict` over the web half and the six Kotlin files are read by no tool at all. Session 126
+proved what that costs by shipping a second `companion object` in one class, which cannot compile
+and reached him as a broken build. This session touched four Kotlin files. Brace and paren balance
+was checked by hand and every reference was written explicitly; that is not a compiler and it should
+not be mistaken for one.
 
 ## NEXT THREE JOBS
 
@@ -882,3 +900,8 @@ have landed. That is the price of the single table and it is accepted.
 - 20 Aug 2026 — The lock screen draws the alarm shell's build, stated once as `CascadeAlarmPlugin.SHELL_BUILD` and read by `version()` too — a number in two places would be the account screen and the alarm disagreeing about which shell is running — raised to 3 with `ALARM_SHELL_EXPECTED`, so an un-rebuilt APK asks for the rebuild instead of just looking wrong.
 - 20 Aug 2026 — `apply()` left `alarm.bridge.js` as `alarm.apply.js` and takes the store as an argument, and `catchUpRepeats()` stopped importing one — a write path that imports the real store cannot be imported by any check, which is why session 123's four lost outcomes ran green for four days — the seam is the fix, not the assertions on top of it.
 - 20 Aug 2026 — `check_writes.mjs` is the eighth check and it asserts the SHAPE OF THE CALL, not only the value: its store throws when `update` is handed anything but `(id, record)` — every value session 123 computed was correct and the defect was in the call — proved by reverting one branch and watching the run fail.
+- 20 Aug 2026 — `SHELL_BUILD` moved into the ONE companion object `CascadeAlarmPlugin` already had — session 126 added a second one and shipped it, and Kotlin allows exactly one per class — it failed on his machine and nowhere else, because nothing in this project compiles Kotlin: `gate2.py` runs `tsc --strict` over the web half and the six Kotlin files have no equivalent, which is now a written gap rather than one found twice.
+- 20 Aug 2026 — `CANCEL` closes one occurrence as cancelled and hands a repeat its next one, his ask — cancelling tonight's run is not cancelling the habit, and `cancelled` rather than `done` because it was not done — the row stays on the Done tab so the miss is countable.
+- 20 Aug 2026 — `DISMISS` ends the ring and touches nothing else — `alarm_type` would end the series and the date would move a commitment to silence a noise — a repeat arms its next occurrence on the following sync, which only works because a repeat's ring already follows its rule.
+- 20 Aug 2026 — The `time` push ladder holds +1, +2, +3 and +4 hours, his ask on the lock screen — an exact time is the precision where an hour is a real answer and the middle two needed two presses — widened in `push.js`, so the list rows gained them too rather than the lock screen keeping a private ladder.
+- 20 Aug 2026 — The lock screen carries five push targets in a sideways scroller and a `Pick…` button opening date then time — two rungs could not reach tomorrow, and five equal slices of a phone's width are five unreadable buttons — the picker composes local wall clock with the offset read off the calendar, the one place this shell writes a date.

@@ -45,6 +45,13 @@ object AlarmStore {
         val ringSec: Int,
         val autoSnoozeMin: Int,
         val autoMax: Int,
+        /**
+         * Whether the task repeats (session 128). The lock screen words two of
+         * its buttons on it — cancelling one run of a daily task is not
+         * cancelling the task — and this shell cannot see the record, so the
+         * payload says.
+         */
+        val repeats: Boolean,
         /** Autos spent in the chain now running. Never persisted past a reboot. */
         val autoCount: Int,
     )
@@ -78,6 +85,10 @@ object AlarmStore {
             ringSec = o.optInt("ringSec", 120),
             autoSnoozeMin = o.optInt("autoSnoozeMin", 5),
             autoMax = o.optInt("autoMax", 5),
+            // False when absent, which is what an alarm armed by an older web
+            // half looks like: it wears the plain wording rather than claiming
+            // a repeat this shell cannot confirm.
+            repeats = o.optBoolean("repeats", false),
             autoCount = o.optInt("autoCount", 0),
         )
     }.getOrNull()
@@ -107,6 +118,7 @@ object AlarmStore {
                 .put("ringSec", alarm.ringSec)
                 .put("autoSnoozeMin", alarm.autoSnoozeMin)
                 .put("autoMax", alarm.autoMax)
+                .put("repeats", alarm.repeats)
                 .put("autoCount", alarm.autoCount)
                 .toString()
         ).apply()

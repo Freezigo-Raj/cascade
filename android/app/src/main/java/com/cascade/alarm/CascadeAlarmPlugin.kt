@@ -58,7 +58,7 @@ class CascadeAlarmPlugin : Plugin() {
          * half and there is no equivalent for these six files, which is now
          * written down as the gap it is rather than found again the same way.
          */
-        const val SHELL_BUILD = 3
+        const val SHELL_BUILD = 4
 
         private var live: CascadeAlarmPlugin? = null
         /** Whether a WebView is alive to hear an outcome. */
@@ -116,6 +116,7 @@ class CascadeAlarmPlugin : Plugin() {
                 ringSec = call.getInt("ringSec") ?: 120,
                 autoSnoozeMin = call.getInt("autoSnoozeMin") ?: 5,
                 autoMax = call.getInt("autoMax") ?: 5,
+                repeats = call.getBoolean("repeats") ?: false,
                 autoCount = keep,
             )
         )

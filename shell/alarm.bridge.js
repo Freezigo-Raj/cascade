@@ -83,9 +83,11 @@ export function desiredAlarms(all, now) {
     // the push targets, which are load-aware and therefore need every task.
     for (const c of listOnly(all, partAConfig, now).cards) {
       cards.set(c.card_id, c.card_reason_short);
-      // Two, not three. A lock screen already holds Done and four snooze
-      // buttons, and a seventh control is one more thing to aim past.
-      targets.set(c.card_id, (c.push_options ?? []).slice(0, 2));
+      // FIVE, IN A ROW THAT SCROLLS (session 128, his slide). Two was right
+      // while the row was a fixed pair of wide buttons; a sideways scroller
+      // costs the same height whatever it holds, and two rungs meant a push
+      // that could not reach tomorrow without opening the app.
+      targets.set(c.card_id, (c.push_options ?? []).slice(0, 5));
     }
   } catch (e) {
     // A sentence is decoration. A missing one must not stop an alarm ringing.
@@ -116,6 +118,10 @@ export function desiredAlarms(all, now) {
           label: o.push_label,
           iso: o.push_to,
         })),
+        // The lock screen words two of its buttons differently for a repeat —
+        // cancelling one occurrence of a daily task is not cancelling the task
+        // — and it cannot see the record, so it is told.
+        repeats: Boolean(t.recurrence && t.recurrence.unit),
         snoozeOptions: partAConfig.alarm_snooze_options,
         ringSec: partAConfig.alarm_defaults.ring_sec,
         autoSnoozeMin: partAConfig.alarm_defaults.auto_snooze_min,
@@ -253,12 +259,15 @@ export const PERMISSIONS = [
  * written against, and the account screen draws the difference as the loud
  * sentence it is. An old plugin with no `version()` at all reads as build 1.
  */
-// Build 3 (session 126): the lock screen wears paper instead of ink, and it
-// draws the shell build. Neither changes a method or a reading's shape, so an
-// APK still on build 2 keeps working — but it looks like the old app and says
-// nothing about why, which is the thing the number is for. Raised so the
-// account screen asks for the rebuild rather than leaving him to notice.
-export const ALARM_SHELL_EXPECTED = 3;
+// Build 4 (session 128): two new verbs, `CANCEL` and `DISMISS`, a `repeats`
+// flag in the payload, and a date-and-time picker on the lock screen. An APK on
+// build 3 still rings and still answers Done, Snooze and Push — the two new
+// buttons simply are not there — so the account screen asks for the rebuild
+// rather than leaving the buttons quietly missing.
+//
+// Build 3 (session 126): the lock screen wears paper instead of ink and draws
+// the shell build.
+export const ALARM_SHELL_EXPECTED = 4;
 
 export async function alarmShellVersion() {
   const Alarm = plugin();

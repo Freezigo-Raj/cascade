@@ -91,6 +91,41 @@ export async function applyOutcome(store, id, verb, tsMs, newId) {
   }
   if (verb === "UNANSWERED") {
     await store.update(task.id, unanswered(task, now));
+    return;
+  }
+  // CANCEL THIS ONE (session 128, his slide: "a button to cancel task instance
+  // — repeat instances of the task will still stay"). It is the catch-up's
+  // move made by hand: the occurrence is closed as CANCELLED, not done, because
+  // it was not done — and a repeat immediately gets the next one, so cancelling
+  // tonight's run does not end the habit. A one-off simply closes.
+  if (verb === "CANCEL") {
+    const stamp = isoAt(Math.max(tsMs, ms(task.updated_at ?? now) + 1000, Date.now()), task);
+    const closed = {
+      ...task,
+      task_state: "cancelled",
+      closed_at: now,
+      alarm_snoozed_until: null,
+      alarm_unanswered_at: null,
+      updated_at: stamp,
+    };
+    await store.update(task.id, closed);
+    const next = spawn({ ...closed }, newId, now);
+    if (next) await store.add(next);
+    return;
+  }
+  // CANCEL THE ALARM, NOT THE TASK (session 128, his slide: "add option to
+  // cancel alarm — repeat instances of task with alarm still ring"). It stops
+  // THIS ring and touches nothing else: not `alarm_type`, which would end the
+  // series, and not the date, which would move a commitment to silence a noise.
+  // The shell cancels the pending alarm; the next occurrence arms itself on the
+  // next sync, because a repeat's ring follows its rule (session 126).
+  if (verb === "DISMISS") {
+    await store.update(task.id, {
+      ...task,
+      alarm_snoozed_until: null,
+      alarm_unanswered_at: null,
+      updated_at: isoAt(Math.max(tsMs, Date.now()), task),
+    });
   }
 }
 

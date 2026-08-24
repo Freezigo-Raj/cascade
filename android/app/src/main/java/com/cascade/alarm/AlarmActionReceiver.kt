@@ -14,6 +14,10 @@ import android.content.Intent
  *                     re-arms it against the new date on the next sync.
  *   AUTO            — nobody pressed anything and the ringing timed out. Internal.
  *   UNANSWERED      — the last auto rang out. The task escalates.
+ *   CANCEL          — this occurrence is cancelled. A repeat gets its next one
+ *                     straight away, so a habit survives one cancelled night.
+ *   DISMISS         — this RING is cancelled and the task is not touched. A
+ *                     repeat rings again on its own schedule.
  *
  * `AUTO` never reaches the web app. Emitting one per auto would mean five store
  * writes and five sync round trips for one unanswered alarm, and the web app does
@@ -78,6 +82,21 @@ class AlarmActionReceiver : BroadcastReceiver() {
                         AlarmStore.set(ctx, a.copy(atMs = now + mins * 60_000L, autoCount = 0))
                     }
                     report(ctx, id, "SNOOZE:$mins")
+                }
+
+                // CANCEL THIS OCCURRENCE, and DISMISS THIS RING (session 128).
+                // Both end the alarm here; what they mean to the record is the
+                // web half's business and it is told in one word. Neither
+                // brings the app forward: a person cancelling something at a
+                // lock screen has said what they wanted to say.
+                verb == "CANCEL" -> {
+                    AlarmStore.cancel(ctx, id)
+                    report(ctx, id, "CANCEL")
+                }
+
+                verb == "DISMISS" -> {
+                    AlarmStore.cancel(ctx, id)
+                    report(ctx, id, "DISMISS")
                 }
 
                 verb == "AUTO" -> {

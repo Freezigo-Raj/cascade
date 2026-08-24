@@ -8,9 +8,13 @@ import android.os.Build
 import android.os.Bundle
 import android.view.Gravity
 import android.view.WindowManager
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import android.widget.Button
+import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.TextView
+import java.util.Calendar
 
 /**
  * The lock screen. Built in code rather than XML so the module drops into any
@@ -162,6 +166,11 @@ class AlarmActivity : Activity() {
         // The push targets, when the payload carried any. A task with no date to
         // move, or one armed before the app could compute them, draws no row at
         // all rather than a button that would have to invent a date.
+        //
+        // IT SCROLLS SIDEWAYS NOW (session 128, his slide: "give more options
+        // with scroll"). The row used to share its width between two buttons;
+        // five equal slices on a phone are five unreadable ones, so each button
+        // takes the width its label needs and the row scrolls past the edge.
         val pushes = alarm?.pushTargets ?: emptyList()
         if (pushes.isNotEmpty()) {
             root.addView(TextView(this).apply {
@@ -172,10 +181,6 @@ class AlarmActivity : Activity() {
             })
             val prow = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply { topMargin = 12 }
             }
             for ((label, iso) in pushes) {
                 prow.addView(Button(this).apply {
@@ -183,16 +188,77 @@ class AlarmActivity : Activity() {
                     textSize = 16f
                     setTextColor(Color.parseColor("#201e1d"))
                     setBackgroundColor(Color.parseColor("#eee7db"))
-                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-                        .apply { marginEnd = 12 }
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    ).apply { marginEnd = 12 }
                     setOnClickListener {
                         AlarmActionReceiver.handle(this@AlarmActivity, id, "PUSH:$iso")
                         finish()
                     }
                 })
             }
-            root.addView(prow)
+            // PICK A DATE AND A TIME (session 128, his slide: "need ability to
+            // select time and date as well here"). The rungs are the fast
+            // answers and this is the exact one, at the end of the same row
+            // because it answers the same question.
+            //
+            // IT IS THE ONE PLACE THIS SHELL COMPOSES A DATE, and it does it
+            // the way the store does: local wall clock, with the device's own
+            // offset written on the end, never epoch milliseconds — a due date
+            // is a local instant and rebuilding one from epoch drops the zone.
+            prow.addView(Button(this).apply {
+                text = "Pick…"
+                textSize = 16f
+                setTextColor(Color.parseColor("#201e1d"))
+                setBackgroundColor(Color.parseColor("#eee7db"))
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+                setOnClickListener { pickDateAndTime(id) }
+            })
+            root.addView(HorizontalScrollView(this).apply {
+                isHorizontalScrollBarEnabled = false
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply { topMargin = 12 }
+                addView(prow)
+            })
         }
+
+        // TWO CANCELS, AND THEY MEAN DIFFERENT THINGS (session 128, his slide).
+        // `Cancel alarm` stops this ring and touches nothing else, so a repeat
+        // rings again on its own schedule and a one-off simply goes quiet.
+        // `Cancel this one` / `Cancel task` closes the occurrence itself as
+        // cancelled — not done, because it was not done — and a repeat is given
+        // its next occurrence straight away, so calling off tonight's run does
+        // not end the habit. The wording follows `repeats`, which the payload
+        // carries because this shell cannot see the record.
+        val small = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = 28 }
+        }
+        fun quietButton(label: String, verb: String) = Button(this).apply {
+            text = label
+            textSize = 14f
+            setTextColor(Color.parseColor("#8c491a"))
+            setBackgroundColor(Color.parseColor("#f5ead8"))
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            setOnClickListener {
+                AlarmActionReceiver.handle(this@AlarmActivity, id, verb)
+                finish()
+            }
+        }
+        small.addView(quietButton("Cancel alarm", "DISMISS"))
+        small.addView(
+            quietButton(if (alarm?.repeats == true) "Cancel this one" else "Cancel task", "CANCEL")
+        )
+        root.addView(small)
 
         // THE SHELL SAYS WHICH BUILD IT IS (session 126, his slide: "add a
         // version number on this as well, if possible"). The web half updates
@@ -210,5 +276,48 @@ class AlarmActivity : Activity() {
         })
 
         setContentView(root)
+    }
+
+    /**
+     * Date, then time, then a push. Two dialogs rather than one because Android
+     * has no combined picker and a hand-built one would be this shell deciding
+     * what a date looks like.
+     *
+     * The ringing has already stopped by the time either dialog opens — the
+     * service is stopped when this screen appears — so a person can take as
+     * long as they like over it in silence. Dismissing either dialog leaves the
+     * task exactly where it was, which is the right answer to a change of mind.
+     */
+    private fun pickDateAndTime(id: String) {
+        val c = Calendar.getInstance()
+        DatePickerDialog(this@AlarmActivity, { _, year, month, day ->
+            TimePickerDialog(this@AlarmActivity, { _, hour, minute ->
+                val at = Calendar.getInstance().apply {
+                    set(year, month, day, hour, minute, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }
+                AlarmActionReceiver.handle(this@AlarmActivity, id, "PUSH:" + isoLocal(at))
+                finish()
+            }, c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), false).show()
+        }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show()
+    }
+
+    /**
+     * `2026-08-21T14:30:00+05:30` — the shape every date in this app is stored
+     * in: local wall clock, with the offset that was in force at that instant
+     * written on the end. The offset is read from the calendar itself rather
+     * than from the device's current zone, so a date picked either side of a
+     * daylight change carries the right one.
+     */
+    private fun isoLocal(c: Calendar): String {
+        val offMin = (c.get(Calendar.ZONE_OFFSET) + c.get(Calendar.DST_OFFSET)) / 60000
+        val sign = if (offMin < 0) "-" else "+"
+        val abs = kotlin.math.abs(offMin)
+        return String.format(
+            "%04d-%02d-%02dT%02d:%02d:00%s%02d:%02d",
+            c.get(Calendar.YEAR), c.get(Calendar.MONTH) + 1, c.get(Calendar.DAY_OF_MONTH),
+            c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE),
+            sign, abs / 60, abs % 60
+        )
     }
 }

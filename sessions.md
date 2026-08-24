@@ -2951,3 +2951,26 @@ Colour meant one thing and now means three. Accent is pressable, `#c0492b` is ov
 **The point.** Session 123's defect was `update(record)` for `update(id, record)` in four branches, and six green checks missed it for four days because every value those branches computed was correct — the bug was in the CALL. A write path that imports the real store cannot be imported by a check at all, so the seam had to move before an assertion was possible. The store this check hands in throws when `update` is given anything but `(id, record)`. Proved by reverting one branch and watching the run fail.
 
 **Still owed:** the APK rebuild, two sessions deep. The nine alarm tests on a device. Gates 1-6.
+
+**Post-delivery fix, same day.** Session 126's `SHELL_BUILD` was added as a SECOND `companion object` in `CascadeAlarmPlugin.kt`, which Kotlin refuses — one per class. It reached him as a broken build and cost him a round trip through Android Studio. Moved into the companion the class already had. THE REAL GAP, recorded: nothing in this project compiles Kotlin. `gate2.py` runs `tsc --strict` over the web half; the six Kotlin files are read by no tool at all, so any Kotlin defect is found by him, on a phone, after a rebuild.
+
+---
+
+## Session 128 — 20 August 2026
+
+**Job:** His `UI_review_R2.pptx`. Slide 2 was stale (builds 42 and 43 fixed both items); slide 3 was the lock screen with four asks.
+
+**Stage before / after:** 5 / 5
+
+**Files changed:**
+- `shell/alarm.apply.js` — `CANCEL` and `DISMISS`
+- `shell/alarm.bridge.js` — five push targets, the `repeats` flag, expected shell 4
+- `shell/push.js` — the `time` ladder holds +1, +2, +3, +4 hours
+- `shell/check_writes.mjs` — thirteen assertions for the two new verbs
+- `android/…/AlarmActivity.kt` — scrolling rungs, `Pick…`, two cancel buttons
+- `android/…/AlarmActionReceiver.kt`, `AlarmStore.kt`, `CascadeAlarmPlugin.kt` — the two verbs, the `repeats` field, shell build 4
+- `shell/render.js` 44 and the five other version sites, `spec.md`, `MVP.md`
+
+**Tests:** all eight green.
+
+**Stated plainly:** four Kotlin files changed and nothing in this project compiles Kotlin. Braces, parens and companion objects were checked by hand after session 126 shipped a file that could not compile. That is not a compiler.

@@ -184,5 +184,45 @@ const adds = (s) => s.calls.filter((c) => c[0] === "add");
   say(again === 0 && updates(store).length === 0, "running it again on the same store changes nothing");
 }
 
+// ------------------------------------------------- session 128, the two cancels
+{
+  // CANCEL on a repeat: this occurrence closes as cancelled and the next one
+  // arrives, so calling off tonight's run does not end the habit.
+  const store = fakeStore([task({ recurrence: { every: 1, unit: "day" } })]);
+  await applyOutcome(store, "t1", "CANCEL", NOW_MS, "t2");
+  const wrote = store.rows().find((r) => r.id === "t1");
+  say(updates(store)[0][1] === "t1", "CANCEL passes the id first");
+  say(wrote.task_state === "cancelled", "the occurrence is cancelled, not done");
+  say(Boolean(wrote.closed_at), "and closed, so it shows on the Done tab");
+  say(adds(store).length === 1 && adds(store)[0][1].spawned_from === "t1",
+      "and the repeat is handed its next occurrence");
+}
+
+{
+  // CANCEL on a one-off: it closes, and nothing takes its place.
+  const store = fakeStore([task()]);
+  await applyOutcome(store, "t1", "CANCEL", NOW_MS, "t2");
+  say(store.rows()[0].task_state === "cancelled", "a one-off cancels");
+  say(adds(store).length === 0, "and spawns nothing");
+}
+
+{
+  // DISMISS: the RING ends and the task is untouched. Not `alarm_type`, which
+  // would end a series; not the date, which would move a commitment to silence
+  // a noise.
+  const store = fakeStore([task({
+    recurrence: { every: 1, unit: "day" },
+    alarm_snoozed_until: "2026-08-20T17:30:00+05:30",
+  })]);
+  await applyOutcome(store, "t1", "DISMISS", NOW_MS, "t2");
+  const wrote = store.rows()[0];
+  say(updates(store)[0][1] === "t1", "DISMISS passes the id first");
+  say(wrote.alarm_type === "on", "the alarm stays ON, so the series keeps ringing");
+  say(wrote.due_at === "2026-08-20T17:00:00+05:30", "the date is not moved");
+  say(wrote.task_state === "ready", "and the task is still owed");
+  say(wrote.alarm_snoozed_until === null, "the spent snooze is cleared");
+  say(adds(store).length === 0, "nothing is spawned");
+}
+
 console.log(`\n${bad === 0 ? "CHECK WRITES: PASS" : `CHECK WRITES: ${bad} FAILED`}\n`);
 process.exit(bad ? 1 : 0);

@@ -108,7 +108,14 @@ function targetsFor(task, now) {
   switch (task.date_precision) {
     case "time":
       return [...pullIn,
+        // FOUR HOURS, ONE RUNG EACH (session 128, his slide on the lock
+        // screen: "give more options with scroll like +1hr, +2hrs, +3hrs,
+        // +4hrs"). An exact time is the precision where an hour is a real
+        // answer, and +1 then +4 made the middle two reachable only by pushing
+        // twice. The rows scroll, so rungs cost no height.
         { label: "+1 hour", at: at + HOUR },
+        { label: "+2 hours", at: at + 2 * HOUR },
+        { label: "+3 hours", at: at + 3 * HOUR },
         { label: "+4 hours", at: at + 4 * HOUR },
         { label: "Tomorrow", at: at + DAY },
         { label: "+2 days", at: at + 2 * DAY },
