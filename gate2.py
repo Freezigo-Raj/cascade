@@ -572,6 +572,36 @@ if _sch is not None:
         for _x in sorted(_fields-_base):
             bad('schema.sql: Task.%s has no column; the record cannot be stored whole'%_x)
 
+# ---------------------------------------------------------------- versioned imports
+# EVERY RELATIVE IMPORT IN `shell/` CARRIES THE VERSION (session 129). The whole
+# cache-busting scheme is one query string: `index.html` asks for `mvp.js?v=N`
+# and every module passes its own `?v=` down the graph. A plain
+# `import x from "./y.js"` opts that one edge out — the browser answers it from
+# whatever it already had, so a page on build 44 can be running a module from
+# build 40, and if the old copy is missing an export the import fails to link
+# and every module above it dies with it.
+#
+# Session 126 wrote exactly that line in `alarm.js` and it went unnoticed for
+# three builds, which is what this rule is for.
+# THE TWO ENGINE FILES ARE A WARNING AND NOT A FAILURE, and the reason is
+# stated rather than assumed: `resolve.js` and `resolve.stage3.js` are imported
+# as plain modules by `gate4.mjs`, `check_render.mjs` and the key runner, which
+# have no version to pass. Their imports are engine-internal and the engine
+# always ships whole. They are the next thing to convert, not a rule to drop.
+_ENGINE_EXCUSED = {'shell/resolve.js', 'shell/resolve.stage3.js'}
+import glob as _glob
+for _f in sorted(_glob.glob('shell/*.js')):
+    _src = open(_f, encoding='utf-8').read()
+    # Static: import ... from "./x.js"   (no query)
+    for _m in re.finditer(r'^\s*import\s[^;\n]*?from\s+["\'](\.\/[^"\']+?)["\']', _src, re.M):
+        if '?' not in _m.group(1):
+            _say = warns.append if _f.replace('\\', '/') in _ENGINE_EXCUSED else bad
+            _say('%s: `%s` is imported without ?v= — the browser will answer it from cache' % (_f, _m.group(1)))
+    # Dynamic: import("./x.js") without a template carrying ${v}
+    for _m in re.finditer(r'import\(\s*["\'](\.\/[^"\']+?)["\']\s*\)', _src):
+        _say = warns.append if _f.replace('\\', '/') in _ENGINE_EXCUSED else bad
+        _say('%s: `%s` is imported without ?v= — the browser will answer it from cache' % (_f, _m.group(1)))
+
 print('inputs %d | working %d | shown %d | Task %d | Undo %d | config %d | excused %d | drawn %d'
       %(len(inputs),len(working),len(shown),len(task_c),len(undo_c),len(cfg_a),len(excused),len(drawn)))
 for x in warns: print('   warning:',x)

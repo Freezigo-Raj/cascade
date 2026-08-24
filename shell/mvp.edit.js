@@ -44,6 +44,8 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
   let notesText = "";
   let newId = crypto.randomUUID();
   let all = [];
+  // The record this screen is editing, kept rather than looked up. See `bind`.
+  let heldTask = null;
   let toast = null;
   let toastTimer = 0;
 
@@ -217,6 +219,14 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
     // the title finds neither: the words that implied them were consumed on
     // capture. Loading them back is what stops a save quietly resetting both.
     dropDate = false;
+    // THE SCREEN KEEPS THE RECORD IT WAS HANDED (session 129, his report: "the
+    // alarm part vanishes"). Session 126 taught the alarm row to fall back to
+    // the STORED date when the typed line carries none, and looked that record
+    // up with `all.find(...)` — but `all` is filled by `reload()`, which lands
+    // after `bind()`, so on the first paint the list was empty and the fallback
+    // found nothing. The alarm disappeared for exactly one paint and then
+    // stayed gone, because nothing repaints an untouched screen.
+    heldTask = task;
     typeTap = task.type_source === "user" ? task.commitment_type : null;
     sigTap = task.significance;
     repeat = task.recurrence ?? null;
@@ -236,6 +246,7 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
 
   function unbind() {
     boundId = null;
+    heldTask = null;
     line = "";
     box.value = "";
     chipSpan = null;
@@ -471,7 +482,7 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
     // The date the screen must speak about is the one SAVE WILL KEEP: the
     // typed line's date when it has one, and otherwise the stored task's, which
     // is exactly what `keepDate` writes back. One rule, read in both places.
-    const held = boundId && !dropDate ? all.find((t) => t.id === boundId) : null;
+    const held = boundId && !dropDate ? heldTask : null;
     const dueAt = out.task.due_at ?? (held?.due_at ?? null);
     const hasTime = out.task.due_at ? Boolean(out.task.has_time) : Boolean(held?.has_time);
     if (hasTime && dueAt) {

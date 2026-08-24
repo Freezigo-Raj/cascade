@@ -269,6 +269,22 @@ export const PERMISSIONS = [
 // the shell build.
 export const ALARM_SHELL_EXPECTED = 4;
 
+/**
+ * What the phone's alarm shell is holding right now, straight from `list()`.
+ *
+ * The alarms screen draws it against what the app meant to arm (session 129).
+ * A silent phone has three possible causes — a missing permission, an APK too
+ * old, or the arming pass itself — and a screen that only ever showed the app's
+ * intention could not separate them. An empty list in a browser is not a fault:
+ * there is no shell, and the caller is told by the throw rather than by a lie.
+ */
+export async function armedAlarms() {
+  const Alarm = plugin();
+  if (!Alarm) throw new Error("no alarm shell");
+  const { alarms } = await Alarm.list();
+  return alarms ?? [];
+}
+
 export async function alarmShellVersion() {
   const Alarm = plugin();
   if (!Alarm) return 0;

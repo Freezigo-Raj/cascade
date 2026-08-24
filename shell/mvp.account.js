@@ -195,6 +195,18 @@ export function mountAccount(root, { onBack, onSignedOut } = {}) {
             loud.dataset.perm = "stale";
             ring.appendChild(loud);
           }
+          // THE APK, ONE PRESS AWAY (session 129, his ask). A sentence telling
+          // a person to rebuild and reinstall is only useful to the person who
+          // can build it; a link is useful to everyone else, and the sentence
+          // above is exactly where somebody reads that they need one.
+          //
+          // It is drawn whether or not the shell is stale, because the other
+          // reason to want it is having no APK at all.
+          const apk = el("a", "act apk-link", "Download the alarm APK");
+          apk.href = "https://freezigo-raj.github.io/cascade/app-debug.apk";
+          apk.setAttribute("download", "");
+          apk.rel = "noopener";
+          ring.appendChild(apk);
           const p = await bridge.alarmPermissionStatus();
           said.textContent = p.needed
             ? "Each of these is a switch Android holds and the app cannot set. What is missing is listed below."

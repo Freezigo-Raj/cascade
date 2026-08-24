@@ -100,7 +100,13 @@ export function rowOf(card, { all, tab, slot, narrow, act, openEdit }) {
   // is `closed_at`, a fact rather than a guess, so the quiet-fields rule is
   // untouched. No clock: the day is what a person looks for.
   if (tab === "Done" && task?.closed_at) {
-    body.appendChild(el("div", "said", `Done ${dayWords(task.closed_at)}`));
+    // CANCELLED IS NOT DONE (session 129, his report). The tab holds both
+    // states — `cards.js` has read `done || cancelled` since the catch-up was
+    // built — and every row said `Done`, so a task the calendar walked past, or
+    // one called off at a lock screen, read as an achievement. The word follows
+    // the state.
+    const verb = task.task_state === "cancelled" ? "Cancelled" : "Done";
+    body.appendChild(el("div", "said", `${verb} ${dayWords(task.closed_at)}`));
   }
 
   const acts = el("div", "acts");

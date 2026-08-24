@@ -19,7 +19,7 @@ const { listOnly } = await import(`./resolve.js${v}`);
 const { tasks, undo, UNDO_ID, mode, sync } = await import(`./store.select.js${v}`);
 const { pushed } = await import(`./push.js${v}`);
 const { matchTier } = await import(`./search.js${v}`);
-const { spawn } = await import(`./repeat.js${v}`);
+const { spawn, nextDue } = await import(`./repeat.js${v}`);
 const { alarmCleared } = await import(`./alarm.js${v}`);
 const { nowLocal } = await import(`./mvp.clock.js${v}`);
 const { readClashes, readClashDialog, readDeadlineClashes, readDeadlineDialog } =
@@ -106,7 +106,26 @@ export function mountList(root, { openEdit, openAccount, openAlarms, onTasks } =
       // Undoing a done takes back what the done created, so the press leaves
       // one row rather than two.
       for (const t of all) if (t.spawned_from === id) await tasks.remove(t.id);
-      await tasks.update(id, { ...task, task_state: "ready", closed_at: null, updated_at: now() });
+      // A REVIVED REPEAT LANDS ON ITS NEXT SCHEDULED DATE (session 129, his
+      // report: "Revive doesn't work — the task goes away and comes back").
+      //
+      // It was not the sync. `catchup.js` runs on every open and closes any
+      // repeat the calendar has walked past, so reviving a week-old weekly task
+      // put a stale occurrence back and the next open cancelled it again. The
+      // press worked perfectly and was undone before he could see it.
+      //
+      // Reviving a repeat means the person wants it back, and a repeat only
+      // exists in the future, so it comes back on the next date its own rule
+      // gives. `first_due_at` goes with it: a push that moved the occurrence
+      // that was closed has nothing to say about the one being reopened. A
+      // one-off is reopened exactly where it was, overdue and visibly so.
+      const due = nextDue(task, now());
+      const back = due
+        ? { due_at: due, first_due_at: null, alarm_snoozed_until: null, alarm_unanswered_at: null }
+        : {};
+      await tasks.update(id, {
+        ...task, ...back, task_state: "ready", closed_at: null, updated_at: now(),
+      });
       say(`Back "${task.title}"`);
     } else if (what === "pin") {
       await remember("pin", task);

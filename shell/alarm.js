@@ -46,7 +46,17 @@
 // The one import this file has, and it is a pure function of a date and a rule.
 // A repeat's ring follows the rule (see `nextRing`), and re-deriving the step
 // here would be a second copy of the thing `repeat.js` exists to own.
-import { step } from "./repeat.js";
+//
+// IT CARRIES THE VERSION, like every other import in this project (session 129).
+// Session 126 wrote it as a plain `import ... from "./repeat.js"` — no `?v=` —
+// which is the one thing the whole cache-busting scheme forbids: the browser
+// answers that URL from whatever it already had, so a page on build 44 could be
+// running a `repeat.js` from build 40, and if that copy has no `step` export the
+// module fails to link and everything importing `alarm.js` — the list, the
+// editor, the bridge — fails with it. `gate2.py` now refuses a relative import
+// in `shell/` that does not carry the version.
+const v = new URL(import.meta.url).search;
+const { step } = await import(`./repeat.js${v}`);
 
 const MIN = 60 * 1000;
 

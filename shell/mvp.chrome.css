@@ -84,3 +84,8 @@
   font-size: 13px;
 }
 .alarm-acts .act.pill.danger { color: var(--warn); border-color: rgba(192, 73, 43, 0.35); }
+
+/* The two views on screen 4 (session 129). The tab row's own grammar, because
+   that is what a person has already learned on screen 1. */
+.bar.alarm-views { margin-bottom: calc(var(--step) * 4); }
+.alarm-views .tab.on { color: var(--ink); font-weight: 700; }

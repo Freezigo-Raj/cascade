@@ -43,7 +43,7 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
   contract     54
   config       a.19
   answer_key   28
-  shell        44
+  shell        45
   gate1        signed on example 35
   gate2        signed on contract 32
   gate3        signed on shell 1
@@ -79,52 +79,52 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 
 ## THIS SESSION'S JOB
 
-Session 128: his `UI_review_R2.pptx`. Slide 2 is a build-41 shot of two things builds 42 and 43
-already fixed — verified, nothing done. Slide 3 is the lock screen, working, paper, saying
-`alarm shell build 3`, with four new asks on it.
+Session 129: his build-44 phone pass — seven reports, and the first is that alarms stopped ringing.
 
-**TWO CANCELS, AND THEY MEAN DIFFERENT THINGS.** His words: a button to cancel the task instance
-where "repeat instances of the task will still stay", and an option to cancel the alarm where
-"repeat instances of task with alarm still ring". Two verbs, and the difference between them is the
-whole point.
+**A VERSIONLESS IMPORT, AND IT IS THE ONE THING THIS PROJECT'S CACHE SCHEME FORBIDS.** Session 126
+wrote `import { step } from "./repeat.js"` in `alarm.js` — no `?v=`. Every other import in the shell
+passes its own version down the graph; that one edge opted out, so the browser answers it from
+whatever it already had. A page on build 44 can be running a `repeat.js` from build 40, and if the
+cached copy has no `step` export the module fails to LINK — which takes down `alarm.js` and
+everything importing it, the bridge included. It is the best candidate for a phone that stopped
+ringing and nothing else changed in the arming pass.
 
-`CANCEL` closes THIS OCCURRENCE as `cancelled` — not `done`, because it was not done — and hands a
-repeat its next occurrence straight away. It is the catch-up's move made by hand. Calling off
-tonight's run does not end the habit, and the cancelled row shows on the Done tab so the miss stays
-countable.
+`gate2.py` refuses one now. Two engine files are a stated warning rather than a failure —
+`resolve.js` and `resolve.stage3.js` are imported as plain modules by `gate4.mjs`, `check_render.mjs`
+and the key runner, which have no version to pass. They are the next thing to convert.
 
-`DISMISS` ends THIS RING and touches nothing else. Not `alarm_type`, which would end the series; not
-the date, which would move a commitment to silence a noise. The shell cancels the pending alarm and
-the next occurrence arms itself on the next sync, because a repeat's ring follows its rule
-(session 126). A one-off simply goes quiet.
+**AND THE SCREEN NOW SAYS WHAT THE PHONE ACTUALLY HOLDS.** Every alarm view until now drew what the
+app INTENDED to arm. A silent phone has three possible causes — a missing permission, an APK too
+old, or the arming pass itself — and no screen could separate them. `armedAlarms()` reads the shell's
+own `list()`, and a row the shell does not hold says `NOT armed on this phone`.
 
-The lock screen words the second button off the payload's new `repeats` flag — `Cancel this one` for
-a repeat, `Cancel task` otherwise — because the shell cannot see the record and guessing is how two
-halves come to say different things.
+**BACK FROM SCREEN 4 WAS A LOOP.** A back gesture out of the editor landed in `popstate` with
+`screen: "alarms"`, and `showAlarms()` pushed a FRESH history entry every time — so going back put
+the alarms screen on top of itself, and the next back popped into the same place again. Restoring a
+screen is not navigating to it: `popstate` passes `push: false`.
 
-**FOUR HOURS, ONE RUNG EACH**, his slide: "+1hr, +2hrs, +3hrs, +4hrs". The `time` ladder held +1 and
-+4, so the middle two were reachable only by pushing twice. Widened in `push.js`, which is the one
-place a push target is decided, so the list rows gained them too. The lock screen carries FIVE
-targets now rather than two, in a row that scrolls sideways: two was right while the row split its
-width between fixed buttons, and five equal slices on a phone are five unreadable ones.
+**REVIVE WORKED PERFECTLY AND WAS UNDONE BEFORE HE COULD SEE IT.** Not the sync, his guess, and a
+fair one: `catchup.js` runs on every open and closes any repeat the calendar has walked past, so
+reviving a week-old weekly task put a stale occurrence back and the next open cancelled it again.
+A revived repeat now lands on the next date its own rule gives, with `first_due_at` cleared — a
+repeat only exists in the future, and a push that moved the occurrence being closed has nothing to
+say about the one being reopened. A one-off is reopened exactly where it was, overdue and visibly so.
 
-**A DATE AND TIME PICKER ON THE LOCK SCREEN**, his ask. `Pick…` at the end of the same row, because
-it answers the same question the rungs answer. Two dialogs, date then time — Android has no combined
-picker and a hand-built one would be this shell deciding what a date looks like. IT IS THE ONE PLACE
-THE SHELL COMPOSES A DATE, and it does it the way the store does: local wall clock with the offset
-read from the calendar itself, never epoch milliseconds. The ringing has already stopped by then, so
-the choice is made in silence, and dismissing either dialog leaves the task where it was.
+**THE EDITOR LOST THE ALARM AGAIN, AND SESSION 126'S FIX WAS HALF OF ONE.** The row falls back to
+the STORED date when the typed line carries none — and it looked that record up with
+`all.find(...)`, where `all` is filled by `reload()`, which lands AFTER `bind()`. On the first paint
+the list was empty, the fallback found nothing, and nothing repaints an untouched screen. The screen
+keeps the record it was handed.
 
-**Shell build 4**, and `ALARM_SHELL_EXPECTED` with it. An APK on build 3 still rings and still
-answers Done, Snooze and Push; the two new buttons are simply absent, which is exactly the kind of
-quiet gap the number exists to announce.
+**CANCELLED IS NOT DONE.** The Done tab has held both states since the catch-up was built and every
+row said `Done`, so a task the calendar walked past read as an achievement.
 
-**THE GAP THIS SESSION RUNS ON.** Nothing in this project compiles Kotlin — `gate2.py` runs
-`tsc --strict` over the web half and the six Kotlin files are read by no tool at all. Session 126
-proved what that costs by shipping a second `companion object` in one class, which cannot compile
-and reached him as a broken build. This session touched four Kotlin files. Brace and paren balance
-was checked by hand and every reference was written explicitly; that is not a compiler and it should
-not be mistaken for one.
+**REPEATS ARE A SECOND VIEW ON SCREEN 4**, his ask: "otherwise removing them becomes hard". The two
+lists overlap and neither contains the other — a repeat with no alarm is invisible on the first, a
+one-off alarm invisible on the second. Stop repeat, Alarm off and Delete on every row.
+
+**AND THE APK IS A LINK ON THE ACCOUNT SCREEN**, next to the sentence that tells a person the shell
+is too old. That sentence was only ever useful to the person who could build it.
 
 ## NEXT THREE JOBS
 
@@ -905,3 +905,11 @@ have landed. That is the price of the single table and it is accepted.
 - 20 Aug 2026 — `DISMISS` ends the ring and touches nothing else — `alarm_type` would end the series and the date would move a commitment to silence a noise — a repeat arms its next occurrence on the following sync, which only works because a repeat's ring already follows its rule.
 - 20 Aug 2026 — The `time` push ladder holds +1, +2, +3 and +4 hours, his ask on the lock screen — an exact time is the precision where an hour is a real answer and the middle two needed two presses — widened in `push.js`, so the list rows gained them too rather than the lock screen keeping a private ladder.
 - 20 Aug 2026 — The lock screen carries five push targets in a sideways scroller and a `Pick…` button opening date then time — two rungs could not reach tomorrow, and five equal slices of a phone's width are five unreadable buttons — the picker composes local wall clock with the offset read off the calendar, the one place this shell writes a date.
+- 20 Aug 2026 — `gate2.py` fails any relative import in `shell/` that does not carry `?v=` — session 126 wrote one plain import in `alarm.js` and it survived three builds, and a cached module missing an export takes down every module above it — `resolve.js` and `resolve.stage3.js` are a stated warning because the node checks import them with no version to pass.
+- 20 Aug 2026 — The alarms screen reads the shell's own `list()` and marks a row `NOT armed on this phone` — a silent phone could be a permission, an old APK or the arming pass, and every screen until now drew only what the app intended — the app's intention and the phone's state are two different facts and the screen shows both.
+- 20 Aug 2026 — `popstate` restores a screen with `push: false` — `showAlarms()` pushed a fresh entry when called from a back gesture, so back put screen 4 on top of itself and became a loop with no way out but killing the app — restoring a screen is not navigating to it.
+- 20 Aug 2026 — Reviving a repeat lands it on the next date its own rule gives and clears `first_due_at` — the catch-up runs on every open and cancelled the stale occurrence straight back again, so the press worked and was undone before he saw it — a one-off is reopened where it was, overdue and visibly so.
+- 20 Aug 2026 — The editor keeps the record it was handed instead of finding it in `all` — `all` is filled by `reload()`, which lands after `bind()`, so the alarm row's fallback to the stored date found nothing on the first paint and nothing repaints an untouched screen — session 126 fixed the rule and not the timing.
+- 20 Aug 2026 — A cancelled row says `Cancelled`, not `Done` — the tab has held both states since the catch-up was built — a task the calendar walked past was reading as an achievement.
+- 20 Aug 2026 — Screen 4 has a second view listing everything that repeats, alarm or not, his ask — the two lists overlap and neither contains the other, so a repeat with no alarm had nowhere to be removed from.
+- 20 Aug 2026 — The account screen links the APK at freezigo-raj.github.io/cascade/app-debug.apk, his ask — the sentence asking for a rebuild was only useful to the person who could build one — an anchor rather than a button, so it copies and long-presses like an address.

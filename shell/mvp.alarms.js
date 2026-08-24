@@ -50,6 +50,8 @@ const { partAConfig } = await import(`./config.js${v}`);
 const { tasks, undo, UNDO_ID } = await import(`./store.select.js${v}`);
 const { canAlarm, ringAt, alarmAt, nextRing, alarmCleared } = await import(`./alarm.js${v}`);
 const { nowLocal } = await import(`./mvp.clock.js${v}`);
+const { nextDue } = await import(`./repeat.js${v}`);
+const bridge = await import(`./alarm.bridge.js${v}`);
 const { el, button } = await import(`./mvp.paint.js${v}`);
 
 const WD = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -100,9 +102,28 @@ function repeatWords(task) {
 
 export function mountAlarms(root, { onBack, openEdit } = {}) {
   let all = [];
+  // WHICH LIST IS SHOWING. `alarms` is everything the shell will ring; `repeats`
+  // is everything that recurs, alarm or not (session 129, his ask: "need all the
+  // tasks with repeat as a tab inside alarm tab, otherwise removing them becomes
+  // hard"). They overlap and neither contains the other: a repeat with no alarm
+  // is invisible on the first, and a one-off alarm is invisible on the second.
+  let view = "alarms";
+  // What the phone's alarm shell says it is actually holding. The web half can
+  // only say what it INTENDED to arm; when an alarm does not ring, the whole
+  // question is which of those two is wrong, and until now nothing on any
+  // screen could answer it.
+  let armedIds = new Set();
 
   async function reload() {
     all = await tasks.all();
+    try {
+      const live = await bridge.armedAlarms();
+      armedIds = new Set(live.map((a) => a.id));
+    } catch (e) {
+      // A browser has no alarm shell, and that is not an error. The marker is
+      // simply not drawn, rather than every row claiming to be unarmed.
+      armedIds = null;
+    }
     draw();
   }
 
@@ -146,6 +167,14 @@ export function mountAlarms(root, { onBack, openEdit } = {}) {
     const notes = [];
     if (rep) notes.push(rep);
     if (task.reminder_fatigue) notes.push(`${task.reminder_fatigue} unanswered`);
+    // WHAT THE PHONE ACTUALLY HOLDS (session 129, his first line: "alarm is not
+    // ringing"). Everything above is what the app INTENDS; this is what the
+    // Android shell says it has armed. When the two disagree the answer is a
+    // permission, a shell too old, or a defect in the arming pass — and until
+    // now nothing on any screen could tell those apart from a silent phone.
+    if (armedIds && !armedIds.has(task.id) && !gone) {
+      notes.push("NOT armed on this phone");
+    }
     if (notes.length) row.appendChild(el("div", "alarm-note", notes.join(" \u00b7 ")));
 
     // ------------------------------------------------------------ shift the ring
@@ -209,6 +238,34 @@ export function mountAlarms(root, { onBack, openEdit } = {}) {
     return row;
   }
 
+  function repeatRow(task, now) {
+    const row = el("div", "alarm-item");
+    row.appendChild(button("alarm-title", task.title, () => openEdit && openEdit(task.id)));
+    const due = task.due_at ? whenWords(ms(task.due_at)) : "no date";
+    row.appendChild(el("div", "alarm-said", `Due ${due}`));
+    const notes = [repeatWords(task) || "repeats"];
+    const after = nextDue(task, now);
+    // The date the rule gives after this one. A repeat is a promise about the
+    // future and this is the whole of it in one line.
+    if (after) notes.push(`then ${whenWords(ms(after))}`);
+    if (task.alarm_type && task.alarm_type !== "none") notes.push("alarm on");
+    row.appendChild(el("div", "alarm-note", notes.join(" \u00b7 ")));
+
+    const acts = el("div", "alarm-acts");
+    acts.appendChild(button("act pill", "Stop repeat", () => write(task, { recurrence: null })));
+    if (task.alarm_type && task.alarm_type !== "none") {
+      acts.appendChild(button("act pill", "Alarm off", () =>
+        write(task, alarmCleared({ ...task, alarm_type: "none", alarm_lead_min: null }))));
+    }
+    acts.appendChild(button("act pill danger", "Delete", async () => {
+      await remember("delete", task);
+      await tasks.remove(task.id);
+      await reload();
+    }));
+    row.appendChild(acts);
+    return row;
+  }
+
   function draw() {
     root.innerHTML = "";
     const now = nowLocal();
@@ -222,6 +279,32 @@ export function mountAlarms(root, { onBack, openEdit } = {}) {
     left.append(el("div", "kicker", "ALARMS"), el("h1", "head-title", "Every alarm"));
     head.appendChild(left);
     root.appendChild(head);
+
+    // TWO VIEWS, ONE SCREEN (session 129, his ask). The toggle is the tab row's
+    // grammar borrowed, because that is what a person has already learned on
+    // screen 1.
+    const tabs = el("div", "bar alarm-views");
+    for (const name of ["Alarms", "Repeats"]) {
+      const key = name.toLowerCase();
+      const b = button("tab" + (view === key ? " on" : ""), name, () => { view = key; draw(); });
+      b.setAttribute("aria-pressed", String(view === key));
+      tabs.appendChild(b);
+    }
+    root.appendChild(tabs);
+
+    if (view === "repeats") {
+      const rows = all
+        .filter((t) => t.recurrence && t.recurrence.unit && t.task_state === "ready" && !t.archived)
+        .sort((a, b) => (a.due_at ?? "").localeCompare(b.due_at ?? ""));
+      if (!rows.length) {
+        root.appendChild(el("div", "said", "Nothing repeats yet. A repeat is set in the panel under the box."));
+        return;
+      }
+      const list = el("div", "alarm-list");
+      for (const t of rows) list.appendChild(repeatRow(t, now));
+      root.appendChild(list);
+      return;
+    }
 
     // The same filter the bridge arms against, in the order they will ring.
     const armed = all

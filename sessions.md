@@ -2974,3 +2974,29 @@ Colour meant one thing and now means three. Accent is pressable, `#c0492b` is ov
 **Tests:** all eight green.
 
 **Stated plainly:** four Kotlin files changed and nothing in this project compiles Kotlin. Braces, parens and companion objects were checked by hand after session 126 shipped a file that could not compile. That is not a compiler.
+
+---
+
+## Session 129 — 20 August 2026
+
+**Job:** His build-44 phone pass. Seven reports.
+
+**Stage before / after:** 5 / 5
+
+**Files changed:**
+- `shell/alarm.js` — the versionless import, versioned
+- `gate2.py` — a relative import in `shell/` without `?v=` is a failure
+- `shell/alarm.bridge.js` — `armedAlarms()`, the shell's own list
+- `shell/mvp.js` — `popstate` restores without pushing
+- `shell/mvp.list.js` — a revived repeat lands on its next scheduled date
+- `shell/mvp.edit.js` — the screen keeps the record it was handed
+- `shell/mvp.row.js` — `Cancelled` on a cancelled row
+- `shell/mvp.alarms.js` — a Repeats view, and `NOT armed on this phone`
+- `shell/mvp.account.js`, `mvp.account.css` — the APK link
+- `shell/mvp.chrome.css`, `render.js` 45 and the five other version sites, `spec.md`, `MVP.md`
+
+**Tests:** all eight green, with two stated warnings for the engine's own imports.
+
+**On his item 4** — a revived task with an alarm, then edited, going missing — the cause is almost certainly the same catch-up collision as Revive, since a revived stale repeat was being cancelled on the next open whether or not it had been edited. Worth re-running on 45 before anything else is built for it.
+
+**Still owed:** the APK rebuild to alarm shell build 4. The nine alarm tests. Gates 1-6.

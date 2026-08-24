@@ -55,3 +55,16 @@
   margin-top: 5px;
 }
 
+
+/* The APK link (session 129). An anchor wearing the act's clothes: it is a
+   navigation and not a button, so it stays an anchor and gets a long-press
+   menu, a copyable address, and a download the browser understands. */
+.apk-link {
+  display: inline-block;
+  margin-top: calc(var(--step) * 2);
+  text-decoration: none;
+  border: 1px solid var(--edge);
+  border-radius: var(--r-pill);
+  padding: calc(var(--step) * 2) calc(var(--step) * 4);
+  background: var(--sunk);
+}

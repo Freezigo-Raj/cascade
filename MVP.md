@@ -71,7 +71,7 @@ Every task where `canAlarm()` holds and `alarm_type` is not `none` — the same 
 |---|---|---|
 | Title | one per row | Opens screen 2 with the task loaded |
 | Sentence | one per row | Three shapes, no clauses (session 126): `Rings 4:45pm on Monday`, `Snoozed until …`, or `Missed …. It will not ring again.` The third only reaches a one-off — a repeat's ring follows its rule |
-| Note | 0 or 1 | The repeat in words and the unanswered count |
+| Note | 0 or 1 | The repeat in words, the unanswered count, and `NOT armed on this phone` when the Android shell does not hold this alarm (session 129) — the app's intention and the phone's state are two facts, and a silent phone needs both |
 | Lead | one per row | The same 0-to-60 slider as the capture screen, writing the same field. It moves the RING |
 | Alarm off | one per row | `alarm_type = "none"`. On a repeating task this ends the ring for the SERIES, because `spawn()` inherits `alarm_type`. Drawn as a pill (session 126, his call: button-like feel) |
 | Clear snooze | 0 or 1 | Only while one is pending. The one piece of alarm state a person sets without seeing it |
@@ -85,6 +85,8 @@ Every task where `canAlarm()` holds and `alarm_type` is not `none` — the same 
 **Repeats the calendar walked past are stepped forward on open** (session 125, his call). An occurrence whose own date plus one whole interval has passed is closed as `cancelled` and the schedule's next future date is spawned, before the list draws and before the alarms are armed. `cancelled` and not `done`, because it was not done: the row keeps `closed_at` and shows on the Done tab beside the finished ones, so the miss is visible and countable. One interval and not one minute — a weekly task an hour late is still this week's task. Nothing else in the app ever moves a date on its own: a one-off is left exactly where it is, however late.
 
 **The catch-up takes no undo slot.** Undo holds one entry and it belongs to the last thing a person did. The cancelled row is the way back.
+
+**Two views: Alarms and Repeats** (session 129). `Alarms` is everything the shell will ring; `Repeats` is everything that recurs, alarm or not. They overlap and neither contains the other — a repeat with no alarm is invisible on the first, a one-off alarm invisible on the second. A repeat row carries Stop repeat, Alarm off and Delete.
 
 **It is a screen and not a fourth tab.** The three tabs answer "when is this owed" and share one row shape, one toggle and one search. A row here answers "when will this ring", which is a different question about a smaller set.
 
@@ -147,7 +149,7 @@ Due today. You called this a deadline.
 
 Overdue sits in Today. A task three days late is a thing to deal with now, and a separate place for it means the tab you open first is not your real day.
 
-A Done row is a title, the day it was finished — `Done today`, `Done 16th August` (session 126, his ask) — and `Revive`. `Overdue since Friday` on a finished task is a sentence about a deadline that no longer applies, so the reason is still not drawn.
+A Done row is a title, the day it was closed — `Done today`, `Cancelled 16th August` (sessions 126 and 129) — and `Revive`. The verb follows the state: the tab holds both `done` and `cancelled`, and a task the calendar walked past is not an achievement. Reviving a repeat lands it on the next date its rule gives, because the catch-up would otherwise cancel a stale occurrence straight back again. `Overdue since Friday` on a finished task is a sentence about a deadline that no longer applies, so the reason is still not drawn.
 
 **Pushing.** The targets come from how precisely the date was given, and each carries the load on the day it lands on.
 

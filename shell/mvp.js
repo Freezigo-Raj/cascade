@@ -86,10 +86,16 @@ function mark(name, push) {
 window.addEventListener("popstate", (e) => {
   // Whatever the phone went back to. An unknown state is the list, because an
   // entry this app did not write is one it cannot restore.
+  //
+  // `push: false` AND THAT IS THE WHOLE OF SESSION 129'S BACK-BUTTON DEFECT.
+  // A back gesture from the editor landed here with `screen: "alarms"`, and
+  // `showAlarms()` pushed a FRESH entry every time — so going back put the
+  // alarms screen on top of itself and the next back popped straight into the
+  // same place again. From screen 4 the back gesture became a loop with no way
+  // out but killing the app. Restoring a screen is not navigating to it.
   const name = e.state?.screen ?? "list";
-  if (name === "list") { showList(); return; }
-  if (name === "account") { showAccount(); return; }
-  if (name === "alarms") { showAlarms(); return; }
+  if (name === "account") { showAccount(false); return; }
+  if (name === "alarms") { showAlarms(false); return; }
   showList();
 });
 
@@ -123,8 +129,8 @@ async function showList() {
   mark("list", false);
   const list = await put(screen, mountList, "list", {
     openEdit: openTask,
-    openAccount: showAccount,
-    openAlarms: showAlarms,
+    openAccount: () => showAccount(),
+    openAlarms: () => showAlarms(),
     onTasks: (tasks) => { bar?.setTasks(tasks); detail?.draw(); },
     onGo: null,
   });
@@ -149,7 +155,7 @@ async function wideFrame() {
       slot: () => here?.state?.().slot,
       go: (tab, slot) => here?.go?.(tab, slot),
       capture: () => openPanel(null),
-      openAccount: showAccount,
+      openAccount: () => showAccount(),
       email: () => whoEmail,
       say: (text) => here?.say?.(text),
     });
@@ -218,10 +224,10 @@ function closeWide() {
  * account does: it is a place you go to settle something, not a thing you work
  * beside, and every control on it changes a task the list is showing.
  */
-async function showAlarms() {
+async function showAlarms(push = true) {
   const { mountAlarms } = await import(`./mvp.alarms.js${v}`);
   route = "alarms";
-  mark("alarms", true);
+  mark("alarms", push);
   closeWide();
   await put(screen, mountAlarms, "alarms", {
     onBack: () => history.back(),
@@ -231,10 +237,10 @@ async function showAlarms() {
   });
 }
 
-async function showAccount() {
+async function showAccount(push = true) {
   const { mountAccount } = await import(`./mvp.account.js${v}`);
   route = "account";
-  mark("account", true);
+  mark("account", push);
   // The account screen takes the whole window in both layouts. It is a place you
   // go rather than a thing you work beside, and leaving the capture box open next
   // to a Sign out button offers to type into an account you are leaving.
