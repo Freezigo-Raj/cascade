@@ -3133,3 +3133,20 @@ Colour meant one thing and now means three. Accent is pressable, `#c0492b` is ov
 **The gates.** Retired rather than deferred. Five of six had been owed since session 101 and the app shipped to his phone every day regardless. The checks, the linter and his own use are what have been finding defects; the gates were finding none because nobody was running them.
 
 **Still owed:** the nine alarm tests on the phone, and the workflow migration under DECIDED, NOT BUILT.
+
+---
+
+## Session 136 — 20 August 2026
+
+**Job:** His rule for `Later today`.
+
+**Stage before / after:** 5 / 5
+
+**Files changed:**
+- `shell/push.js` — `laterToday` steps by band; `sameDay` drops any within-today rung that leaves the day; the pull-in obeys it too
+- `shell/check_alarm.mjs` — nine assertions, replacing session 132's four
+- `shell/render.js` 52 and the five other version sites, `spec.md`, `MVP.md`
+
+**Tests:** all eight green, `no-undef` clean.
+
+**Note.** Session 132 fixed the symptom he reported and kept the wrong unit. His rule this session is the one that should have been written then: the rung is about bands, and four hours was a number that happened to be about right from some starting points.

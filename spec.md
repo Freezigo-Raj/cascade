@@ -43,7 +43,7 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
   contract     54
   config       a.19
   answer_key   28
-  shell        51
+  shell        52
   gate1        signed on example 35
   gate2        signed on contract 32
   gate3        signed on shell 1
@@ -79,32 +79,29 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 
 ## THIS SESSION'S JOB
 
-Session 135: the two things named as owed at the end of 134, and the gates retired.
+Session 136: `Later today` moves by BAND, his rule.
 
-**THE ENGINE'S IMPORTS CARRY THE VERSION, AND THE EXCUSE LIST IS GONE.** Four plain relative imports
-in `resolve.js` were excused by gate2 because the node checks import that file with no version to
-pass. That excuse was worth nothing: A RELATIVE SPECIFIER DOES NOT INHERIT ITS IMPORTER'S QUERY, so
-`resolve.js?v=50` asking for `./cards.js` got whatever the browser had cached under that bare name —
-possibly from build 30 — and one stale engine file with a missing export takes the whole app down.
-That is precisely what session 129 found in `alarm.js`, fixed there, and left standing in five other
-places. In node the query is empty, so nothing about `gate4.mjs` or any check changed.
+**FOUR HOURS WAS THE WRONG UNIT ALL ALONG.** Session 132 clamped the rung so it stopped crossing
+midnight, which was right about the day and still wrong about what the words mean. Four hours reached
+the next band from some starting points and the middle of the same one from others: 09:00 became
+13:00, which is the afternoon by accident, and 12:30 became 16:30, which is the afternoon it was
+already in.
 
-gate2's rule is universal now, and it strips comments before scanning: `@param {import("./types.js")
-.CaptureInput}` is a type annotation, not an import, and matching it was the rule's own false
-positive.
+His rule: morning to afternoon, afternoon to evening, evening to tonight. Stated in the engine as THE
+FIRST BAND THAT STARTS AFTER IT, read from `config.time_bands`, which gives all three of his moves
+exactly and also answers the case his sentence does not reach — 07:00 goes to 09:00, the morning,
+because that is the first band ahead of it. Nothing at all when the day has no band left, which is
+his other half: do not offer it when it cannot move later in the same day.
 
-**ONE OPEN-TASK PREDICATE, NOT FIVE.** With the imports settled, `isOpen` from `cards.js` is what
-`search.js`, `clash.js` and `push.js` ask, and what the duplicate rule asks since 134. Session 134's
-defect was one file out of five disagreeing about what "still open" means; there are two copies left
-and both are named in the code — `repeat.js` and `alarm.js` sit on the other side of the graph from
-`cards.js` and importing back into it would make the graph's only cycle.
+**AND THE HOUR RUNGS OBEY THE SAME LINE.** His second sentence is about exact times, and the honest
+reading of it is wider than the one label. `+4 hours` on a task at 22:00 is a perfectly TRUE label
+for an instant that is tomorrow morning, and a person pressing it on a lock screen is not doing
+arithmetic about midnight. Any rung offered as a move within today is dropped when it lands on
+another day: a 22:00 task keeps `+1 hour` and nothing else, a 23:30 task keeps none of them, and the
+day rungs below — Tomorrow, +2 days, Next week — say which day they mean and are untouched.
 
-**THE SIX GATES ARE RETIRED**, his call. Five have been owed since session 101 while the app shipped
-to a phone every day. A ceremony nobody performs is not a safeguard; it is a line in a document that
-makes a project look more reviewed than it is. What replaces them is what has been catching things:
-eight checks, `no-undef`, and his own pass on the phone. Every real defect in the last thirty
-sessions was found by one of those three and none by a gate. `gate2.py` and `gate4.mjs` keep their
-names — they are checks that run, not reviews that wait.
+The pull-in rung goes with them. `now + 1 hour` at 23:30 was a `Today` that meant tomorrow, which is
+the same fault in the one rung that names the day outright.
 
 ## NEXT THREE JOBS
 
@@ -923,3 +920,5 @@ have landed. That is the price of the single table and it is accepted.
 - 20 Aug 2026 — Every relative import in the project carries `?v=`, engine included, and gate2's excuse list is gone — a relative specifier does not inherit its importer's query, so the node checks having no version to pass was never a reason for the browser to be served a module from build 30 — comments are stripped before the scan, because a JSDoc type annotation is not an import.
 - 20 Aug 2026 — `isOpen` in `cards.js` is the engine's one open-task predicate, used by search, clash, push and the duplicate rule — session 134's defect was one file out of five disagreeing about what open means — two copies remain in `repeat.js` and `alarm.js`, named in the code, because importing back into `cards.js` would make the graph's only cycle.
 - 20 Aug 2026 — The six gates are retired, his call — five were owed since session 101 while the app shipped to a phone daily, and every real defect in thirty sessions was found by a check, by `no-undef`, or by him on the phone — a ceremony nobody performs is not a safeguard.
+- 20 Aug 2026 — `Later today` moves to the first band that starts after the task, his rule — four hours reached the next band from some starting points and the middle of the same one from others, so 09:00 became the afternoon by accident and 12:30 stayed in the afternoon it was in — nothing is offered when the day has no band left.
+- 20 Aug 2026 — Any rung offered as a move within today is dropped when it lands on another day, hour rungs and the pull-in included — `+4 hours` on a 22:00 task is a true label for an instant that is tomorrow, and `Today` at 23:30 was `now + 1 hour` meaning tomorrow — the day rungs name their day and are left alone.

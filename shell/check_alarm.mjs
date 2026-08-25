@@ -281,26 +281,41 @@ console.log("\na length of time, spaced either way");
   say(daily.due_at === "2026-08-17T17:00:00+05:30", "and the task's own date is left exactly where it was");
 }
 
-// ---------------------------------------- session 132, `Later today` lands today
+// ------------------------------- sessions 132 and 136, `Later today` in bands
 //
-// His report: pressing `Later today` moved the task to TOMORROW. The rung was
-// `at + 4 hours` with nothing stopping that crossing midnight, so a task in the
-// night band at 21:00 became 01:00 the next day wearing a label saying today.
+// 132: pressing it moved the task to TOMORROW — the rung was `at + 4 hours`
+// with nothing stopping it crossing midnight, so a 21:00 task became 01:00 the
+// next day under a label saying today.
+//
+// 136, his rule and the better one: it moves BY BAND. Morning to afternoon,
+// afternoon to evening, evening to tonight, and nothing at all when the day has
+// no band left. Four hours was a number that reached the next band from some
+// starting points and the middle of the same one from others.
 {
-  const band = (clock) => ({
-    ...task({ due_at: `2026-08-25T${clock}:00+05:30`, date_precision: "band" }),
-  });
-  const rungs = (t) => readPushOptions(t, [t], config, "2026-08-25T08:00:00+05:30");
+  const band = (clock) => task({ due_at: `2026-08-25T${clock}:00+05:30`, date_precision: "band" });
+  const rungs = (t) => readPushOptions(t, [t], config, "2026-08-25T06:00:00+05:30");
   const later = (t) => rungs(t).find((o) => o.push_label === "Later today");
 
-  say(later(band("09:00")).push_to === "2026-08-25T13:00:00+05:30",
-      "morning + 4 hours is still the same day");
-  say(later(band("19:00")).push_to === "2026-08-25T21:00:00+05:30",
-      "evening is clamped to the last band the day has, not carried past midnight");
-  say(later(band("21:00")) === undefined,
-      "and at the last band the rung is dropped — `Later today` with no later today is a lie");
-  say(rungs(band("21:00"))[0].push_label === "Tomorrow",
-      "what is left starts at Tomorrow, which is at least true");
+  say(later(band("09:00")).push_to === "2026-08-25T12:00:00+05:30", "morning goes to the afternoon");
+  say(later(band("13:00")).push_to === "2026-08-25T18:00:00+05:30", "afternoon goes to the evening");
+  say(later(band("19:00")).push_to === "2026-08-25T21:00:00+05:30", "evening goes to tonight");
+  say(later(band("21:30")) === undefined,
+      "and at night there is no rung — `Later today` with no later today is a lie");
+  say(rungs(band("21:30"))[0].push_label === "Tomorrow", "what is left starts at Tomorrow, which is true");
+  // The case his sentence does not reach, answered by the same rule.
+  say(later(band("07:00")).push_to === "2026-08-25T09:00:00+05:30",
+      "before nine goes to the morning, the first band ahead of it");
+
+  // AN HOUR RUNG THAT LEAVES THE DAY IS NOT OFFERED EITHER (session 136).
+  // `+4 hours` on a 22:00 task is a true label for an instant that is tomorrow,
+  // and nobody presses it doing arithmetic about midnight.
+  const exact = (clock) => task({ due_at: `2026-08-25T${clock}:00+05:30`, date_precision: "time" });
+  const labels = (t) => rungs(t).map((o) => o.push_label);
+  say(labels(exact("14:00")).slice(0, 4).join() === "+1 hour,+2 hours,+3 hours,+4 hours",
+      "an afternoon task keeps all four hour rungs");
+  say(labels(exact("22:00")).join().startsWith("+1 hour,Tomorrow"),
+      "a 22:00 task keeps only the hour that stays in the day");
+  say(labels(exact("23:30"))[0] === "Tomorrow", "and a 23:30 task keeps none of them");
 }
 
 console.log(`\n${bad === 0 ? "CHECK ALARM: PASS" : `CHECK ALARM: ${bad} FAILED`}\n`);

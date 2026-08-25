@@ -78,19 +78,53 @@ function isFull(load, capacity) {
  * The targets, by the precision the person gave. Each is an offset from the
  * task's own date rather than from `now`, so pushing twice moves twice.
  */
+/** The wall-clock day an instant sits in. */
+const dayOf = (ms) => Math.floor(ms / DAY) * DAY;
+
 /**
- * The `Later today` rung, or nothing. Four hours on, but never past the last
- * band the day has: `time_bands.night.start` is the hour every other screen
- * calls tonight, so the rung and the words agree.
+ * The `Later today` rung, or nothing.
+ *
+ * IT MOVES BY BANDS, NOT BY HOURS (session 136, his rule): morning goes to
+ * afternoon, afternoon to evening, evening to tonight. Four hours was a number
+ * that landed in the next band from some starting points and in the middle of
+ * the same one from others — 09:00 became 13:00, which is the afternoon by
+ * accident, and 12:30 became 16:30, which is the afternoon it was already in.
+ * Session 132 clamped it to 21:00 so it stopped crossing midnight; the clamp
+ * was right about the day and still wrong about the unit.
+ *
+ * The rule is the FIRST BAND THAT STARTS AFTER IT, read from
+ * `config.time_bands`. That gives his three moves exactly and also answers the
+ * case his sentence does not reach: 07:00 goes to 09:00, the morning, because
+ * that is the first band ahead of it.
+ *
+ * Nothing when the day has no band left, which is his other half: do not offer
+ * it when it cannot move later in the same day.
  */
 function laterToday(at, config) {
-  const night = config?.time_bands?.night?.start ?? "21:00";
-  const [h, m] = night.split(":").map(Number);
-  const midnight = at - (at % DAY);
-  const last = midnight + h * 60 * 60 * 1000 + m * 60 * 1000;
-  if (at >= last) return [];
-  return [{ label: "Later today", at: Math.min(at + 4 * HOUR, last) }];
+  const midnight = dayOf(at);
+  const starts = Object.values(config?.time_bands ?? {})
+    .map((b) => String(b?.start ?? ""))
+    .filter((t) => /^\d{1,2}:\d{2}$/.test(t))
+    .map((t) => {
+      const [h, m] = t.split(":").map(Number);
+      return midnight + h * 60 * 60 * 1000 + m * 60 * 1000;
+    })
+    .sort((a, b) => a - b);
+  const next = starts.find((t) => t > at);
+  return next === undefined ? [] : [{ label: "Later today", at: next }];
 }
+
+/**
+ * A rung that leaves the day it started in (session 136, his rule, applied to
+ * the hour rungs as well).
+ *
+ * `+4 hours` on a task at 22:00 is a true label for an instant that is tomorrow
+ * morning, and a person pressing it at a lock screen is not doing arithmetic
+ * about midnight. Any rung offered as a move WITHIN today is dropped when it
+ * lands on another day. The day rungs below — Tomorrow, +2 days, Next week —
+ * say which day they mean and are left alone.
+ */
+const sameDay = (at) => (rung) => dayOf(rung.at) === dayOf(at);
 
 function targetsFor(task, now, config) {
   const at = Date.parse(task.due_at.slice(0, 19) + "Z");
@@ -115,7 +149,11 @@ function targetsFor(task, now, config) {
   const pullIn = [];
   if (at - (at % DAY) > today && ["time", "band", "day"].includes(task.date_precision)) {
     const atToday = today + (at % DAY);
-    pullIn.push({ label: "Today", at: atToday > nowMs ? atToday : nowMs + HOUR });
+    // The pull-in has to land today as well (session 136). `now + 1 hour` at
+    // 23:30 is tomorrow, wearing a label that says Today — the same fault the
+    // rungs above were carrying, in the one rung that names the day outright.
+    const pulled = atToday > nowMs ? atToday : nowMs + HOUR;
+    if (dayOf(pulled) === today) pullIn.push({ label: "Today", at: pulled });
   }
   // Each set is a STANDARD LADDER at the precision the person gave (session
   // 119): the row scrolls sideways, so four or five rungs cost no height and a
@@ -130,10 +168,12 @@ function targetsFor(task, now, config) {
         // +4hrs"). An exact time is the precision where an hour is a real
         // answer, and +1 then +4 made the middle two reachable only by pushing
         // twice. The rows scroll, so rungs cost no height.
-        { label: "+1 hour", at: at + HOUR },
-        { label: "+2 hours", at: at + 2 * HOUR },
-        { label: "+3 hours", at: at + 3 * HOUR },
-        { label: "+4 hours", at: at + 4 * HOUR },
+        ...[
+          { label: "+1 hour", at: at + HOUR },
+          { label: "+2 hours", at: at + 2 * HOUR },
+          { label: "+3 hours", at: at + 3 * HOUR },
+          { label: "+4 hours", at: at + 4 * HOUR },
+        ].filter(sameDay(at)),
         { label: "Tomorrow", at: at + DAY },
         { label: "+2 days", at: at + 2 * DAY },
         { label: "Next week", at: at + 7 * DAY },
