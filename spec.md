@@ -33,7 +33,7 @@ Run app:   py -m http.server 8000, then http://localhost:8000/  (both screens, w
            /shell/ and still draws every field
            (live: every keystroke
            re-resolves; no build step, shell/config.js is checked against config.ts by gate2.py)
-Run tests: python3 gate2.py && python3 selftest.py && node gate4.mjs && node shell/check_render.mjs && node shell/check_loud.mjs && node shell/check_alarm.mjs && node shell/check_search.mjs && node shell/check_writes.mjs
+Run tests (install eslint first: npm i -g eslint): python3 gate2.py && python3 selftest.py && node gate4.mjs && node shell/check_render.mjs && node shell/check_loud.mjs && node shell/check_alarm.mjs && node shell/check_search.mjs && node shell/check_writes.mjs
 Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section B for one section,
            --placeholder to run the current key against the frozen Stage 3 file under the Stage 4 reading)
 
@@ -43,7 +43,7 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
   contract     54
   config       a.19
   answer_key   28
-  shell        48
+  shell        49
   gate1        signed on example 35
   gate2        signed on contract 32
   gate3        signed on shell 1
@@ -79,46 +79,31 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 
 ## THIS SESSION'S JOB
 
-Session 132: four items from his build-47 pass.
+Session 133: "all my tasks from all tabs vanished." Mine, and the store was never touched.
 
-**A BELL AND A LOOP ON THE ROW**, his ask, and neither is a control. The row has said WHEN since it
-was built and never said HOW IT WILL TELL YOU: everything about an alarm or a repeat lived one screen
-away, so the only way to know which of eleven tasks would wake you was to open them one at a time.
-They sit beside the title rather than among the acts, carry no border, no background and no hit
-area, and are `aria-hidden` with the fact folded into the title's own label — a screen reader that
-stops on two decorative shapes between a title and a date has been made slower by them.
+**WHAT HAPPENED.** Session 132 removed undo. `say()` — the toast — sat next to `remember()` in
+`mvp.list.js` and was deleted with it. `say` is handed out in `mountList`'s RETURNED API, so the
+object literal at the bottom of the function threw a ReferenceError THE MOMENT THE SCREEN MOUNTED.
+The list never rendered. Every tab was empty over a store holding every task it had always held.
 
-**UNDO IS GONE**, his call: "they will cause more problems in the future". He is right, and the
-reason is the store rather than the feature. Undo held ONE entry, restored a WHOLE record with a
-fresh stamp, and every write in the app had to remember to write it first. Under newest-wins that
-restore is a full-record overwrite racing the sync — two devices, one undo slot — and session 130
-already showed what a stamp in the wrong place does to that merge.
+**WHY EIGHT CHECKS WERE GREEN, and they could not have been anything else.** `node --check` parses a
+file and never resolves a name. `tsc --strict` in gate2 reads `types.ts`, not the shell. And no check
+can import a screen at all, because every screen imports the real store at module load — the same
+seam session 127 solved for the write paths and has not solved for the screens. Nothing in this
+project had ever asked whether a name exists.
 
-What it protected is protected by the state now. The bin cancels rather than erasing (session 130)
-and `Revive` brings anything on the Done tab back whole. The one thing undo could do that Revive
-cannot is unpick an edit, which a person can also do by editing. `Delete for good` is now the only
-press in this app that cannot be taken back, and it is reachable only from a row already closed and
-cancelled: two decisions on two screens, which is the whole of its protection and enough.
+**`no-undef` NOW RUNS IN GATE 2.** `eslint.config.mjs` enables exactly one rule and declares every
+global a browser hands the app; anything left is a name that does not exist. Style is not a concern
+here — a linter that argues about style is one that gets turned off. Proved by deleting `say()` again
+and watching gate2 fail with three lines naming it.
 
-The `undo` table and the `UndoEntry` type stay in `contract.md` and in `schema.sql`. Nothing writes
-to them. `undo_ui_timeout_sec` still times the toast; the name outlived the feature and renaming a
-config key means renaming it in three files gate2 counts.
+It is a WARNING when eslint is not installed rather than a failure: a missing tool is not a broken
+repository. But it says so loudly, because a check that quietly does not run is worse than one that
+was never written. `npm i -g eslint`.
 
-**`Later today` MOVED THE TASK TO TOMORROW**, his report, and the arithmetic says exactly why. The
-rung was `at + 4 hours` with nothing stopping that crossing midnight: a task in the evening band sits
-at 18:00 and four hours later is 22:00, which is fine, but one in the night band sits at 21:00 and
-four hours later is 01:00 the NEXT DAY, wearing a label that says today. It is clamped to
-`time_bands.night.start` — the same 21:00 every other screen means by tonight — and DROPPED entirely
-when the task is already at or past it, because `Later today` with nothing later today left is not a
-smaller lie than the first one.
-
-**THE APK LINK, THIRD ATTEMPT, AND THE ATTRIBUTE WAS NEVER THE PROBLEM.** A Capacitor WebView hands
-a link to the system browser only when its host is NOT the app's own. The app is served from
-`freezigo-raj.github.io` and so was the APK, so a plain link, `download` and `target="_blank"` all
-asked the WebView to navigate to a binary on its own host — which it does nothing at all with. No
-download, no error, no sound. The link points at `raw.githubusercontent.com` now, a different host,
-which is the whole fix. The address is also drawn as selectable text with a copy button, because a
-link that silently does nothing has already happened twice and an address a person can read cannot.
+**THE SEAM IS STILL THERE.** A screen cannot be mounted by any check. That is the next thing worth
+building and it is the same fix as session 127's: hand the store in rather than importing it. Until
+then, `no-undef` covers the class of defect that produced this one and nothing covers the rest.
 
 ## NEXT THREE JOBS
 
@@ -919,3 +904,6 @@ have landed. That is the price of the single table and it is accepted.
 - 20 Aug 2026 — UNDO IS REMOVED, his call — one entry, a whole-record restore with a fresh stamp, and every write in the app had to remember to write it first, which is the wrong shape for a store that merges — the bin cancelling and `Revive` cover what it protected, and `Delete for good` is now the one press that cannot be taken back.
 - 20 Aug 2026 — `Later today` is clamped to `time_bands.night.start` and dropped when the task is already past it — it was `at + 4 hours` and a 21:00 task became 01:00 the next day under a label saying today — a rung that cannot land today is not offered.
 - 20 Aug 2026 — The APK link points at a DIFFERENT HOST than the app, with the address also drawn as selectable text — a Capacitor WebView only hands out links whose host is not its own, so three attempts at the attribute were all asking it to navigate to a binary on its own host, which it does silently and completely nothing with.
+- 20 Aug 2026 — `say()` was deleted with `remember()` in session 132 and `say` is handed out in `mountList`'s returned API, so the screen threw at mount and every tab looked empty over an intact store — restored, and the fault was a name that did not exist rather than anything to do with data.
+- 20 Aug 2026 — gate2 runs eslint's `no-undef` over the shell, one rule and every browser global declared — `node --check` never resolves a name, `tsc --strict` reads `types.ts` rather than the shell, and no check can import a screen because every screen imports the real store at module load — proved by deleting `say()` again and watching the gate fail.
+- 20 Aug 2026 — A missing eslint is a loud warning and not a failure — a tool that is not installed is not a broken repository, but a check that quietly does not run is worse than one never written.

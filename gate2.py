@@ -6,7 +6,7 @@
   contract.md   ->  example.md                      every item used, or excused
   spec.md       ->  reality                          versions and counts it claims
 """
-import io,re,sys,glob
+import io,re,sys,glob,shutil,subprocess
 
 C=io.open('contract.md',encoding='utf-8').read()
 T=io.open('types.ts',encoding='utf-8').read()
@@ -601,6 +601,29 @@ for _f in sorted(_glob.glob('shell/*.js')):
     for _m in re.finditer(r'import\(\s*["\'](\.\/[^"\']+?)["\']\s*\)', _src):
         _say = warns.append if _f.replace('\\', '/') in _ENGINE_EXCUSED else bad
         _say('%s: `%s` is imported without ?v= — the browser will answer it from cache' % (_f, _m.group(1)))
+
+# ------------------------------------------------------------------ no-undef
+# THE CHECK THAT WOULD HAVE CAUGHT SESSION 132 (session 133). `say()` was
+# deleted by accident and `say` is handed out in `mountList`'s returned API, so
+# the screen threw the moment it mounted and every tab looked empty on a store
+# that was intact. `node --check` parses and never resolves a name; `tsc
+# --strict` here reads `types.ts` rather than the shell; and no check can import
+# a screen, because every screen imports the real store at module load.
+#
+# It is a WARNING when eslint is not installed rather than a failure, because a
+# missing tool is not a broken repository — but it says so loudly, because a
+# check that quietly does not run is worse than one that was never written.
+_lint = shutil.which('eslint')
+if _lint:
+    _r = subprocess.run([_lint, '--no-config-lookup', '-c', 'eslint.config.mjs', 'shell', '.'],
+                        capture_output=True, text=True)
+    if _r.returncode not in (0,):
+        for _line in (_r.stdout or _r.stderr).strip().splitlines():
+            if 'no-undef' in _line or 'error' in _line.lower():
+                bad('eslint: %s' % _line.strip())
+else:
+    warns.append('eslint is not installed, so no-undef did not run. `npm i -g eslint`. '
+                 'This is the check that catches a name that does not exist.')
 
 print('inputs %d | working %d | shown %d | Task %d | Undo %d | config %d | excused %d | drawn %d'
       %(len(inputs),len(working),len(shown),len(task_c),len(undo_c),len(cfg_a),len(excused),len(drawn)))

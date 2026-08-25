@@ -81,6 +81,22 @@ export function mountList(root, { openEdit, openAccount, openAlarms, onTasks } =
   // The `undo` table and the `UndoEntry` type stay in `contract.md` and in the
   // schema. Nothing writes to them.
 
+  /**
+   * The toast. It survived the removal of undo and should have gone on
+   * surviving: session 132 deleted it by accident along with `remember()`, and
+   * because `say` is handed out in this file's returned API, the object literal
+   * at the bottom threw a ReferenceError the moment the screen mounted. The
+   * list never rendered, and every tab looked empty on a store that was
+   * completely intact. See spec.md, session 133.
+   */
+  function say(text) {
+    clearTimeout(toastTimer);
+    toast = text;
+    // The name outlived undo (session 132). It times the toast and nothing else.
+    toastTimer = setTimeout(() => { toast = null; draw(); }, (partAConfig.undo_ui_timeout_sec ?? 8) * 1000);
+    draw();
+  }
+
   async function act(id, what, index) {
     const task = all.find((t) => t.id === id);
     if (!task) return;

@@ -3066,3 +3066,25 @@ Colour meant one thing and now means three. Accent is pressable, `#c0492b` is ov
 **Note for the next pass.** The APK link now points at `raw.githubusercontent.com/freezigo-raj/cascade/main/app-debug.apk`, which assumes the file is committed at the repository root on `main`. If it is not, the address under the button is the one to use, and he should say which of the two hosts works — that is the one thing reasoning from here cannot settle.
 
 **Still owed:** the nine alarm tests. Gates 1-6.
+
+---
+
+## Session 133 — 20 August 2026
+
+**Job:** "All my tasks from all tabs vanished." Session 132's defect, found by him within the hour.
+
+**Stage before / after:** 5 / 5
+
+**Files changed:**
+- `shell/mvp.list.js` — `say()` restored
+- `eslint.config.mjs` — created. One rule: `no-undef`
+- `gate2.py` — runs it when eslint is present, warns loudly when it is not
+- `shell/render.js` 49 and the five other version sites, `spec.md`
+
+**Tests:** all eight green, plus `no-undef` clean across the shell.
+
+**The lesson, and it is the same one as session 123 in a different coat.** The value was never wrong; the NAME did not exist. Nothing in this project had ever asked that question, and a screen still cannot be mounted by any check because every screen imports the real store at module load. That seam is the next thing worth building.
+
+**No data was lost.** The store was never written to. The screen simply never drew.
+
+**Still owed:** the nine alarm tests. Gates 1-6.
