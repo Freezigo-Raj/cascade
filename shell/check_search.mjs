@@ -18,6 +18,7 @@
 
 import { partAConfig as config } from "./config.js";
 import { matchTier } from "./search.js";
+import { resolve } from "./resolve.js";
 
 let bad = 0;
 const say = (ok, what) => {
@@ -55,6 +56,40 @@ say(head.score > tail.score, "the title's own opening still ranks first");
 // The empty query draws no panel; the list screen relies on this rather than
 // checking for itself.
 say(tier("", "water plants") === 0, "an empty query is not a search for everything");
+
+// ---------------------------------- session 134, the panel and the dialog agree
+//
+// His report: the dialog said a task already exists, overdue since Monday,
+// while the panel under the box showed nothing at all. The duplicate rule was
+// the only rule in the engine reading the WHOLE store — every other one filters
+// to open tasks — so it warned about work finished weeks ago, and about every
+// cancelled row, of which there are now many because the bin cancels rather
+// than erases.
+//
+// The two answer the same question and this asserts they answer it from the
+// same set.
+{
+  const stored = (task_state) => ({
+    id: "a", title: "Pcb pin requirement", normalised: "pcb pin requirement",
+    compare_key: "pcb pin requirement", raw_text: "Pcb pin requirement",
+    due_at: "2026-08-17T10:00:00+05:30", has_time: false, date_precision: "day",
+    date_anchor: "point", est_duration_min: 30, archived: false,
+    closed_at: task_state === "ready" ? null : "2026-08-18T10:00:00+05:30",
+    task_state,
+  });
+  const ask = (state) => resolve({
+    typed_line: "Pcb pin requirement", now: "2026-08-25T10:00:00+05:30",
+    config, existing_tasks: [stored(state)],
+  });
+
+  say(Boolean(ask("ready").capture.duplicate_dialog), "an OPEN task with the same name still warns");
+  say(ask("done").capture.duplicate_dialog === null, "a done one does not");
+  say(ask("cancelled").capture.duplicate_dialog === null, "nor a cancelled one");
+  // The panel under the box: the set the dialog now shares. A closed task is
+  // absent from both, which is the whole of the fix in one line.
+  say(ask("done").list.results.length === 0, "and the panel under the box shows nothing either");
+  say(ask("ready").list.results.length > 0, "while an open one appears in both");
+}
 
 console.log(`\n${bad === 0 ? "CHECK SEARCH: PASS" : `CHECK SEARCH: ${bad} FAILED`}\n`);
 process.exit(bad ? 1 : 0);

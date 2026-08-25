@@ -3088,3 +3088,26 @@ Colour meant one thing and now means three. Accent is pressable, `#c0492b` is ov
 **No data was lost.** The store was never written to. The screen simply never drew.
 
 **Still owed:** the nine alarm tests. Gates 1-6.
+
+---
+
+## Session 134 — 20 August 2026
+
+**Job:** His question: are done and cancelled tasks being checked for similarity? Yes, they were.
+
+**Stage before / after:** 5 / 5
+
+**Files changed:**
+- `shell/cards.js` — `isOpen` exported, and `onDefaultList` reads it
+- `shell/resolve.js` — the duplicate check filters to open tasks
+- `shell/search.js` — the same test, written out, with the reason it is not imported
+- `shell/check_search.mjs` — five assertions that the panel and the dialog share a set
+- `shell/render.js` 50 and the five other version sites, `spec.md`, `MVP.md`
+
+**Tests:** all eight green.
+
+**Why it surfaced now.** The rule has always read the whole store. Session 130 made the bin cancel rather than erase, so the closed set grows with every dropped task instead of vanishing — and a rule that was wrong quietly for a hundred sessions became wrong loudly in four days.
+
+**Named, not done:** three engine files still carry their own copy of the open-task predicate. Consolidating them needs the engine's static-import style settled against gate2's version rule.
+
+**Still owed:** the nine alarm tests. Gates 1-6.

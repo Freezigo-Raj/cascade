@@ -43,7 +43,7 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
   contract     54
   config       a.19
   answer_key   28
-  shell        49
+  shell        50
   gate1        signed on example 35
   gate2        signed on contract 32
   gate3        signed on shell 1
@@ -79,31 +79,32 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 
 ## THIS SESSION'S JOB
 
-Session 133: "all my tasks from all tabs vanished." Mine, and the store was never touched.
+Session 134: his question, and the answer was yes.
 
-**WHAT HAPPENED.** Session 132 removed undo. `say()` — the toast — sat next to `remember()` in
-`mvp.list.js` and was deleted with it. `say` is handed out in `mountList`'s RETURNED API, so the
-object literal at the bottom of the function threw a ReferenceError THE MOMENT THE SCREEN MOUNTED.
-The list never rendered. Every tab was empty over a store holding every task it had always held.
+**THE DUPLICATE CHECK WAS READING THE WHOLE STORE.** His report: the dialog said a task already
+exists, overdue since Monday, while the panel under the box showed nothing at all. He asked whether
+done and cancelled tasks were being checked for similarity. They were.
 
-**WHY EIGHT CHECKS WERE GREEN, and they could not have been anything else.** `node --check` parses a
-file and never resolves a name. `tsc --strict` in gate2 reads `types.ts`, not the shell. And no check
-can import a screen at all, because every screen imports the real store at module load — the same
-seam session 127 solved for the write paths and has not solved for the screens. Nothing in this
-project had ever asked whether a name exists.
+`readDuplicate()` was the ONLY rule in the engine reading `existing_tasks` unfiltered. `cards.js`,
+`clash.js`, `push.js` and the search panel all filter to `ready` and not archived. So the dialog
+warned about work finished weeks ago, and about every cancelled row — and since session 130 the bin
+CANCELS rather than erases, so that set only grows, which is why this surfaced now and not a year
+ago.
 
-**`no-undef` NOW RUNS IN GATE 2.** `eslint.config.mjs` enables exactly one rule and declares every
-global a browser hands the app; anything left is a name that does not exist. Style is not a concern
-here — a linter that argues about style is one that gets turned off. Proved by deleting `say()` again
-and watching gate2 fail with three lines naming it.
+THE PANEL AND THE DIALOG ANSWER THE SAME QUESTION AND MUST ANSWER IT FROM THE SAME SET. Otherwise
+the dialog is talking about something the person cannot see, which is exactly what he was looking
+at. A finished task with this name is not a reason to refuse a new one; `Revive` on the Done tab is
+what a finished task with this name is for.
 
-It is a WARNING when eslint is not installed rather than a failure: a missing tool is not a broken
-repository. But it says so loudly, because a check that quietly does not run is worse than one that
-was never written. `npm i -g eslint`.
+`cards.js` exports `isOpen` now and `resolve.js` uses it. `check_search.mjs` asserts that a done and
+a cancelled task raise no dialog and appear in no panel, and that an open one still does both.
 
-**THE SEAM IS STILL THERE.** A screen cannot be mounted by any check. That is the next thing worth
-building and it is the same fix as session 127's: hand the store in rather than importing it. Until
-then, `no-undef` covers the class of defect that produced this one and nothing covers the rest.
+**THE PREDICATE STILL HAS FOUR COPIES, and that is named rather than half-fixed.** `search.js`,
+`clash.js` and `push.js` each write it out. None of them imports anything at all, and adding a
+static relative import to an engine file is exactly what gate2 refuses without a version (session
+129) — so consolidating them needs the engine's import style settled first. That is a job of its own
+and it is worth doing: this defect was one file out of five disagreeing, and there are still three
+places for that to happen again.
 
 ## NEXT THREE JOBS
 
@@ -907,3 +908,5 @@ have landed. That is the price of the single table and it is accepted.
 - 20 Aug 2026 — `say()` was deleted with `remember()` in session 132 and `say` is handed out in `mountList`'s returned API, so the screen threw at mount and every tab looked empty over an intact store — restored, and the fault was a name that did not exist rather than anything to do with data.
 - 20 Aug 2026 — gate2 runs eslint's `no-undef` over the shell, one rule and every browser global declared — `node --check` never resolves a name, `tsc --strict` reads `types.ts` rather than the shell, and no check can import a screen because every screen imports the real store at module load — proved by deleting `say()` again and watching the gate fail.
 - 20 Aug 2026 — A missing eslint is a loud warning and not a failure — a tool that is not installed is not a broken repository, but a check that quietly does not run is worse than one never written.
+- 20 Aug 2026 — The duplicate check reads OPEN tasks only, his report — it was the one rule in the engine reading the whole store, so it warned about work done weeks ago while the panel under the box showed nothing — and since the bin started cancelling rather than erasing, that set only grows.
+- 20 Aug 2026 — `cards.js` exports `isOpen` and `resolve.js` uses it; `search.js`, `clash.js` and `push.js` keep their own copies — none of those files imports anything, and a static relative import in an engine file is what gate2 refuses without a version — consolidating them needs the engine's import style settled, and it is named as its own job rather than half-done.

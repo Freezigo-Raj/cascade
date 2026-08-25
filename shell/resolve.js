@@ -12,7 +12,7 @@ export const lemmaReady = import("./lemma.js")
   .then((m) => { lemmasNow = m.lemmas; })
   .catch(() => {});
 const lemmas = (line) => (lemmasNow ? lemmasNow(line) : null);
-import { readCards, readIdeas, readDone, rankKeyFor } from "./cards.js";
+import { readCards, readIdeas, readDone, rankKeyFor, isOpen } from "./cards.js";
 import { readResults } from "./search.js";
 import { readPushOptions } from "./push.js";
 import { readClashes, readClashDialog, readDeadlineClashes, readDeadlineDialog } from "./clash.js";
@@ -1026,9 +1026,24 @@ export function resolve(input) {
   const compare_key = readCompareKey(normalised);
   // The same exclusion as the two dialogs, for the same reason: saving an edit
   // used to report that the task already exists, naming itself.
+  // THE DUPLICATE CHECK READS OPEN TASKS ONLY (session 134, his report: the
+  // dialog said a task already exists while the panel below the box showed
+  // nothing at all).
+  //
+  // It was the only rule in the engine reading the whole store. `cards.js`,
+  // `clash.js`, `push.js` and the search panel all filter to `ready` and not
+  // archived; this one did not, so it warned about tasks that had been done
+  // weeks ago and about every cancelled one — and since session 130 the bin
+  // CANCELS rather than erases, so that set only grows. The panel and the
+  // dialog answer the same question and they have to answer it from the same
+  // set, or the dialog is talking about something the person cannot see.
+  //
+  // A finished task with this name is not a reason to refuse a new one. That is
+  // what `Revive` on the Done tab is for.
+  const openOnly = (input.existing_tasks ?? []).filter(isOpen);
   const duplicateAgainst = input.bound_task_id
-    ? (input.existing_tasks ?? []).filter((t) => t.id !== input.bound_task_id)
-    : input.existing_tasks;
+    ? openOnly.filter((t) => t.id !== input.bound_task_id)
+    : openOnly;
   const duplicate = readDuplicate(normalised, compare_key, duplicateAgainst, input.config, readInstant(input.now));
   const summed = readSum(dates.title, action_verb, input.config);
   const taps = readTaps(input, derived.commitment_type);

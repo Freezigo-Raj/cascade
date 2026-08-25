@@ -235,6 +235,8 @@ The box is at the top. The tap buttons are with it. The matching tasks are below
 
 **The duplicate dialog fires on Add only, never while typing.** It reads `"check sensor" already exists, due today.` with `[Add anyway]` and `[Cancel]`. Cancel leaves the typed text in the box.
 
+**It reads OPEN tasks only** (session 134). Done, cancelled and archived rows are not compared against, which is the same set the search panel under the box reads — the two answer the same question and a dialog naming something the person cannot see is worse than no dialog. A finished task with the same name is what `Revive` on the Done tab is for.
+
 **The undo toast** reads `Added "Call markan" · this morning` with `[Undo]`, and holds 8 seconds. The undo entry outlives the toast.
 
 ---

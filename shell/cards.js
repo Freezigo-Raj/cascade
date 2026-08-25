@@ -106,16 +106,26 @@ export function readIdeas(existing) {
 }
 
 /**
+ * STILL OPEN. One predicate, exported, because five files were asking this
+ * question with their own copy of the answer and one of them (session 134) was
+ * not asking it at all.
+ *
+ * `ready` is the open state. The set is `ready` `done` `cancelled`, from the
+ * contract; "open" is not a member and reading it as one hid every card once
+ * already.
+ */
+export function isOpen(t) {
+  return Boolean(t) && typeof t === "object"
+    && (!t.task_state || t.task_state === "ready") && !t.archived;
+}
+
+/**
  * A task is on the Default list when it carries a resolved date and is still
  * open. Done, cancelled and archived tasks leave the list entirely: `DONE` is a
  * group in the search results and the main list has no section for it.
  */
 function onDefaultList(t) {
-  if (!t || typeof t !== "object") return false;
-  // `ready` is the open state. The set is `ready` `done` `cancelled`, from the
-  // contract; "open" is not a member and reading it as one hid every card.
-  if (t.task_state && t.task_state !== "ready") return false;
-  if (t.archived) return false;
+  if (!isOpen(t)) return false;
   return Boolean(t.due_at || t.earliest_start);
 }
 
