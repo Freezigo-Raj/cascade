@@ -43,7 +43,7 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
   contract     54
   config       a.19
   answer_key   28
-  shell        47
+  shell        48
   gate1        signed on example 35
   gate2        signed on contract 32
   gate3        signed on shell 1
@@ -79,42 +79,46 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 
 ## THIS SESSION'S JOB
 
-Session 131: his `UI_review_R2.pptx`, re-uploaded with new contents. THE DECK WAS READ THIS TIME.
-Session 130 answered the two items he had typed in chat and never opened the file, and three of its
-five items were only in the file — a stated failure, and the reason the first thing this session did
-was dump every `<a:t>` in every slide rather than trusting a filename.
+Session 132: four items from his build-47 pass.
 
-**ONE CHARACTER PAIR HELD A DEFECT OPEN THROUGH THREE SESSIONS.** His slide: a task with an alarm
-still reading `An alarm needs an exact time`.
+**A BELL AND A LOOP ON THE ROW**, his ask, and neither is a control. The row has said WHEN since it
+was built and never said HOW IT WILL TELL YOU: everything about an alarm or a repeat lived one screen
+away, so the only way to know which of eleven tasks would wake you was to open them one at a time.
+They sit beside the title rather than among the acts, carry no border, no background and no hit
+area, and are `aria-hidden` with the fact folded into the title's own label — a screen reader that
+stops on two decorative shapes between a title and a date has been made slower by them.
 
-`resolve()` returns `due_at: ""` for a line with no date — an EMPTY STRING, not null. The alarm row
-read `out.task.due_at ?? held?.due_at`, and `??` falls through on null and undefined only. So `dueAt`
-came out as `""`, the fallback to the stored date never ran, and `if (hasTime && dueAt)` failed on
-the empty string while `hasTime` was perfectly true. Session 126 wrote the fallback rule and session
-129 fixed its timing; both were correct and both read straight past this. It is `||` now.
+**UNDO IS GONE**, his call: "they will cause more problems in the future". He is right, and the
+reason is the store rather than the feature. Undo held ONE entry, restored a WHOLE record with a
+fresh stamp, and every write in the app had to remember to write it first. Under newest-wins that
+restore is a full-record overwrite racing the sync — two devices, one undo slot — and session 130
+already showed what a stamp in the wrong place does to that merge.
 
-**THE PICKERS SIT ON THEIR OWN LINE**, his slide, and there are TWO. Inside the scrolling rung row
-`Pick…` was reachable only by scrolling past every approximation of the answer. `Pick time` is one
-dialog for the common case — same day, different hour — and a time already gone means TOMORROW,
-because 9am chosen at 6pm can only be the morning and a push that lands overdue is a trap.
-`Pick date & time` is the whole thing. Both are drawn whatever the payload carried: they invent no
-date, the person is typing one.
+What it protected is protected by the state now. The bin cancels rather than erasing (session 130)
+and `Revive` brings anything on the Done tab back whole. The one thing undo could do that Revive
+cannot is unpick an edit, which a person can also do by editing. `Delete for good` is now the only
+press in this app that cannot be taken back, and it is reachable only from a row already closed and
+cancelled: two decisions on two screens, which is the whole of its protection and enough.
 
-**`Tomorrow` LEFT THE LOCK SCREEN**, his slide. Four rungs rather than five. Moving something to
-another day is a decision worth being awake for; the lock screen is for delaying by hours, and the
-pickers cover everything further out.
+The `undo` table and the `UndoEntry` type stay in `contract.md` and in `schema.sql`. Nothing writes
+to them. `undo_ui_timeout_sec` still times the toast; the name outlived the feature and renaming a
+config key means renaming it in three files gate2 counts.
 
-**THE APK LINK DID NOTHING, AND THERE WERE SOMETIMES TWO OF IT.** Both his, and they are unrelated
-bugs in one line of code. The `download` attribute is ignored across origins, and a WebView asked to
-navigate to an APK on its own host does nothing at all — no download, no error, no sound.
-`target="_blank"` is the one signal Capacitor reads as "this is not for me", so the link leaves for
-the system browser, which downloads it and offers to open it. And the account screen's alarm block
-redraws whenever the app returns from a system settings screen, clearing the rows it owns by
-removing every `[data-perm]` node first — the link carried no such mark, survived the sweep, and a
-second copy was appended beside it.
+**`Later today` MOVED THE TASK TO TOMORROW**, his report, and the arithmetic says exactly why. The
+rung was `at + 4 hours` with nothing stopping that crossing midnight: a task in the evening band sits
+at 18:00 and four hours later is 22:00, which is fine, but one in the night band sits at 21:00 and
+four hours later is 01:00 the NEXT DAY, wearing a label that says today. It is clamped to
+`time_bands.night.start` — the same 21:00 every other screen means by tonight — and DROPPED entirely
+when the task is already at or past it, because `Later today` with nothing later today left is not a
+smaller lie than the first one.
 
-**Shell build 5.** Nothing about the payload changed, so an APK on build 4 rings correctly and
-simply wears the older arrangement of the same buttons.
+**THE APK LINK, THIRD ATTEMPT, AND THE ATTRIBUTE WAS NEVER THE PROBLEM.** A Capacitor WebView hands
+a link to the system browser only when its host is NOT the app's own. The app is served from
+`freezigo-raj.github.io` and so was the APK, so a plain link, `download` and `target="_blank"` all
+asked the WebView to navigate to a binary on its own host — which it does nothing at all with. No
+download, no error, no sound. The link points at `raw.githubusercontent.com` now, a different host,
+which is the whole fix. The address is also drawn as selectable text with a copy button, because a
+link that silently does nothing has already happened twice and an address a person can read cannot.
 
 ## NEXT THREE JOBS
 
@@ -911,3 +915,7 @@ have landed. That is the price of the single table and it is accepted.
 - 20 Aug 2026 — The lock screen carries four rungs and two pickers on a line of their own, his slides — `Pick…` inside the scroller sat behind four approximations of the exact answer, and moving a task to another day is a decision worth being awake for — `Pick time` is one dialog and sends a time already gone to tomorrow.
 - 20 Aug 2026 — The APK link is `target="_blank"` and carries `data-perm` — `download` is ignored across origins and a WebView navigating to an APK on its own host does nothing at all, and the account's alarm block sweeps `[data-perm]` nodes on every redraw so an unmarked link was duplicated on the way back from a settings screen.
 - 20 Aug 2026 — A re-uploaded file with the same name is a NEW file — session 130 answered the two items typed in chat and never opened `UI_review_R2.pptx`, and three of its five items existed only in the deck — every slide's text is dumped before anything is built.
+- 20 Aug 2026 — A row draws a bell for an alarm and a loop for a repeat, his ask, and neither is clickable — the row said when and never how it would tell you, so knowing which of eleven tasks would wake you meant opening all eleven — they are `aria-hidden` and the fact is folded into the title's label instead.
+- 20 Aug 2026 — UNDO IS REMOVED, his call — one entry, a whole-record restore with a fresh stamp, and every write in the app had to remember to write it first, which is the wrong shape for a store that merges — the bin cancelling and `Revive` cover what it protected, and `Delete for good` is now the one press that cannot be taken back.
+- 20 Aug 2026 — `Later today` is clamped to `time_bands.night.start` and dropped when the task is already past it — it was `at + 4 hours` and a 21:00 task became 01:00 the next day under a label saying today — a rung that cannot land today is not offered.
+- 20 Aug 2026 — The APK link points at a DIFFERENT HOST than the app, with the address also drawn as selectable text — a Capacitor WebView only hands out links whose host is not its own, so three attempts at the attribute were all asking it to navigate to a binary on its own host, which it does silently and completely nothing with.

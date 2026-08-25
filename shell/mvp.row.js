@@ -14,6 +14,20 @@ const { tapGuard } = await import(`./mvp.tap.js${v}`);
 // bin glyph, each still carrying its word for a screen reader and a hover. The
 // words were the row's widest thing and said what the shapes already say.
 const PIN_PATH = "M9.5 1.5l5 5-1.2 1.2-.6-.2-3 3 .4 2.6-1 1-3.1-3.1L2 15l-1-1 4-4L1.9 6.9l1-1 2.6.4 3-3-.2-.6z";
+// A BELL AND A LOOP, AND NEITHER IS A CONTROL (session 132, his ask: "need to
+// know if a task is one with repeat or with alarm by looking at the task, use a
+// small symbol for each, not clickable").
+//
+// The row has said WHEN since it was built and never said HOW IT WILL TELL YOU.
+// Everything about an alarm or a repeat lived one screen away, so the only way
+// to know which of eleven tasks would wake you was to open them one at a time.
+//
+// They sit beside the title, not among the acts, and they are `aria-hidden`
+// with the fact spoken in the title's own label instead: a screen reader that
+// stops on two decorative shapes between a title and a date has been made
+// slower by them.
+const BELL_PATH = "M8 1.6a3.4 3.4 0 00-3.4 3.4v2.3L3.3 9.9h9.4l-1.3-2.6V5A3.4 3.4 0 008 1.6zM6.6 11.4a1.4 1.4 0 002.8 0";
+const LOOP_PATH = "M4.2 6.2A4 4 0 0111.6 5M11.8 9.8A4 4 0 014.4 11M4.2 3.6v2.6h2.6M11.8 12.4V9.8H9.2";
 const BIN_PATH = "M3 4h10M6.5 4V2.5h3V4M4.5 4l.7 9a1 1 0 001 .9h3.6a1 1 0 001-.9l.7-9M6.8 6.5v5M9.2 6.5v5";
 
 const MONTHS = ["January", "February", "March", "April", "May", "June",
@@ -73,12 +87,14 @@ export function rowOf(card, { all, tab, slot, narrow, act, openEdit }) {
   row.appendChild(tick);
 
   const body = el("div", "body");
+  const titleRow = el("div", "title-row");
   const title = el("button", "title", card.card_title);
   title.type = "button";
   // Tapping the row opens screen 2 with the task loaded. The box holds the
   // title, never `raw_text`, and screen 2 is the one that decides that.
   title.addEventListener("click", () => openEdit && openEdit(card.card_id));
-  body.appendChild(title);
+  titleRow.appendChild(title);
+  body.appendChild(titleRow);
 
   // A Done row is a title alone. `Overdue since Friday` on a finished task is
   // a sentence about a deadline that no longer applies.
@@ -91,6 +107,23 @@ export function rowOf(card, { all, tab, slot, narrow, act, openEdit }) {
   const said = narrow.matches ? card.card_reason_short : card.card_reason;
   const echo = slot && said &&
     said.replace(/\.$/, "").toLowerCase() === `due ${slot.toLowerCase()}`;
+  // The two marks, in the order a person asks the question: will it wake me,
+  // and will it come back.
+  const marks = [];
+  if (task?.alarm_type && task.alarm_type !== "none") marks.push(["alarm", BELL_PATH]);
+  if (task?.recurrence && task.recurrence.unit) marks.push(["repeats", LOOP_PATH]);
+  if (marks.length) {
+    const strip = el("span", "marks");
+    for (const [what, path] of marks) {
+      const m = el("span", "mark mark-" + what);
+      m.appendChild(glyph(path, false));
+      strip.appendChild(m);
+    }
+    titleRow.appendChild(strip);
+    title.setAttribute("aria-label",
+      `${card.card_title}, ${marks.map((m) => m[0]).join(" and ")}`);
+  }
+
   if (said && !echo && tab !== "Done") body.appendChild(el("div", "said", said));
 
   // WHEN IT WAS FINISHED (session 126, his slide: add "today", "16th August").
@@ -146,8 +179,10 @@ export function rowOf(card, { all, tab, slot, narrow, act, openEdit }) {
     const revive = button("Revive", () => act(card.card_id, "undone"));
     revive.title = "Bring it back to the list";
     acts.appendChild(revive);
-    // The only control in the app that erases a task, and it lives here because
-    // this row is already closed (session 130). The bin on an open row cancels.
+    // The only control in the app that erases a task, and since session 132 the
+    // only one that cannot be taken back. It lives here because this row is
+    // already closed: the bin on an open row cancels, and `Revive` beside this
+    // brings that back.
     const purge = button("Delete for good", () => act(card.card_id, "purge"), "danger");
     purge.title = "Remove it from the store";
     acts.appendChild(purge);

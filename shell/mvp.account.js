@@ -27,7 +27,7 @@
 // this version wrote rather than a shape invented for the file.
 
 const v = new URL(import.meta.url).search;
-const { tasks, undo, mode } = await import(`./store.select.js${v}`);
+const { tasks, mode } = await import(`./store.select.js${v}`);
 const { account } = await import(`./auth.js${v}`);
 const { partAConfig } = await import(`./config.js${v}`);
 const { SHELL_VERSION } = await import(`./render.js${v}`);
@@ -66,7 +66,6 @@ const NOT_BUILT = [
  */
 export function mountAccount(root, { onBack, onSignedOut } = {}) {
   let all = [];
-  let undos = [];
   let who = null;
   let busy = false;
 
@@ -117,7 +116,6 @@ export function mountAccount(root, { onBack, onSignedOut } = {}) {
     stats.appendChild(count("Open tasks", all.filter(open).length));
     stats.appendChild(count("Done", all.filter((t) => t.task_state === "done").length));
     stats.appendChild(count("Repeating", all.filter((t) => open(t) && t.recurrence).length));
-    stats.appendChild(count("Undo held", undos.length));
     root.appendChild(stats);
 
     const out = el("div", "group");
@@ -202,26 +200,51 @@ export function mountAccount(root, { onBack, onSignedOut } = {}) {
           //
           // It is drawn whether or not the shell is stale, because the other
           // reason to want it is having no APK at all.
+          // THE APK, AND WHY THIS IS THE THIRD ATTEMPT (session 132: "does
+          // nothing currently").
+          //
+          // A Capacitor WebView hands a link to the system browser only when
+          // its host is NOT the app's own. The app is served from
+          // `freezigo-raj.github.io` and so is the APK, so every version of
+          // this link so far — plain, `download`, `target="_blank"` — asked the
+          // WebView to navigate to a binary on its own host. It does nothing at
+          // all with that: no download, no error, no sound. It was never the
+          // attribute.
+          //
+          // `raw.githubusercontent.com` serves the same file from a DIFFERENT
+          // host, which is the whole fix: the WebView refuses it, Android hands
+          // it to Chrome, and Chrome downloads it and offers to open it.
+          //
+          // The address is drawn as text underneath either way. A link that
+          // silently does nothing is the failure this has already had twice,
+          // and an address a person can read and type is the one thing that
+          // cannot fail — and the one thing that lets him tell me WHICH of the
+          // two hosts works, which no amount of reasoning from here can settle.
+          const APK_HOST = "https://raw.githubusercontent.com/freezigo-raj/cascade/main/app-debug.apk";
+          const APK_PAGE = "https://freezigo-raj.github.io/cascade/app-debug.apk";
           const apk = el("a", "act apk-link", "Download the alarm APK");
-          apk.href = "https://freezigo-raj.github.io/cascade/app-debug.apk";
-          // `data-perm` IS WHAT MAKES IT ONE BUTTON (session 131, his slide:
-          // "it also shows 2 buttons sometimes"). This block redraws whenever
-          // the app comes back from a system settings screen, and it clears the
-          // rows it owns by removing every `[data-perm]` node first. A node
-          // without the mark survived that sweep and a second copy was appended
-          // beside it. It is not decoration on the other rows; it is the sweep.
+          apk.href = APK_HOST;
           apk.dataset.perm = "apk";
-          // `_blank`, NOT `download` (session 131, his slide: "download does not
-          // work, it should run the file after downloading"). The `download`
-          // attribute is ignored across origins, and a WebView asked to navigate
-          // to an APK on its own host does nothing at all — no download, no
-          // error, no sound. `target="_blank"` is the one signal Capacitor
-          // treats as "this is not for me": the link leaves for the system
-          // browser, which downloads it and offers to open it, which is where
-          // Android's installer lives.
           apk.target = "_blank";
           apk.rel = "noopener";
           ring.appendChild(apk);
+          const where = el("div", "said apk-where", APK_PAGE);
+          where.dataset.perm = "apk";
+          ring.appendChild(where);
+          const copy = el("button", "act", "Copy the address");
+          copy.type = "button";
+          copy.dataset.perm = "apk";
+          copy.addEventListener("click", async () => {
+            try {
+              await navigator.clipboard.writeText(APK_PAGE);
+              copy.textContent = "Copied";
+            } catch (e) {
+              // A clipboard refused is not a dead end: the address is already
+              // on the screen above, selectable.
+              copy.textContent = "Select the address above";
+            }
+          });
+          ring.appendChild(copy);
           const p = await bridge.alarmPermissionStatus();
           said.textContent = p.needed
             ? "Each of these is a switch Android holds and the app cannot set. What is missing is listed below."
@@ -308,7 +331,6 @@ export function mountAccount(root, { onBack, onSignedOut } = {}) {
 
   (async () => {
     all = await tasks.all();
-    undos = await undo.all();
     who = await account.current();
     draw();
   })();

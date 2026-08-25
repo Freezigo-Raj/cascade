@@ -17,7 +17,7 @@
 const v = new URL(import.meta.url).search;
 const { partAConfig } = await import(`./config.js${v}`);
 const { resolve } = await import(`./resolve.js${v}`);
-const { tasks, undo, UNDO_ID } = await import(`./store.select.js${v}`);
+const { tasks } = await import(`./store.select.js${v}`);
 const { nowLocal } = await import(`./mvp.clock.js${v}`);
 const { ask } = await import(`./mvp.dialog.js${v}`);
 const { drawPanel } = await import(`./mvp.panel.js${v}`);
@@ -266,6 +266,9 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
     paint();
   }
 
+  // `undo_ui_timeout_sec` is the toast's life. The name outlived undo itself
+  // (session 132) and stays as it is: renaming a config key means renaming it
+  // in `config.js`, `config.ts` and `contract.md`, and gate2 counts all three.
   function say(text) {
     clearTimeout(toastTimer);
     toast = text;
@@ -304,8 +307,6 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
             date_firmness: firmTap || old.date_firmness,
             date_hedge: old.date_hedge }
         : {};
-      await undo.remove(UNDO_ID);
-      await undo.add({ id: UNDO_ID, action: "edit", task_id: old.id, prior_state: old, created_at: nowLocal() });
       // A MOVED DATE ENDS WHAT THE OLD ONE LEFT (session 125). `alarm.js` has
       // said since session 111 that a push, a completion and a date edit all
       // clear the snooze and the unanswered marker; the first two did and this
@@ -348,8 +349,6 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
 
     const task = { ...out.task, ...advancedFields() };
     await tasks.add(task);
-    await undo.remove(UNDO_ID);
-    await undo.add({ id: UNDO_ID, action: "create", task_id: task.id, prior_state: null, created_at: nowLocal() });
     const said = when(out);
     unbind();
     await reload();
@@ -363,21 +362,6 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
     if (onBack) onBack(`Added "${task.title}"` + (said ? ` \u00b7 ${said}` : ""));
   }
 
-  async function undoLast() {
-    const entry = (await undo.all())[0];
-    if (!entry) return;
-    if (entry.action === "create") await tasks.remove(entry.task_id);
-    else if (entry.prior_state) {
-      // A fresh stamp: an undo is a change made now, and newest wins.
-      const back = { ...entry.prior_state, updated_at: nowLocal() };
-      if (all.some((t) => t.id === entry.task_id)) await tasks.update(entry.task_id, back);
-      else await tasks.add(back);
-    }
-    await undo.remove(UNDO_ID);
-    clearTimeout(toastTimer);
-    toast = null;
-    await reload();
-  }
 
   // ----------------------------------------------------------------- drawing
 
@@ -601,7 +585,6 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
     if (!toast) return;
     const t = el("div", "toast");
     t.appendChild(el("span", "", toast));
-    t.appendChild(button("", "Undo", undoLast));
     root.appendChild(t);
   }
 

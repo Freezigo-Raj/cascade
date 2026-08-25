@@ -16,7 +16,7 @@
 const v = new URL(import.meta.url).search;
 const { partAConfig } = await import(`./config.js${v}`);
 const { listOnly } = await import(`./resolve.js${v}`);
-const { tasks, undo, UNDO_ID, mode, sync } = await import(`./store.select.js${v}`);
+const { tasks, mode, sync } = await import(`./store.select.js${v}`);
 const { pushed } = await import(`./push.js${v}`);
 const { matchTier } = await import(`./search.js${v}`);
 const { spawn, nextDue } = await import(`./repeat.js${v}`);
@@ -66,30 +66,27 @@ export function mountList(root, { openEdit, openAccount, openAlarms, onTasks } =
     onTasks && onTasks(all);
   }
 
-  /** The undo entry is written before the action, never after. */
-  async function remember(action, task) {
-    await undo.remove(UNDO_ID);
-    await undo.add({ id: UNDO_ID, action, task_id: task?.id ?? null, prior_state: task ?? null, created_at: now() });
-  }
-
-  function say(text) {
-    clearTimeout(toastTimer);
-    toast = text;
-    // The toast holds eight seconds. The undo entry outlives it: the offer goes
-    // quiet, the ability does not.
-    toastTimer = setTimeout(() => { toast = null; draw(); }, (partAConfig.undo_ui_timeout_sec ?? 8) * 1000);
-    draw();
-  }
-
-  // ------------------------------------------------------------ the actions
+  // UNDO IS GONE (session 132, his call: "remove undo and redo functions, they
+  // will cause more problems in the future").
+  //
+  // It held one entry, restored a whole record with a fresh stamp, and every
+  // write in the app had to remember to write it first. Under newest-wins that
+  // restore is a full-record overwrite racing the sync, and it was already the
+  // wrong shape for a store that merges: two devices, one undo slot. The press
+  // it protected is now protected by the state instead — the bin cancels rather
+  // than erasing, and `Revive` on the Done tab brings anything back — so the
+  // one thing undo could still do that Revive cannot is unpick an edit, which
+  // is a thing a person can also do by editing.
+  //
+  // The `undo` table and the `UndoEntry` type stay in `contract.md` and in the
+  // schema. Nothing writes to them.
 
   async function act(id, what, index) {
     const task = all.find((t) => t.id === id);
     if (!task) return;
 
     if (what === "done") {
-      await remember("done", task);
-      // `alarmCleared()` rather than three fields written by hand (session
+        // `alarmCleared()` rather than three fields written by hand (session
       // 125): the lock-screen Done cleared the snooze and the unanswered
       // marker and this one did not, so a task finished in the app kept a
       // snooze that outlived it and came back at the top of the list the
@@ -102,7 +99,6 @@ export function mountList(root, { openEdit, openAccount, openAlarms, onTasks } =
       if (next) await tasks.add(next);
       say(`Done "${task.title}"`);
     } else if (what === "undone") {
-      await remember("undone", task);
       // Undoing a done takes back what the done created, so the press leaves
       // one row rather than two.
       for (const t of all) if (t.spawned_from === id) await tasks.remove(t.id);
@@ -128,7 +124,6 @@ export function mountList(root, { openEdit, openAccount, openAlarms, onTasks } =
       });
       say(`Back "${task.title}"`);
     } else if (what === "pin") {
-      await remember("pin", task);
       await tasks.update(id, { ...task, pinned: !task.pinned, updated_at: now() });
     } else if (what === "delete") {
       // A DELETE IS A CANCELLATION (session 130, his ask: "deleted tasks should
@@ -140,19 +135,19 @@ export function mountList(root, { openEdit, openAccount, openAlarms, onTasks } =
       // also the same state the catch-up and the lock screen already write, so
       // the Done tab holds one kind of closed row and not two.
       //
-      // Undo still restores it whole, and now so does Revive, which is the
-      // difference between the two: undo is for the press you regret in the
-      // next ten seconds, Revive is for the one you regret next week.
-      await remember("delete", task);
+      // `Revive` on the Done tab brings it back whole, which is what makes
+      // this safe now that undo is gone (session 132).
       await tasks.update(id, alarmCleared({
         ...task, task_state: "cancelled", closed_at: now(), updated_at: now(),
       }));
       say(`Cancelled "${task.title}"`);
     } else if (what === "purge") {
-      // THE ONE PATH THAT STILL ERASES, and it is only reachable from a row
-      // that is already closed. Without it nothing could ever leave the store,
-      // and a list you cannot clean is one you stop reading.
-      await remember("delete", task);
+      // THE ONE PATH THAT ERASES, and with undo gone (session 132) it is the
+      // one press in this app that cannot be taken back. It is reachable only
+      // from a row that is already closed and cancelled, so it takes two
+      // decisions on two screens — which is the whole of its protection now,
+      // and enough: without it nothing could ever leave the store, and a list
+      // you cannot clean is one you stop reading.
       await tasks.remove(id);
       say(`Deleted "${task.title}"`);
     } else if (what === "push") {
@@ -170,29 +165,12 @@ export function mountList(root, { openEdit, openAccount, openAlarms, onTasks } =
         readDeadlineDialog(readDeadlineClashes(moved, all), now()),
       ];
       if (!(await ask(warned, "Push anyway"))) return;
-      await remember("push", task);
       await tasks.update(id, moved);
       say(`Moved "${task.title}" to ${option.push_label.toLowerCase()}`);
     }
     await reload();
   }
 
-  async function undoLast() {
-    const entry = (await undo.all())[0];
-    if (!entry) return;
-    if (entry.action === "create") await tasks.remove(entry.task_id);
-    else if (entry.prior_state) {
-      // Restoring is an update where the task survives and an add where it does
-      // not, with a fresh stamp: an undo is a change made now, and newest wins.
-      const back = { ...entry.prior_state, updated_at: now() };
-      if (all.some((t) => t.id === entry.task_id)) await tasks.update(entry.task_id, back);
-      else await tasks.add(back);
-    }
-    await undo.remove(UNDO_ID);
-    clearTimeout(toastTimer);
-    toast = null;
-    await reload();
-  }
 
   // -------------------------------------------------------------- the lists
 
@@ -421,10 +399,7 @@ export function mountList(root, { openEdit, openAccount, openAlarms, onTasks } =
     if (toast) {
       const t = el("div", "toast");
       t.appendChild(el("span", "", toast));
-      const u = el("button", "", "Undo");
-      u.type = "button";
-      u.addEventListener("click", undoLast);
-      t.appendChild(u);
+      // No Undo button (session 132). The toast says what happened and goes.
       toastSlot.appendChild(t);
     }
   }

@@ -75,7 +75,21 @@ function isFull(load, capacity) {
  * The targets, by the precision the person gave. Each is an offset from the
  * task's own date rather than from `now`, so pushing twice moves twice.
  */
-function targetsFor(task, now) {
+/**
+ * The `Later today` rung, or nothing. Four hours on, but never past the last
+ * band the day has: `time_bands.night.start` is the hour every other screen
+ * calls tonight, so the rung and the words agree.
+ */
+function laterToday(at, config) {
+  const night = config?.time_bands?.night?.start ?? "21:00";
+  const [h, m] = night.split(":").map(Number);
+  const midnight = at - (at % DAY);
+  const last = midnight + h * 60 * 60 * 1000 + m * 60 * 1000;
+  if (at >= last) return [];
+  return [{ label: "Later today", at: Math.min(at + 4 * HOUR, last) }];
+}
+
+function targetsFor(task, now, config) {
   const at = Date.parse(task.due_at.slice(0, 19) + "Z");
   const today = Math.floor(Date.parse(now.slice(0, 19) + "Z") / DAY) * DAY;
   // Overdue is the one case that does not push further out. A task already late
@@ -122,8 +136,21 @@ function targetsFor(task, now) {
         { label: "Next week", at: at + 7 * DAY },
       ];
     case "band":
+      // `Later today` HAS TO LAND TODAY (session 132, his report: pressing it
+      // moved the task to tomorrow).
+      //
+      // It was `at + 4 hours` and nothing stopped that crossing midnight. A
+      // task in the evening band sits at 18:00 and four hours later is 22:00,
+      // which is fine; one in the night band sits at 21:00 and four hours later
+      // is 01:00 the next day, wearing a label that says today. The rung read
+      // as a small delay and was a whole day.
+      //
+      // It is clamped to the last band the day has — `time_bands.night.start`,
+      // the same 21:00 every other screen means by tonight — and DROPPED
+      // ENTIRELY when the task is already at or past it, because `Later today`
+      // with nothing later today left is not a smaller lie than the first one.
       return [...pullIn,
-        { label: "Later today", at: at + 4 * HOUR },
+        ...laterToday(at, config),
         { label: "Tomorrow", at: at + DAY },
         { label: "+2 days", at: at + 2 * DAY },
         { label: "Next week", at: at + 7 * DAY },
@@ -174,7 +201,7 @@ export function readPushOptions(task, existing, config, now) {
   if (!task || !task.due_at) return [];
   const offset = offsetOf(task.due_at);
   const capacity = config.capacity_min_per_day;
-  const all = targetsFor(task, now).map((t) => ({
+  const all = targetsFor(task, now, config).map((t) => ({
     push_label: t.label,
     push_to: write(t.at, offset),
     full: isFull(dayLoad(existing, Math.floor(t.at / DAY) * DAY), capacity),

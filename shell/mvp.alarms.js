@@ -47,7 +47,7 @@
 
 const v = new URL(import.meta.url).search;
 const { partAConfig } = await import(`./config.js${v}`);
-const { tasks, undo, UNDO_ID } = await import(`./store.select.js${v}`);
+const { tasks } = await import(`./store.select.js${v}`);
 const { canAlarm, ringAt, alarmAt, nextRing, alarmCleared } = await import(`./alarm.js${v}`);
 const { nowLocal } = await import(`./mvp.clock.js${v}`);
 const { nextDue } = await import(`./repeat.js${v}`);
@@ -127,13 +127,8 @@ export function mountAlarms(root, { onBack, openEdit } = {}) {
     draw();
   }
 
-  async function remember(action, task) {
-    await undo.remove(UNDO_ID);
-    await undo.add({ id: UNDO_ID, action, task_id: task?.id ?? null, prior_state: task ?? null, created_at: nowLocal() });
-  }
 
   async function write(task, patch) {
-    await remember("edit", task);
     await tasks.update(task.id, { ...task, ...patch, updated_at: nowLocal() });
     await reload();
   }

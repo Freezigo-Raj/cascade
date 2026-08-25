@@ -68,3 +68,13 @@
   padding: calc(var(--step) * 2) calc(var(--step) * 4);
   background: var(--sunk);
 }
+
+/* The APK address, drawn as text because a link that silently does nothing has
+   already happened twice (session 132). Small, selectable, wrapping. */
+.apk-where {
+  font-size: 12px;
+  word-break: break-all;
+  user-select: text;
+  -webkit-user-select: text;
+  margin-top: var(--step);
+}

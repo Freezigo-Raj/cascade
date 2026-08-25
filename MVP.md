@@ -112,6 +112,7 @@ Today  ·  Tomorrow  ·  Upcoming
 | Task row | one per task | Tapping the row opens screen 2 with that task loaded |
 | Done | one per row | The task moves to the Done tab |
 | Delete for good | one per Done row | The only control in the app that erases a task. Reachable only from a row already closed, so erasing costs two decisions |
+| Bell / loop | 0-2 per row | Not controls (session 132). A bell means the task has an alarm, a loop means it repeats. Beside the title, no hit area, `aria-hidden` with the fact in the title's label |
 | Revive | one per Done row | A word beside the filled circle, doing the same thing (session 126, his word). The one control drawn twice on purpose: the circle has meant Undone since session 104 and nothing said so |
 | Pin | one per row | A pin glyph, filled while pinned; the word stays for screen readers. Pinned tasks sort above everything |
 | Delete | one per row | A bin glyph; the word stays for screen readers. The row goes for real. One step of undo holds the only copy |

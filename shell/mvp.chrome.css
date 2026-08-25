@@ -89,3 +89,16 @@
    that is what a person has already learned on screen 1. */
 .bar.alarm-views { margin-bottom: calc(var(--step) * 4); }
 .alarm-views .tab.on { color: var(--ink); font-weight: 700; }
+
+/* The two row marks (session 132). Quiet on purpose: they answer a question a
+   person asks with their eyes and never with a finger, so they carry no border,
+   no background and no hit area. `--quiet` rather than `--signal`, because a
+   row where two shapes are the brightest thing on it is a row whose title has
+   been demoted. */
+.title-row { display: flex; align-items: center; gap: calc(var(--step) * 2); }
+.title-row .title { flex: 0 1 auto; }
+.marks { display: inline-flex; align-items: center; gap: var(--step); flex: 0 0 auto; }
+.mark svg { display: block; width: 14px; height: 14px; }
+/* `glyph()` writes stroke: currentColor inline, so the colour is set on the
+   container and inherited rather than fought with a more specific rule. */
+.mark { color: var(--quiet); line-height: 0; }

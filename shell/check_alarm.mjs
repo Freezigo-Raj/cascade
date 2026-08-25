@@ -16,6 +16,7 @@ import { canAlarm, alarmOffered, alarmAt, ringAt, nextRing, readAlarmView, snooz
 import { rankKeyFor, readCards } from "./cards.js";
 import { pushed } from "./push.js";
 import { spawn, overtaken } from "./repeat.js";
+import { readPushOptions } from "./push.js";
 import { resolve, lemmaReady } from "./resolve.js";
 await lemmaReady; // the model loads lazily; a check must not race it
 
@@ -278,6 +279,28 @@ console.log("\na length of time, spaced either way");
 
   // The record is not touched by any of it.
   say(daily.due_at === "2026-08-17T17:00:00+05:30", "and the task's own date is left exactly where it was");
+}
+
+// ---------------------------------------- session 132, `Later today` lands today
+//
+// His report: pressing `Later today` moved the task to TOMORROW. The rung was
+// `at + 4 hours` with nothing stopping that crossing midnight, so a task in the
+// night band at 21:00 became 01:00 the next day wearing a label saying today.
+{
+  const band = (clock) => ({
+    ...task({ due_at: `2026-08-25T${clock}:00+05:30`, date_precision: "band" }),
+  });
+  const rungs = (t) => readPushOptions(t, [t], config, "2026-08-25T08:00:00+05:30");
+  const later = (t) => rungs(t).find((o) => o.push_label === "Later today");
+
+  say(later(band("09:00")).push_to === "2026-08-25T13:00:00+05:30",
+      "morning + 4 hours is still the same day");
+  say(later(band("19:00")).push_to === "2026-08-25T21:00:00+05:30",
+      "evening is clamped to the last band the day has, not carried past midnight");
+  say(later(band("21:00")) === undefined,
+      "and at the last band the rung is dropped — `Later today` with no later today is a lie");
+  say(rungs(band("21:00"))[0].push_label === "Tomorrow",
+      "what is left starts at Tomorrow, which is at least true");
 }
 
 console.log(`\n${bad === 0 ? "CHECK ALARM: PASS" : `CHECK ALARM: ${bad} FAILED`}\n`);

@@ -3044,3 +3044,25 @@ Colour meant one thing and now means three. Accent is pressable, `#c0492b` is ov
 **Process failure, recorded.** Session 130 was handed this file and did not open it, answering only the two items he had also typed in chat. Three items sat unread in the deck. A re-uploaded file with a familiar name is a new file.
 
 **Still owed:** the nine alarm tests. Gates 1-6.
+
+---
+
+## Session 132 — 20 August 2026
+
+**Job:** Four items from his build-47 pass.
+
+**Stage before / after:** 5 / 5
+
+**Files changed:**
+- `shell/mvp.row.js` — the bell and the loop; the title row
+- `shell/mvp.list.js`, `shell/mvp.edit.js`, `shell/mvp.alarms.js`, `shell/mvp.account.js` — undo removed
+- `shell/push.js` — `Later today` lands today or is not offered
+- `shell/check_alarm.mjs` — four assertions for that rung
+- `shell/mvp.account.js`, `mvp.account.css` — the APK link on another host, with the address as text
+- `shell/mvp.chrome.css`, `render.js` 48 and the five other version sites, `spec.md`, `MVP.md`
+
+**Tests:** all eight green.
+
+**Note for the next pass.** The APK link now points at `raw.githubusercontent.com/freezigo-raj/cascade/main/app-debug.apk`, which assumes the file is committed at the repository root on `main`. If it is not, the address under the button is the one to use, and he should say which of the two hosts works — that is the one thing reasoning from here cannot settle.
+
+**Still owed:** the nine alarm tests. Gates 1-6.
