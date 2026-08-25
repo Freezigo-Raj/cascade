@@ -1,6 +1,6 @@
 # Cascade Part A — Answer Key
 
-Stage 4 deliverable, version 28. Written against `schema/contract.md` and `config.ts`; see VERSIONS in spec.md.
+Stage 4 deliverable, version 29. Written against `schema/contract.md` and `config.ts`; see VERSIONS in spec.md.
 
 **Every `action_verbs` member is reachable from `verb_lexicon`, checked by `gate2.py` against whichever config is in force.** Version 1 of this key expected eleven members that no lexicon entry could produce, because `verb_lexicon` was never updated when the members were added. The gate now fails on a dead member. No config version is named here: a version written into a companion file is what `gate2.py` exists to stop.
 
@@ -9,6 +9,17 @@ Stage 4 deliverable, version 28. Written against `schema/contract.md` and `confi
 **Similarity is defined in `schema/contract.md`, not here.** Trigrams are a multiset over the `compare_key` padded with two leading spaces and one trailing space, `word_match` is over token sets, and the maximum is rounded half-up to two decimals before it meets `threshold`. Every score below was recomputed from that definition rather than by hand.
 
 **Written by hand from the contract, before any logic exists.** No code produced any value below. Where a value is wrong, the contract is wrong or I read it wrong, and both are things to find now rather than after a resolver agrees with them.
+
+**That claim has exceptions, and they are listed rather than left in the notes.** A handful of rows were RECONCILED to the engine after the fact: the engine did one thing, the reasoning was re-read, and the row was edited to agree. A reconciled row can never catch the engine it was copied from. They are named in RECONCILED ROWS below, `gate2.py` fails any row that reconciles without being listed there, and the reason each one was kept is stated. They were kept because the case still catches a FUTURE change, which is what a regression test is for; what they cannot do is testify about the change that produced them.
+
+**Two kinds of cell, and only one of them can be wrong.** Every asserted column is a `fact` or a `choice`, declared in FIELD KINDS below and read by `gate4.mjs` at run time.
+
+- A **fact** is a value a rule produced and the world can contradict. `friday` is 7 August 2026 and 7 August 2026 is a Friday. `call kushan friday` leaves `call kushan` in the title. A fact that differs is a regression: it fails the gate.
+- A **choice** is a number or a label this project picked. A `call` takes 15 minutes. `pay` is a `deadline`. A dateless line is worth 30 significance. Nothing can contradict a choice; changing one is changing your mind. A choice that differs is REPORTED and COUNTED and does not fail the gate.
+
+Before this, both kinds failed identically, so editing a guess read as breaking the build. A field `gate4.mjs` compares and FIELD KINDS does not classify fails the run: an unclassified cell is a cell nobody decided about.
+
+**The three columns section A used to carry are gone.** `commitment_type`, `context` and `est_duration_min` are one line each in `resolve()` — `config.verb_to_type[v]`, `config.verb_to_context[v] ?? "undetermined"`, `config.duration_defaults[v]` — so section A asserting them tested that two copies of one table agreed, not that the engine worked. Thirty-three cases went red whenever a number in `config.ts` changed, with no defect present. What the tables actually needed checking for is that every member is mapped and every mapping lands inside its own vocabulary, and `gate2.py` reads `config.ts` for that directly. The three columns are kept where a rule rather than a lookup produces them: `est_duration_min` in section C, where a comma list sums, and `commitment_type` in section I, where a tap overrides the verb.
 
 **Every case that runs must disagree with the Stage 3 placeholder on at least one value stated here.** A case that cannot disagree is not a test. It names the gate that answers it in a `Handled by` cell and is reported as not run, rather than being counted as a failure it did not earn.
 
@@ -33,40 +44,98 @@ Window bounds, half-open, from `window_bounds` and `time_bands`:
 
 ---
 
+## FIELD KINDS
+
+Every field `gate4.mjs` compares, and which kind it is. A few columns are named one thing in a table and another in what `resolve()` returns; the row is under the name the engine uses, with the column's own spelling in `Why`. `Only in` scopes a row to one section and beats the unscoped row for the same field; a blank `Only in` covers every section.
+
+| Field | Kind | Only in | Why |
+|---|---|---|---|
+| `verb_phrase` | fact | | The words the engine took out of the line. The line either holds them or it does not. |
+| `action_verb` | fact | | What the lexicon, the irregulars, the spelling rules and the model resolved the phrase to. A chain of rules, checkable. |
+| `title` | fact | | What is left after the engine consumed what it consumed. |
+| `normalised` | fact | | Derived from `title` by a stated rule. |
+| `compare_key` | fact | | `normalised` minus purely numeric tokens. |
+| `date_marker` | fact | | A word that is in the line or is not. |
+| `date_phrase` | fact | | The date words as typed. |
+| `date_precision` | fact | | How exact the expression was. Read off the expression. |
+| `date_anchor` | fact | | Which of the five shapes the expression is. |
+| `date_firmness` | fact | | Produced by the marker and hedge rules. |
+| `earliest_start` | fact | | A computed instant. |
+| `due_at` | fact | | A computed instant, with its weekday checked against its date. |
+| `has_time` | fact | | Whether a clock time was stated. |
+| `due_phrase` | fact | | Rendered at the finest granularity that is true. |
+| `is_hard` | fact | | Follows `date_firmness`. |
+| `list_header` | fact | | Default when a date resolved, Ideas when none did. One rule, no numbers. The column reads `list`. |
+| `chip_spans` | fact | | Where the chip's words landed in the line. Arithmetic on offsets. |
+| `similarity` | fact | | The larger of the two. The column reads `similarity_max`. |
+| `numeric_variant` | fact | | Whether the only difference between two lines is a number. |
+| `duplicate_dialog` | fact | | Whether the dialog fires at all, which the threshold rule decides. The column reads `Dialog`. |
+| `type_source` | fact | | Whether the type came from the verb or from a tap. |
+| `duration_source` | fact | | Whether the duration was defaulted, summed or selected. The rule, not the number. |
+| `type_chip` | fact | | A function of whether there is text. |
+| `add_button` | fact | | A function of `bound_task_id`. |
+| `input_field` | fact | | A function of `bound_task_id`. |
+| `bound_task_chip` | fact | | A function of `bound_task_id`. |
+| `commitment_type` | choice | | `config.verb_to_type[action_verb]`, one line. Deciding that `pay` is a `deadline` is a decision, not a result. |
+| `commitment_type` | fact | I | A tap overrides the verb. Whether the override lands is a rule. |
+| `context` | choice | | `config.verb_to_context[action_verb]`, defaulting to `undetermined`. |
+| `est_duration_min` | choice | | `config.duration_defaults[action_verb]`, or a multiple of it. That a `call` takes 15 minutes is a guess with no backlog behind it, and section C tests the summing rule through `duration_source`. |
+| `significance` | choice | | 30 by default, or whatever was tapped. A number this project picked. |
+
+**`trigram` and `word_match` are workings, not assertions.** `resolve()` returns `similarity` and neither of the two numbers behind it, so there is nothing for the runner to compare them against. They are in section D so the maximum can be read rather than believed, and `gate4.mjs` names them in `IGNORED_COLUMNS` so that is a decision rather than an accident of which cells carry backticks.
+
+**A choice differing is not nothing.** It is reported, counted and printed in the run, and it is how a config change announces which cases it moved. It just does not go red, because nothing was broken.
+
+## RECONCILED ROWS
+
+Rows edited to agree with the engine after the engine already ran. Each one is a hole in the claim at the top of this file, so each is named. `gate2.py` fails any row whose note says it was reconciled or corrected without its id appearing here.
+
+| Case | Reconciled at | What happened | Kept because |
+|---|---|---|---|
+| A2, A26 | version 8 | The rows read `context` `phone` for `check`. The engine gave `undetermined`, the reasoning was re-read, and `undetermined` won: `phone` says the work happens on a phone, and checking a sensor is the sensor. | The reasoning was checked against the contract rather than against the output, and the column has since left section A. |
+| A21 | version 4 | `personal ITR` read `other`. `itr` is in `verb_lexicon` and gives `file`. The row was wrong and the engine was right. | The case still holds a noun supplying a verb, which is the shape it was written for. |
+| G5 | version 4 | `jhanvi automobile invoice clarification` read a different verb. `invoice` is in `verb_lexicon`. Same shape as A21. | Same. |
+| C1, C3 | version 4 | The comma rule itself was FITTED, not derived: a list sums only when every item is a single token, chosen because `sudhi` is one token and `the new CFO` is three. Written into the contract at version 4 and stated there as fitted. | It is the only rule in this project fitted to two examples, and the first real line that contradicts it is what corrects it. Recorded so nobody reads it as derived. |
+| The duplicate threshold | the same rewrite | 0.6, chosen against eleven hand-made pairs, four of them written to test it. Stated as fitted in `example.md` and in the contract. | Not a key row. Listed because it is the same kind of claim and section D's expected scores rest on it. |
+
+**What a reconciled row can and cannot do.** It cannot testify about the change that produced it: it was copied from the answer. It can still catch the NEXT change, which is why none of them is deleted. The rule going forward: reconcile if the reasoning holds when read against the contract, and add the row here in the same edit.
+
+---
+
 ## A. Verbs, one per member
 
 `due` empty on all of these, so all route to **Ideas**.
 
-| # | Input | `verb_phrase` | `action_verb` | `commitment_type` | `context` | `est_duration_min` | list |
-|---|---|---|---|---|---|---|---
-| A1 | `call kushan` | `call` | `call` | `action` | `phone` | 15 | Ideas |
-| A2 | `check sensor` | `check` | `check` | `action` | `undetermined` | 30 | Ideas |
-| A3 | `pay coolindia` | `pay` | `pay` | `deadline` | `bills` | 10 | Ideas |
-| A4 | `submit the tender` | `submit` | `submit` | `deadline` | `bills` | 30 | Ideas |
-| A5 | `message vivek` | `message` | `message` | `action` | `phone` | 5 | Ideas |
-| A6 | `make finance software` | `make` | `make` | `project` | `undetermined` | 60 | Ideas |
-| A7 | `meet the supplier` | `meet` | `meet` | `appointment` | `undetermined` | 60 | Ideas |
-| A8 | `send energy data to om` | `send` | `send` | `action` | `phone` | 5 | Ideas |
-| A9 | `reply to dishit` | `reply` | `reply` | `action` | `phone` | 5 | Ideas |
-| A10 | `talk to rajkot customer` | `talk` | `talk` | `action` | `phone` | 15 | Ideas |
-| A11 | `give arshad ledger` | `give` | `give` | `action` | `undetermined` | 10 | Ideas |
-| A12 | `file form 8` | `file` | `file` | `deadline` | `bills` | 30 | Ideas |
-| A13 | `sharad DSC renew` | `renew` | `renew` | `deadline` | `undetermined` | 30 | Ideas |
-| A14 | `demo trial date finalize` | `finalize` | `finalize` | `decision` | `undetermined` | 30 | Ideas |
-| A15 | `confirm testing` | `confirm` | `confirm` | `action` | `undetermined` | 10 | Ideas |
-| A16 | `karjat booking` | `booking` | `book` | `purchase` | `undetermined` | 20 | Ideas |
-| A17 | `billing for prompt` | `billing` | `bill` | `deadline` | `bills` | 15 | Ideas |
-| A18 | `hiring viraj IT` | `hiring` | `hire` | `project` | `undetermined` | 60 | Ideas |
+| # | Input | `verb_phrase` | `action_verb` | list |
+|---|---|---|---|---|
+| A1 | `call kushan` | `call` | `call` | Ideas |
+| A2 | `check sensor` | `check` | `check` | Ideas |
+| A3 | `pay coolindia` | `pay` | `pay` | Ideas |
+| A4 | `submit the tender` | `submit` | `submit` | Ideas |
+| A5 | `message vivek` | `message` | `message` | Ideas |
+| A6 | `make finance software` | `make` | `make` | Ideas |
+| A7 | `meet the supplier` | `meet` | `meet` | Ideas |
+| A8 | `send energy data to om` | `send` | `send` | Ideas |
+| A9 | `reply to dishit` | `reply` | `reply` | Ideas |
+| A10 | `talk to rajkot customer` | `talk` | `talk` | Ideas |
+| A11 | `give arshad ledger` | `give` | `give` | Ideas |
+| A12 | `file form 8` | `file` | `file` | Ideas |
+| A13 | `sharad DSC renew` | `renew` | `renew` | Ideas |
+| A14 | `demo trial date finalize` | `finalize` | `finalize` | Ideas |
+| A15 | `confirm testing` | `confirm` | `confirm` | Ideas |
+| A16 | `karjat booking` | `booking` | `book` | Ideas |
+| A17 | `billing for prompt` | `billing` | `bill` | Ideas |
+| A18 | `hiring viraj IT` | `hiring` | `hire` | Ideas |
 
-**`check` gives `undetermined`.** A2 and A26 read `phone` through version 7, which was wrong: `phone` says the work happens on a phone, and checking a sensor is the sensor. `verb_to_context` holds only the verbs that imply a context, so `check` has no entry and R3 gives `undetermined`, which is what the engine does. `confirm` and `give` were already `undetermined` in this table on the same reasoning.
+**`check` gives `undetermined`, and that is a `verb_to_context` decision rather than a case.** A2 and A26 read `phone` through version 7, which was wrong: `phone` says the work happens on a phone, and checking a sensor is the sensor. `verb_to_context` holds only the verbs that imply a context, so `check` has no entry and falls to `undetermined`. `confirm` and `give` were already `undetermined` on the same reasoning. The column left this section at version 29; the decision stands in `config.ts` and `gate2.py` holds every mapping to its vocabulary. RECONCILED, and listed.
 
 **A19 to A22, the lexicon gaps.** Nothing in `verb_lexicon` matches.
 
-| # | Input | `verb_phrase` | `action_verb` | `commitment_type` | `context` | `est_duration_min` | list | Note |
-|---|---|---|---|---|---|---|---|---|
-| A19 | `Srilanka tickets` | *(empty)* | `other` | `action` | `undetermined` | 5 | Ideas | `tickets` is deliberately absent from `verb_lexicon` |
-| A20 | `Kena investment` | *(empty)* | `other` | `action` | `undetermined` | 5 | Ideas | Same. These two are the only rows in section A written to be `other`; A22, C2, F5, F9 and seven G rows reach it too. |
-| A22 | `tasks` | *(empty)* | `other` | `action` | `undetermined` | 5 | Ideas | One word, no match |
+| # | Input | `verb_phrase` | `action_verb` | list | Note |
+|---|---|---|---|---|---|
+| A19 | `Srilanka tickets` | *(empty)* | `other` | Ideas | `tickets` is deliberately absent from `verb_lexicon` |
+| A20 | `Kena investment` | *(empty)* | `other` | Ideas | Same. These two are the only rows in section A written to be `other`; A22, C2, F5, F9 and seven G rows reach it too. |
+| A22 | `tasks` | *(empty)* | `other` | Ideas | One word, no match |
 
 **A28 to A31 are the shapes of a word, not new words.** The lexicon held 52 tokens for 18 verbs and a third of them were endings someone had typed once and added by hand, which is a list that can never be finished: `replied`, `booked` and `paid` were all missing and all fell to `other`. Endings are English spelling and are read by the engine; irregular forms are vocabulary and sit in `verb_irregulars` beside the date shorthand. A30 is a verb of two words, which one token at a time could not express at all.
 
@@ -74,20 +143,20 @@ Window bounds, half-open, from `window_bounds` and `time_bands`:
 
 **A21 and A23 to A27, nouns and sentence shapes.** A21 and A23 are nouns supplying the verb; A24 to A26 are one task each, with the first *matching* token winning rather than the first word. A21 read `other` through version 3, which was wrong: `itr` is in `verb_lexicon` and gives `file`. Table membership follows the shape being shown, not the id order, which is why A21 sits here and A22 sits above.
 
-| # | Input | `verb_phrase` | `action_verb` | `commitment_type` | `context` | `est_duration_min` | `title` | `date_marker` | `date_firmness` | `date_precision` | `date_anchor` | `due_at` | list | Note |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| A21 | `personal ITR` | `ITR` | `file` | `deadline` | `bills` | 30 | `personal ITR` | *(empty)* | `normal` | `none` | `none` | *(empty)* | Ideas | Corrected at version 4. The noun carries the verb. |
-| A23 | `Social alpha application deadline` | `application` | `submit` | `deadline` | `bills` | 30 | `Social alpha application` | `deadline` | `hard` | `none` | `none` | *(empty)* | Ideas | Routes to Ideas while carrying `is_hard = true` |
-| A24 | `call surat vehicle and confirm testing` | `call` | `call` | `action` | `phone` | 15 | `call surat vehicle and confirm testing` | *(empty)* | `normal` | `none` | `none` | *(empty)* | Ideas | One task. `confirm` stays in the title and does nothing. |
-| A25 | `make testing procedure and finalize steps` | `make` | `make` | `project` | `undetermined` | 60 | `make testing procedure and finalize steps` | *(empty)* | `normal` | `none` | `none` | *(empty)* | Ideas | One task |
-| A26 | `trial and check data` | `check` | `check` | `action` | `undetermined` | 30 | `trial and check data` | *(empty)* | `normal` | `none` | `none` | *(empty)* | Ideas | `trial` is not in the lexicon, so the second token wins |
-| A27 | `call kushan 30 min` | `call` | `call` | `action` | `phone` | 15 | `call kushan 30 min` | *(empty)* | `normal` | `none` | `none` | *(empty)* | Ideas | A typed duration is not read. The words stay in `title`. |
-| A28 | `replied to bharti singhal` | `replied` | `reply` | `action` | `phone` | 5 | `replied to bharti singhal` | *(empty)* | `normal` | `none` | `none` | *(empty)* | Ideas | An ending, not an entry. `replied` reaches `reply` by spelling. |
-| A29 | `paid coolindia` | `paid` | `pay` | `deadline` | `bills` | 10 | `paid coolindia` | *(empty)* | `normal` | `none` | `none` | *(empty)* | Ideas | An irregular form. No spelling rule reaches it; `verb_irregulars` does. |
-| A30 | `follow up with raj` | `follow up` | `reply` | `action` | `phone` | 5 | `follow up with raj` | *(empty)* | `normal` | `none` | `none` | *(empty)* | Ideas | A verb of two words. One token at a time could not express it. |
-| A31 | `submitting the tender` | `submitting` | `submit` | `deadline` | `bills` | 30 | `submitting the tender` | *(empty)* | `normal` | `none` | `none` | *(empty)* | Ideas | A doubled letter goes with the ending. |
-| A32 | `pay by cheque` | `pay` | `pay` | `deadline` | `bills` | 10 | `pay by cheque` | *(empty)* | `normal` | `none` | `none` | *(empty)* | Ideas | `by` with no date after it is not a marker, and stays in the title. |
-| A33 | `pay by cheque friday` | `pay` | `pay` | `deadline` | `bills` | 10 | `pay by cheque` | *(empty)* | `normal` | `day` | `window` | Fri 7 Aug 16:30 | Default | Due Friday, and `by` still not a marker: the date does not start after it. |
+| # | Input | `verb_phrase` | `action_verb` | `title` | `date_marker` | `date_firmness` | `date_precision` | `date_anchor` | `due_at` | list | Note |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| A21 | `personal ITR` | `ITR` | `file` | `personal ITR` | *(empty)* | `normal` | `none` | `none` | *(empty)* | Ideas | Corrected at version 4. The noun carries the verb. |
+| A23 | `Social alpha application deadline` | `application` | `submit` | `Social alpha application` | `deadline` | `hard` | `none` | `none` | *(empty)* | Ideas | Routes to Ideas while carrying `is_hard = true` |
+| A24 | `call surat vehicle and confirm testing` | `call` | `call` | `call surat vehicle and confirm testing` | *(empty)* | `normal` | `none` | `none` | *(empty)* | Ideas | One task. `confirm` stays in the title and does nothing. |
+| A25 | `make testing procedure and finalize steps` | `make` | `make` | `make testing procedure and finalize steps` | *(empty)* | `normal` | `none` | `none` | *(empty)* | Ideas | One task |
+| A26 | `trial and check data` | `check` | `check` | `trial and check data` | *(empty)* | `normal` | `none` | `none` | *(empty)* | Ideas | `trial` is not in the lexicon, so the second token wins |
+| A27 | `call kushan 30 min` | `call` | `call` | `call kushan 30 min` | *(empty)* | `normal` | `none` | `none` | *(empty)* | Ideas | A typed duration is not read. The words stay in `title`. |
+| A28 | `replied to bharti singhal` | `replied` | `reply` | `replied to bharti singhal` | *(empty)* | `normal` | `none` | `none` | *(empty)* | Ideas | An ending, not an entry. `replied` reaches `reply` by spelling. |
+| A29 | `paid coolindia` | `paid` | `pay` | `paid coolindia` | *(empty)* | `normal` | `none` | `none` | *(empty)* | Ideas | An irregular form. No spelling rule reaches it; `verb_irregulars` does. |
+| A30 | `follow up with raj` | `follow up` | `reply` | `follow up with raj` | *(empty)* | `normal` | `none` | `none` | *(empty)* | Ideas | A verb of two words. One token at a time could not express it. |
+| A31 | `submitting the tender` | `submitting` | `submit` | `submitting the tender` | *(empty)* | `normal` | `none` | `none` | *(empty)* | Ideas | A doubled letter goes with the ending. |
+| A32 | `pay by cheque` | `pay` | `pay` | `pay by cheque` | *(empty)* | `normal` | `none` | `none` | *(empty)* | Ideas | `by` with no date after it is not a marker, and stays in the title. |
+| A33 | `pay by cheque friday` | `pay` | `pay` | `pay by cheque` | *(empty)* | `normal` | `day` | `window` | Fri 7 Aug 16:30 | Default | Due Friday, and `by` still not a marker: the date does not start after it. |
 
 ---
 

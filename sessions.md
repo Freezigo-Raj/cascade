@@ -3150,3 +3150,88 @@ Colour meant one thing and now means three. Accent is pressable, `#c0492b` is ov
 **Tests:** all eight green, `no-undef` clean.
 
 **Note.** Session 132 fixed the symptom he reported and kept the wrong unit. His rule this session is the one that should have been written then: the rung is about bands, and four hours was a number that happened to be about right from some starting points.
+
+---
+
+## Session 137 — 26 August 2026
+
+**Job:** stop the checks measuring a screen nobody opens, and stop the answer key re-typing `config.ts`. His brief: "some gates were hard to pass, since the test cases were flawed in some cases. So lets write things as they [are]."
+
+**Deleted, the Stage 3 harness.** `shell/app.js`, `shell/render.js`, `shell/resolve.stage3.js`, `shell/boot.js`, `shell/index.html`, `shell/check_render.mjs`. It drew an ASCII panel in box characters that nobody has opened since screen 1 was built in session 98, and `check_render.mjs` proved the panel matched a picture in `example.md` — a green check about a screen that does not exist, which is worse than no check because it reads as coverage. `SHELL_VERSION` had been living inside `render.js`; it now lives in `shell/version.js`, which holds nothing else, and six other numbers are held to it as before. `gate2.py` fails if any of the six deleted files reappears.
+
+**Deleted, four gate2 checks and five selftest fixtures.** The fragment-versus-template scan, the badge-versus-task-table check, the box-corner check and the panel-rectangularity check all read the drawing. Five fixtures existed only to plant defects in it. Removing them is the honest count of what they were worth.
+
+**Every ASCII panel left `example.md`.** Seven of them. They were of a layout three redesigns old, still drawing a verb and a duration on every row that the quiet-field rule removed in session 88, and keeping them meant redrawing box characters for every UI decision, which is what carried the example to version 42. Each is replaced by a table stating what it rendered. Ten contract Example values lived only inside a box — `due Wed`, `IDEAS      (none)`, `Sort:  [Duration ▾]   Newest`, the chip row, the duplicate dialog, the significance row, the type chip, the bound-task chip, the action row — and all ten survive, so the contract-to-example check still holds them.
+
+**Undo left the documents.** `UndoEntry`, `undo_toast`, `row_action` `undo` and cross-field invariant 14 are out of `contract.md` and `types.ts`. Undo was removed from the app in session 132 and five sessions of documents kept describing it, so gate2 was proving the contract matched a deleted feature. `cascade_undo` stays standing in `schema.sql`, unwritten, HIS CALL: dropping a table cannot be taken back and the workflow work may want the shape. `config.undo_ui_timeout_sec` keeps its name; a config key is stored per version and renaming one costs a version for no behaviour. Shown outputs 40 → 39, invariants 14 → 13. gate2 fails the names coming back as declarations or table rows, and passes prose that explains the removal.
+
+**Section A stopped re-typing config.** `commitment_type`, `context` and `est_duration_min` are gone from all three section A tables, 33 cases. Each is one line in `resolve()` — `config.verb_to_type[v]`, `config.verb_to_context[v] ?? "undetermined"`, `config.duration_defaults[v]` — so 99 assertions were testing that two copies of one table agreed, and every one went red whenever a number in `config.ts` changed with no defect present. That is the answer to what made the key hard to keep green. Kept where a rule rather than a lookup produces them: `est_duration_min` in section C, where a comma list sums, and `commitment_type` in section I, where a tap overrides the verb. What the columns were worth is now a gate2 check — every `verb_to_type` and `verb_to_context` mapping must land inside its own vocabulary and name no verb that is not a member.
+
+**FIELD KINDS: every compared field is a `fact` or a `choice`.** A fact is a value the world can contradict — a weekday, a title after the engine consumed words from it, a similarity score. A choice is a number this project picked — a `call` takes 15 minutes, a dateless line is worth 30 significance. Both used to fail identically, so changing your mind about a guess read as breaking the build. The table is stated in the key and read by `gate4.mjs` at run time, scoped per section where a section differs: `commitment_type` is a choice everywhere and a fact in section I. A fact that differs fails; a choice that differs is reported, counted and green. PROVED BOTH WAYS: `duration_defaults.call` 15 → 20 reports four CHOICE cases and stays PASS; `verb_lexicon.call` pointed at `check` fails seven cases on `action_verb`. A field compared with no row in FIELD KINDS fails the run.
+
+**The kind is looked up when a field is COMPARED, not when it differs.** Written the other way first, and an unclassified field was invisible for exactly as long as it agreed, which is every run except the one that needed it. Same shape as every check in this project that only ran on the unhappy path.
+
+**RECONCILED ROWS.** The key opens by claiming every value was written by hand from the contract before any logic existed. A2, A26, A21, G5 and the comma rule (C1, C3) were reconciled to the engine after it ran, each admitting it in a Note cell where nothing counted it. They now have a block naming what happened and why each was kept — a reconciled row cannot testify about the change that produced it, but it still catches the next one, which is why none was deleted. gate2 fails any row whose note reads as reconciled without its id in the block, and it caught C1 undeclared on the first run.
+
+**`trigram` and `word_match` are named in `IGNORED_COLUMNS`.** `resolve()` returns `similarity` and neither number behind it, so the two columns were never compared — and they were excluded only because their headers carry no backticks. An exclusion by formatting accident is not a decision.
+
+**HIS CALL, RECORDED: no check will ever import a screen.** `shell/mvp*.js` is 3,400 lines with nothing over it. He reads the actual screens on the phone. A headless harness would be a second description of the same screen, which is exactly how the Stage 3 shell came to exist and stay for forty sessions. Recorded in FOUND, NOT FIXED with its cost: `eslint no-undef` inside `gate2.py` is the only thing that catches a name that does not exist in a screen file, and it has to be installed to run.
+
+**Versions:** example 43, contract 55, config a.19 (unchanged, no migration), shell 53, answer_key 29. Task still 44 fields, 39 shown outputs, 13 inputs, 13 working values, 37 config objects, 13 invariants.
+
+**All eight checks green:** gate2 PASS, selftest 28 caught 0 missed, gate4 142/142 with 0 choice-moved, check_loud 6/6, check_alarm PASS, check_search PASS, check_writes PASS. Decision log sealed at 545.
+
+**No Kotlin change.** The alarm shell stays at build 5 and no APK rebuild is needed.
+
+---
+
+## Session 138 — 26 August 2026
+
+**Job:** he ran `gate2.py` on Windows and it failed with `tsc is not installed`. The repository was fine. The call was wrong.
+
+**`npm` installs `tsc` and `eslint` as `tsc.cmd` and `eslint.cmd`.** Windows cannot start a `.cmd` through CreateProcess, which is what `subprocess.run([...])` calls without `shell=True`. So `subprocess.run(['npx','tsc',...])` raised `FileNotFoundError` on his machine whether or not TypeScript was installed, and the gate reported the tool missing. The same defect sat under the eslint call: `shutil.which` finds `eslint.cmd` because it reads PATHEXT, and then `subprocess.run([that_path, ...])` could not have started it.
+
+**`gate2.py` now finds its own tools.** `_tool()` takes candidate names and returns the first on PATH; `_run()` hands a `.cmd` or `.bat` to the shell and starts anything else directly, as before. Search order for the compiler: `tsc` on PATH, then `node_modules/.bin/tsc`, then `npx` LAST — npx is the one that fetches, and a fetch inside a gate is a gate that fails when the wifi does.
+
+**A missing compiler still FAILS rather than skips**, unchanged and deliberate, and it now prints the install line and says plainly that it is a missing tool on this machine rather than a defect in the repository. Proved by running the gate with only python on PATH.
+
+**He still needs to install both:** `npm i -g typescript eslint`. eslint is a loud warning, not a failure; tsc is a failure. `no-undef` is the only thing that catches a name that does not exist in a screen file, and since session 137 no check imports a screen at all.
+
+**Shell 54.** No other change. Versions: example 43, contract 55, config a.19, answer_key 29. All eight checks green, log sealed 546.
+
+---
+
+## Session 139 — 26 August 2026
+
+**Job:** `UI_review_R2.pptx`, re-uploaded under the name session 130 was given. A NEW FILE WITH AN OLD NAME, so every slide was dumped before anything was built — session 130 answered only the items he had also typed in chat and never opened the deck, and three of five items existed only in it.
+
+**What the deck says.** Slide 1, two phone screenshots side by side with a caption beside each. Right-hand phone: "the height, width and font size are better in this phone. The top part that doesn't show task needs to take up less space heightwise though." Left-hand phone: "the height, width and font size of all parts are bad in this phone. Need to ensure at least 70% of height is meant for tasks. Increase width of tasks and 'Today', etc tabs as well. Reduce [font] size for all." Slide 2 is a title, **"Other requirements"**, WITH NOTHING UNDER IT — recorded as a gap rather than answered.
+
+**THE 70% RULE.** At least 70% of the viewport height belongs to tasks. Everything above the first row — header, tab row, search, slot toggle, group heading — is a budget of 30vh and no more.
+
+**Why his narrow phone was worse, which is the actual defect.** Every number in the chrome was a fixed pixel count. A fixed 32px title is 4.1% of a 785px screen and 3.5% of a 915px one, so the small phone paid twice for the same header. The sizes that drive the budget are `clamp()`ed against `vw` now: a smaller screen gets a smaller header rather than the same one taking a larger bite. A slope, not a third breakpoint to state twice.
+
+**Where the height went.** The tab row stopped wrapping: `flex-wrap: wrap` gave the search box a row of its own on every phone, 44px of a 30vh budget for a control 34px tall. The sync pill and the build number came off two stacked rows onto one, which was 20px of header height for eight characters. The slot toggle no longer wraps `Tomorrow · 2h 5m` onto a second line. Header, group heading and row paddings all tightened.
+
+**Wider tasks, his second ask.** The push ladder is an `auto` grid track, so every pixel it takes comes straight off the title beside it — the same geometry that ate the whole row in session 120. Narrower pills, tighter row padding and a smaller gap: the title has 152px at 360 where it had 130.
+
+**His words stay.** The search placeholder is still `search all tasks` from session 123. On a narrow phone the box is smaller than the words, so it ellipsises rather than being cut mid-letter: a truncation that looks deliberate is not a defect.
+
+**MEASURED, NOT ASSERTED.** `tools/measure_layout.py` loads the real app in a headless browser at four phone sizes, seeds overdue tasks into localStorage, and prints where the first row starts.
+
+| Viewport | Tasks before | Tasks now |
+|---|---|---|
+| 320 x 690 | 51.6% | 71.3% |
+| 360 x 785 (his narrow phone) | 59.1% | 74.1% |
+| 393 x 852 | 62.6% | 75.6% |
+| 412 x 915 (his wide phone) | 65.1% | 76.9% |
+
+His two screenshots are 587x1280 and 702x1568, which are 1080x2356 and 1440x3216 downscaled; at their device pixel ratios that is a CSS viewport of about 360x785 and 412x915. The two middle rows of the table are his own phones.
+
+**The tool is NOT a check and is not in the run line**, deliberately. It needs playwright, and the standing call from session 137 is that screens are read on the phone rather than by a harness. It exists because the 70% claim was otherwise going to be an assertion in a comment, and this project has been wrong four times about numbers nothing could read.
+
+**The wide layouts were re-measured too** and are untouched: at 1280 the rail, list and detail panel are all where they were, and the search shows its full placeholder at 190px.
+
+**Shell 55.** Engine, contract, key and config all untouched: this is a stylesheet session plus two lines in `mvp.list.js` that move the build number onto the sync line. All eight checks green, log sealed 550.
+
+**OPEN, and his to answer:** slide 2 of the deck is `Other requirements` with an empty body.

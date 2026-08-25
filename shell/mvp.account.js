@@ -30,7 +30,7 @@ const v = new URL(import.meta.url).search;
 const { tasks, mode } = await import(`./store.select.js${v}`);
 const { account } = await import(`./auth.js${v}`);
 const { partAConfig } = await import(`./config.js${v}`);
-const { SHELL_VERSION } = await import(`./render.js${v}`);
+const { SHELL_VERSION } = await import(`./version.js${v}`);
 const { el, button } = await import(`./mvp.paint.js${v}`);
 
 const open = (t) => t.task_state === "ready" && !t.archived;

@@ -28,10 +28,8 @@ const KEY = new URL("./answer_key.md", import.meta.url);
 const argv = process.argv.slice(2);
 const only = argv.includes("--section") ? argv[argv.indexOf("--section") + 1] : null;
 const verbose = argv.includes("--verbose");
-// --placeholder runs the current key against the frozen Stage 3 file under the
-// Stage 4 reading, which is how a key edit is checked once the engine has rules.
-const placeholder = argv.includes("--placeholder");
-const _engine = await import(placeholder ? "./shell/resolve.stage3.js" : "./shell/resolve.js");
+// `--placeholder` is gone with the Stage 3 file it ran against (session 137).
+const _engine = await import("./shell/resolve.js");
 const { resolve } = _engine;
 // The model loads behind the app; a runner is the one caller that must not race it.
 if (_engine.lemmaReady) await _engine.lemmaReady;
@@ -46,13 +44,49 @@ const src = readFileSync(KEY, "utf8");
 // Stage 5 a case that fails names a rule not yet written, so the count that
 // matters inverts. The stage is read from spec.md rather than passed as a flag,
 // because a flag is a second place to forget.
-const STAGE = placeholder
-  ? 4
-  : Number(
-      (readFileSync(new URL("./spec.md", import.meta.url), "utf8").match(/^Current stage:\s*(\d+)/m) || [])[1]
-    );
+const STAGE = Number(
+  (readFileSync(new URL("./spec.md", import.meta.url), "utf8").match(/^Current stage:\s*(\d+)/m) || [])[1]
+);
 
 // ---------------------------------------------------------------- key reading
+
+/**
+ * FIELD KINDS. Two kinds of cell, and only one of them can be wrong.
+ *
+ * A `fact` is a value a rule produced and the world can contradict: a weekday,
+ * a title after the engine consumed words out of it, a similarity score. A
+ * `choice` is a number or a label this project picked: that a `call` takes 15
+ * minutes, that `pay` is a `deadline`. Nothing can contradict a choice, so a
+ * choice that differs is this project changing its mind — reported, counted,
+ * and NOT a failure. A fact that differs is a regression and fails the gate.
+ *
+ * Before this, both failed identically, so editing a guess read as breaking the
+ * build. That is what made a third of the key feel impossible to keep green.
+ *
+ * Read out of the key at run time like every other value here. A row with an
+ * `Only in` cell is scoped to those sections and beats the unscoped row for the
+ * same field. Fail closed: a field compared and not classified fails the run.
+ */
+function readKinds(text) {
+  const start = text.indexOf("## FIELD KINDS");
+  if (start < 0) die("answer_key.md states no FIELD KINDS table; no cell can be read as fact or choice");
+  const block = text.slice(start, text.indexOf("\n## ", start + 4));
+  const general = new Map();
+  const scoped = new Map(); // "letter:field" -> kind
+  for (const line of block.split("\n")) {
+    if (!line.trim().startsWith("|")) continue;
+    const c = line.trim().slice(1, -1).split("|").map((x) => x.trim());
+    if (c.length < 3) continue;
+    const field = (c[0].match(/^`(\w+)`$/) || [])[1];
+    const kind = c[1];
+    if (!field || (kind !== "fact" && kind !== "choice")) continue;
+    const only = c[2].replace(/[^A-I]/g, "");
+    if (only) for (const L of only) scoped.set(`${L}:${field}`, kind);
+    else general.set(field, kind);
+  }
+  if (!general.size) die("the FIELD KINDS table declares nothing");
+  return (letter, field) => scoped.get(`${letter}:${field}`) ?? general.get(field) ?? null;
+}
 
 /** `now` for every case, stated once in the key. */
 function anchorFrom(t) {
@@ -136,8 +170,13 @@ function tables(text) {
 // about. Column names only. No values.
 
 const INPUT_COLUMNS = ["Input", "Input date part", "Existing", "New"];
+// `trigram` and `word_match` are section D's workings: `resolve()` returns
+// `similarity` and neither number behind it, so there is nothing to compare
+// them against. They were excluded until now only because their headers carry
+// no backticks, which is an accident of formatting rather than a decision.
 const IGNORED_COLUMNS = ["#", "Note", "Domain", "Expected", "max", "Dialog", "Chip",
-                         "Handled by", "Rejects", "Existing normalised"];
+                         "Handled by", "Rejects", "Existing normalised",
+                         "trigram", "word_match"];
 
 // Where a compared value lives in what resolve() returns. Sections that state
 // plain field names mean the saved record; section D names two columns that do
@@ -263,6 +302,10 @@ function census(sectionText, letter) {
 // Cells the key left blank in a column its own table declares. A blank passed
 // silently until now: the runner skipped it and the engine could return anything.
 const unfinished = [];
+
+// A field compared with no row in FIELD KINDS. Nobody decided whether it can be
+// wrong, so the run says so rather than guessing.
+const unclassified = [];
 
 function parseCases(sectionText, letter, ctx) {
   const spec = SECTIONS[letter];
@@ -390,7 +433,7 @@ function invariants(input) {
 
 // ----------------------------------------------------------------- the runner
 
-function run(c, anchor) {
+function run(c, anchor, kindOf) {
   // A chip types its words into the box, so the case's chip is appended to the
   // line rather than handed in beside it. The engine has no chip input.
   const input = {
@@ -431,7 +474,7 @@ function run(c, anchor) {
     return thrown
       ? { id: c.id, verdict: "PASS", typed_line: c.typed_line, diffs: [], unreadable: [] }
       : { id: c.id, verdict: "FAIL", typed_line: c.typed_line, unreadable: [],
-          diffs: [{ field: "resolve()", want: "throws", got: "returned a record", src: "key" }] };
+          diffs: [{ field: "resolve()", want: "throws", got: "returned a record", src: "key", kind: "fact" }] };
   }
   if (thrown) {
     return { id: c.id, verdict: "ERROR", note: `resolve() threw: ${thrown.message}`, diffs: [], unreadable: [] };
@@ -453,12 +496,18 @@ function run(c, anchor) {
   let keyAgrees = true;
   for (const [field, e] of Object.entries(c.expected)) {
     const where = out[e.at];
+    // Classified when it is COMPARED, not when it differs. Looking the kind up
+    // only inside the failure branch meant an unclassified field was invisible
+    // for exactly as long as it agreed, which is every run until the one that
+    // needed it.
+    const kind = kindOf(c.letter, field);
+    if (!kind) unclassified.push(`${c.id}: \`${field}\` is compared and FIELD KINDS does not classify it`);
     if (REFERENCES.some((p) => p.test(e.want))) {
       unreadable.push(`${field}: the key states ${JSON.stringify(e.want)}, a reference rather than a value`);
       continue;
     }
     if (!where || !(field in where)) {
-      diffs.push({ field, want: shown(e.want), got: `(no such field on ${e.at})`, src: "key" });
+      diffs.push({ field, want: shown(e.want), got: `(no such field on ${e.at})`, src: "key", kind: "fact" });
       keyAgrees = false;
       continue;
     }
@@ -467,26 +516,36 @@ function run(c, anchor) {
       ? (e.want === "" ? got === null || got === "" : typeof got === "string" && got !== "")
       : same(expand(e.want, anchor), got);
     if (!ok) {
-      diffs.push({ field, want: shown(e.presence ? e.want : expand(e.want, anchor)), got: shown(got), src: "key" });
+      diffs.push({
+        field,
+        want: shown(e.presence ? e.want : expand(e.want, anchor)),
+        got: shown(got),
+        src: "key",
+        kind: kind ?? "fact", // an unclassified field is treated as a fact and the run fails anyway
+      });
       keyAgrees = false;
     }
   }
   for (const [field, want] of Object.entries(invariants(input))) {
     if (!same(want, task[field])) {
-      diffs.push({ field, want: shown(want), got: shown(task[field]), src: "contract" });
+      diffs.push({ field, want: shown(want), got: shown(task[field]), src: "contract", kind: "fact" });
     }
   }
 
+  // A case whose only differences are choices has not broken. It says the
+  // project changed its mind about a number, which is a thing to read, not fix.
+  const hard = diffs.filter((d) => d.kind !== "choice");
   return {
     id: c.id,
-    verdict: diffs.length ? "FAIL" : "PASS",
+    verdict: hard.length ? "FAIL" : diffs.length ? "CHOICE" : "PASS",
+    choices: diffs.filter((d) => d.kind === "choice").length,
     typed_line: c.typed_line,
     diffs,
     unreadable,
     // A failure the key did not cause. Counted separately; it fails the gate.
-    nonDiagnostic: diffs.length > 0 && keyAgrees,
+    nonDiagnostic: hard.length > 0 && keyAgrees,
     note:
-      diffs.length && keyAgrees
+      hard.length && keyAgrees
         ? "every key-stated field agreed; this case fails on contract invariants only, so it tests nothing"
         : null,
   };
@@ -500,6 +559,7 @@ function die(msg) {
 }
 
 const anchor = readAnchor(src);
+const kindOf = readKinds(src);
 const parked = readParked(src);
 const secs = sections(src);
 const letters = Object.keys(SECTIONS).filter((l) => secs[l] && (!only || only === l));
@@ -549,14 +609,15 @@ for (const letter of letters) {
       continue;
     }
 
-    const r = run(c, c.now ? anchorFrom(expand(c.now, anchor)) : anchor);
+    const r = run(c, c.now ? anchorFrom(expand(c.now, anchor)) : anchor, kindOf);
     results.push(r);
     console.log(`  ${r.verdict.padEnd(5)} ${r.id.padEnd(4)} ${JSON.stringify(c.typed_line)}`);
     if (r.note) console.log(`        note: ${r.note}`);
     for (const u of r.unreadable) console.log(`        unread: ${u}`);
     for (const d of r.diffs) {
       if (!verbose && d.src === "contract" && r.diffs.some((x) => x.src === "key")) continue;
-      const tag = d.src === "contract" ? "  [contract invariant]" : "";
+      const tag =
+        d.src === "contract" ? "  [contract invariant]" : d.kind === "choice" ? "  [choice, not a failure]" : "";
       console.log(`        ${d.field.padEnd(17)} expected ${d.want.padEnd(34)} got ${d.got}${tag}`);
     }
   }
@@ -564,6 +625,7 @@ for (const letter of letters) {
 
 const failed = results.filter((r) => r.verdict === "FAIL").length;
 const passed = results.filter((r) => r.verdict === "PASS").length;
+const moved = results.filter((r) => r.verdict === "CHOICE");
 const errored = results.filter((r) => r.verdict === "ERROR").length;
 const blind = results.filter((r) => r.nonDiagnostic);
 
@@ -574,6 +636,7 @@ console.log(`  failed              ${failed}`);
 console.log(`    on the key        ${failed - blind.length}`);
 console.log(`    on invariants only ${blind.length}`);
 console.log(`  passed              ${passed}`);
+console.log(`  choice moved        ${moved.length}   (a value this project picked, changed; not a failure)`);
 console.log(`  errored             ${errored}`);
 console.log(`not run               ${skipped.length}`);
 
@@ -591,6 +654,18 @@ if (blind.length) {
   console.log("      gate that answers the case in a `Handled by` cell.");
 }
 
+if (moved.length) {
+  console.log(`\n${moved.map((r) => r.id).join(" ")}`);
+  console.log("      differ only on a `choice` field. Nothing is broken: a number or a");
+  console.log("      label this project picked has changed. Update the key, or change it back.");
+}
+
+if (unclassified.length) {
+  console.log(`\n${unclassified.length} field(s) compared with no row in FIELD KINDS:`);
+  for (const u of unclassified) console.log(`      ${u}`);
+  console.log("      Classify it as `fact` or `choice`. An unclassified cell is one nobody decided about.");
+}
+
 if (!STAGE) die("spec.md states no current stage; the run has no reading");
 
 if (unfinished.length) {
@@ -599,13 +674,15 @@ if (unfinished.length) {
   console.log("      A blank is not an assertion. State the value, or write — for not applicable.");
 }
 
-const complete = results.length > 0 && blind.length === 0 && errored === 0 && unfinished.length === 0;
+const complete =
+  results.length > 0 && blind.length === 0 && errored === 0 && unfinished.length === 0 && unclassified.length === 0;
 const ok =
   STAGE <= 4
     ? complete && failed === results.length
     : complete && failed === 0;
 
 const why = () => {
+  if (unclassified.length) return `${unclassified.length} compared field(s) FIELD KINDS does not classify`;
   if (unfinished.length) return `${unfinished.length} cell(s) the key leaves blank`;
   if (errored) return `${errored} case(s) could not be evaluated`;
   if (blind.length) return `${blind.length} case(s) failed on contract invariants alone and test nothing`;
@@ -618,7 +695,7 @@ console.log(
     ok
       ? STAGE <= 4
         ? "every case run disagreed with the placeholder on a value the key states"
-        : "every case run agrees with the engine"
+        : "every case run agrees with the engine on every fact it states"
       : why()
   }`
 );

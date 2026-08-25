@@ -12,7 +12,7 @@
 // second copy of either is how two copies come to disagree.
 
 const v = new URL(import.meta.url).search;
-const { SHELL_VERSION } = await import(`./render.js${v}`);
+const { SHELL_VERSION } = await import(`./version.js${v}`);
 
 /**
  * THE STYLESHEET REPAIRS ITSELF BEFORE ANYTHING IS SAID ABOUT IT.

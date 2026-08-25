@@ -1,6 +1,6 @@
 # Cascade Part A — Contract
 
-Stage 2 deliverable, version 54. Companion to `spec/example.md`; see VERSIONS in spec.md.
+Stage 2 deliverable, version 55. Companion to `spec/example.md`; see VERSIONS in spec.md.
 
 This file says what every piece of information **is**. `spec/example.md` says what one session **was**. Where they disagree, one of them is wrong and the disagreement is a defect.
 
@@ -66,7 +66,7 @@ Handed in by the user, the clock, the client or config. Nothing here is computed
 | `duration_tap` | whole number | no | minutes | `limits.duration_min` to `limits.duration_max`. Non-null writes `duration_source` `selected` and the per-verb default is not consulted; a comma list's sum loses to it too. | `30` |
 | `firmness_tap` | one-of-a-fixed-set | no | — | `hard` `normal` `soft`. Overrides the firmness the marker words implied, so `is_hard` follows it. Empty leaves the words their say. | `hard` |
 | `notes_text` | text | yes | characters | 0 to `limits.notes_chars`. Written to `notes` verbatim and read by nothing else: it never enters `normalised`, so it reaches neither search nor duplicate detection. | *(empty)* |
-| `row_action` | one-of-a-fixed-set | no | — | `done` `cancel` `archive` `pin` `edit` `undo` `delete` `push` `undone` | `done` |
+| `row_action` | one-of-a-fixed-set | no | — | `done` `cancel` `archive` `pin` `edit` `delete` `push` `undone` | `done` |
 | `bound_task_id` | text | no | — | UUID v7 of the task being edited. Empty means capturing a new one. | `019876e2-…` |
 | `now` | date-and-time | yes | — | local with offset | `2026-08-03T10:40:00+05:30` |
 | `new_id` | text | yes | — | UUID v7, client-generated, handed into the engine | `019876e2-…` |
@@ -207,7 +207,7 @@ Part 4 forbids an unused contract item without a written reason. These are reach
 | `task_state = done` / `cancelled`, with `closed_at` set | Both actions are in §6, neither taken |
 | `duration_source = selected` | The control exists on screen 2 and the example predates it, so nothing in the example taps it |
 | `type_chip_tap` | The chip is shown in §2 and never tapped |
-| `row_action` `done` `cancel` `archive` `pin` `undo` | The buttons are shown in §2 and §6; none of these five is pressed. `edit` **is** exercised in §6. |
+| `row_action` `done` `cancel` `archive` `pin` | The buttons are named in §2 and §6; none of these four is pressed. `edit` **is** exercised in §6. |
 | `row_action` `delete` `push` `undone` | All three arrived with the MVP screens and none is drawn in the example, which predates them |
 | `recurrence`, `spawned_from` | Nothing in the example repeats; the advanced panel arrived after it was written |
 | `duration_tap`, `firmness_tap`, `notes_text` | All three are set in the advanced panel, which arrived after the example was written. Every one of them is a Stage 4 golden case instead |
@@ -225,18 +225,11 @@ Part 4 forbids an unused contract item without a written reason. These are reach
 
 All are Stage 4 golden cases.
 
-## 3b. `UndoEntry`
+## 3b. Undo, deleted
 
-Single level. A row rather than a variable, so a stack is a limit change rather than a rewrite.
+There is no `UndoEntry` and no `undo_toast`. One entry restoring a whole record with a fresh `updated_at` is the wrong shape for a store that merges newest-wins, and it was removed from the app in session 132: the bin CANCELS rather than erases, `Revive` brings a cancelled task back, and `Delete for good` on a Done row is the one press that cannot be taken back.
 
-| Name | Type | Required | Unit | Range | Example |
-|---|---|---|---|---|---|
-| `action` | one-of-a-fixed-set | yes | — | the `row_action` set, plus `create` | `create` |
-| `task_id` | text | yes | — | UUID v7 of the affected task | `019876e2-…` |
-| `prior_state` | object | optional | — | The complete `Task` before the action. Empty when the action was `create`. | *(none)* |
-| `created_at` | date-and-time | yes | — | | `2026-08-03T10:40:00+05:30` |
-
-**`prior_state` is a whole record, not a diff.** An undo restores the previous `updated_at` along with everything else, and nothing but a full copy can do that. One entry exists at a time; the next undoable action supersedes it.
+The four fields it named, its shown output and its `row_action` member left this contract and `types.ts` in session 137. `cascade_undo` is left standing in `schema.sql`, unwritten by anything, because the workflow work may want a shape like it and dropping a table is the one storage change that cannot be undone. `config.undo_ui_timeout_sec` is kept under its old name and holds the toast's life; the name outlived the feature and renaming it would cost a config version for nothing.
 
 ---
 
@@ -265,7 +258,6 @@ Every rendered string, with its template. Part 4 applies here too: these spellin
 | `group_header` | one-of-a-fixed-set | `ACTIVE` `IDEAS` `DONE`, with `(none)` when empty | `IDEAS      (none)` |
 | `sort_header` | text | `Sort:  [<current> ▾]   <alternative>` | `Sort:  [Duration ▾]   Newest` |
 | `chip_row` | list of | the parsed-date chip if any, then `chip_presets` | `[✓ this morning][This afternoon]` |
-| `undo_toast` | text | `Added "<title>" · <date_phrase>` with `[Undo]`, held `config.undo_ui_timeout_sec` | `Added "Call markan" · this morning` |
 | `alarm_at` | date-and-time | `due_at` less the lead. Derived, never stored | — |
 | `alarm_ring_at` | date-and-time | What the shell arms: `alarm_snoozed_until` while that is ahead of `now`, otherwise `alarm_at` | — |
 | `alarm_armed_for` | date-and-time | The derived instant the shell armed against, so a diff can tell a snoozed alarm from a stale one. Equal to `alarm_at` | — |
@@ -410,7 +402,7 @@ Every rendered string, with its template. Part 4 applies here too: these spellin
 
 **The list screen's search filters the tab in place.** Same four tiers as the capture screen, exposed through one matcher so the two boxes cannot disagree about what counts as a match. The pool differs: on the capture screen it is open tasks, because a done task is not a duplicate risk, and on the Done tab it is done ones, because finding something finished is why anyone looks there.
 
-**The type control is a dropdown of all fourteen** (session 122, reversing the three-chip decision on his instruction — the drawn design was always `⟨action ▾⟩`). `verb_to_type` still maps a verb to exactly one type, and that one is the dropdown's value; there are still no runners-up and no guessed alternates. The Stage 3 harness keeps the three-and-the-rest arrangement, which is what still reads `type_suggestions`.
+**The type control is a dropdown of all fourteen** (session 122, reversing the three-chip decision on his instruction — the drawn design was always `⟨action ▾⟩`). `verb_to_type` still maps a verb to exactly one type, and that one is the dropdown's value; there are still no runners-up and no guessed alternates. `type_suggestions` is still read: the Stage 3 harness that read it is deleted, and the three it names are the shortcuts the capture row offers above the dropdown.
 
 **The advanced panel holds what a capture rarely needs.** The full type list and `recurrence` today. It is a second surface on the capture screen rather than a second screen, so nothing about the box or the chips changes when it opens.
 
@@ -420,7 +412,7 @@ Every rendered string, with its template. Part 4 applies here too: these spellin
 
 **A push moves one occurrence and leaves the series alone.** One busy month must not shift a monthly reminder permanently.
 
-**`spawned_from` names the completion that produced an occurrence.** Undoing a done has to be able to take back what the done created; without it, pressing Undone leaves two rows, the one that came back and the one that was made.
+**`spawned_from` names the completion that produced an occurrence.** Pressing Undone has to be able to take back what the Done created; without it, pressing Undone leaves two rows, the one that came back and the one that was made.
 
 **A push sets the date and touches no words.** Once a task is added its typed line is gone from the screen: only `title` is drawn, on the list and on the edit screen alike, and `raw_text` is provenance that is kept and never shown. So there are no date words left in view for a push to keep in step with, and the second way a date can arrive that this project has refused twice does not arise.
 
@@ -448,7 +440,7 @@ Every rendered string, with its template. Part 4 applies here too: these spellin
 
 **`card_reason` is generated, not stored.** It is produced from the ranking term breakdown, which is why the sentence and the sort order can never disagree.
 
-**The toast holds for `config.undo_ui_timeout_sec`; the `UndoEntry` does not expire with it.** The entry survives until superseded and stays reachable through the engine after the button is gone.
+**The toast holds for `config.undo_ui_timeout_sec` and then goes.** Nothing outlives it. The setting keeps the name it was given when it timed an Undo button, because a config key is stored per version and renaming one costs a version for no behaviour.
 
 ---
 
@@ -564,7 +556,6 @@ A record can be field-by-field valid and jointly nonsense. These are what stop t
 | 11 | `action_verb` `other` implies `context` is `undetermined` |
 | 12 | `date_firmness` is `hard` only when `date_marker` is non-empty |
 | 13 | `date_firmness` is `soft` only when `date_hedge` is non-empty |
-| 14 | `UndoEntry.prior_state` is empty exactly when `UndoEntry.action` is `create` |
 
 ---
 

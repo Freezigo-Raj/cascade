@@ -5,7 +5,7 @@ import io,os,shutil,subprocess,sys,tempfile
 SRC=['contract.md','types.ts','example.md','config.ts','spec.md','answer_key.md','gate2.py','gate4.mjs','log.manifest']
 # gate2.py now reads the emitted config too, so the sandbox has to carry it.
 # gate4.mjs runs the engine, so the sandbox carries the shell files it imports.
-SRC_DIRS=['shell/config.js','shell/app.js','shell/resolve.js','shell/resolve.stage3.js','shell/types.js','shell/lemma.js','shell/render.js','shell/cards.js','shell/store.js','shell/search.js','shell/push.js','shell/repeat.js','shell/clash.js','shell/alarm.js']
+SRC_DIRS=['shell/config.js','shell/resolve.js','shell/types.js','shell/lemma.js','shell/version.js','shell/cards.js','shell/store.js','shell/search.js','shell/push.js','shell/repeat.js','shell/clash.js','shell/alarm.js']
 def _versions_line(key):
     import re
     m=re.search(r'^\s*%s\s+\S+\s*$'%key,io.open('spec.md',encoding='utf-8').read(),re.M)
@@ -21,8 +21,6 @@ def _live(path,pattern):
     return m.group(0)
 
 CASES=[
- ("invented screen row", 'example.md', "APPEND",
-  "\n```\n\u250c\u2500\u2500\u2500\u2500\u2510\n\u2502  Snooze until Tuesday   [Remind me later]   \u2502\n\u2514\u2500\u2500\u2500\u2500\u2518\n```\n"),
  ("wrong Task Example", 'contract.md',
   "| `raw_text` | text | yes | characters | 1 to `limits.raw_text_chars`. Never truncated. | `Call markan morning` |",
   "| `raw_text` | text | yes | characters | 1 to `limits.raw_text_chars`. Never truncated. | `YYY` |"),
@@ -35,22 +33,17 @@ CASES=[
  ("stale version in spec", 'spec.md', _versions_line('contract'), _versions_line('contract')[:-1]),
  # Gate 3's number, planted the other way round: the shell moves and VERSIONS
  # does not. Nothing read the shell's version until this session.
- ("stale shell version", 'shell/render.js',
-  _live('shell/render.js', r'export const SHELL_VERSION = \d+;'), "export const SHELL_VERSION = 99;"),
+ ("stale shell version", 'shell/version.js',
+  _live('shell/version.js', r'export const SHELL_VERSION = \d+;'), "export const SHELL_VERSION = 99;"),
  # A box whose rails sit one column off its own sides. Every row stays 68 wide,
  # which is why width alone never saw it and thirty-four passes read past it.
- ("misaligned box in the example", 'example.md',
-  "\u2502  \u250f"+"\u2501"*48+"\u2513", "\u2502   \u250f"+"\u2501"*47+"\u2513"),
- # Planted beside the export rather than on it. Renaming `partAConfig` breaks
- # the reader that finds the config body, so the gate died on a traceback and the
- # crash was counted as a catch. This plants a versioned name the reader survives.
  ("version inside an identifier", 'config.ts',
   "export const partAConfig: Config = {",
   "const cfgA1 = 0;\nexport const partAConfig: Config = {"),
  # No `config` in either name. The check matched that one word until now, so both
  # of these were invisible to it.
- ("version in a name, noun is `schema`", 'shell/app.js',
-  "const logEl = $(\"log\");", "const schemaV2 = $(\"log\");"),
+ ("version in a name, noun is `schema`", 'shell/cards.js',
+  "export function isOpen(t) {", "const schemaV2 = 0;\nexport function isOpen(t) {"),
  ("version in a name, noun is `key`", 'gate4.mjs',
   "const src = readFileSync(KEY, \"utf8\");",
   "const srcKeyV7 = readFileSync(KEY, \"utf8\");"),
@@ -66,10 +59,6 @@ CASES=[
   "// Every value here is one that an origin in spec/example.md v19 points at."),
  ("dead vocabulary member", 'config.ts', '"confirm", "book", "bill", "hire",', '"confirm", "book", "bill", "hire", "zzz",'),
  ("shown output missing from types", 'types.ts', "  input_field: InputFieldState;", ""),
- ("badge with a non-member verb", 'example.md',
-  "\u2502   Call markan                                                    \u2502", "\u2502   Call markan                                banana \u00b7 30m       \u2502"),
- ("badge with the wrong member", 'example.md',
-  "Reply to bharti singhal   due today \u00b7 reply \u00b7  5m", "Reply to bharti singhal   due today \u00b7 message \u00b7  5m"),
  ("stale count in spec", 'spec.md',
   _live('spec.md', r'the \d+ config objects'), "the 21 config objects"),
  # Read live, like the config-object count two lines up. Pinning the number
@@ -83,9 +72,6 @@ CASES=[
  ("version below the decision log", 'spec.md',
   "# DELIBERATE DEVIATIONS FROM PROTOCOL\n\n",
   "# DELIBERATE DEVIATIONS FROM PROTOCOL\n\nShips at contract version 99.\n\n"),
- ("ragged drawn panel", 'example.md',
-  "\u2502  Default                                                         \u2502",
-  "\u2502  Default                                                       \u2502"),
  ("companion version outside spec", 'contract.md',
   "Companion to `spec/example.md`; see VERSIONS in spec.md.",
   "Companion to `spec/example.md` v23."),
@@ -108,6 +94,27 @@ CASES=[
  ("config version in the key header", 'answer_key.md',
   "checked by `gate2.py` against whichever config is in force.",
   "checked by `gate2.py` at `a.2`."),
+ # ---- session 137: the checks that replaced the drawing ----
+ # Undo left the documents and the table stayed standing. The way it comes back
+ # is a copy-paste, so the name coming back is what is watched for.
+ ("undo declared again in types", 'types.ts',
+  "export type RowAction =",
+  "export interface UndoEntry { action: string; }\nexport type RowAction ="),
+ ("undo back as a row_action member", 'contract.md',
+  "| `row_action` | one-of-a-fixed-set | no | \u2014 | `done` `cancel` `archive` `pin` `edit` `delete` `push` `undone` | `done` |",
+  "| `row_action` | one-of-a-fixed-set | no | \u2014 | `done` `cancel` `archive` `pin` `edit` `undo` `delete` `push` `undone` | `done` |"),
+ # What section A's three columns were checking by accident: every mapping has
+ # to land inside its own vocabulary.
+ ("config maps a verb outside its vocabulary", 'config.ts',
+  'call: "action", check: "action", message: "action", reply: "action",',
+  'call: "banana", check: "action", message: "action", reply: "action",'),
+ # A row fitted to the engine with nothing declaring it.
+ ("reconciled row not declared", 'answer_key.md',
+  "| A21 | version 4 |", "| A99 | version 4 |"),
+ # A field compared with nobody having decided whether it can be wrong. Only
+ # the key runner can see this one.
+ ("compared field with no kind", 'answer_key.md',
+  "| `compare_key` | fact | | `normalised` minus purely numeric tokens. |\n", ""),
 ]
 passed=failed=0
 for name,fname,old,new in CASES:
@@ -125,10 +132,10 @@ for name,fname,old,new in CASES:
         io.open(p,'w',encoding='utf-8').write(t.replace(old,new))
     # Most fixtures are read by gate2.py. A defect only the key runner can see,
     # like a weekday that contradicts its date, names gate4.mjs instead.
-    byGate4 = 'weekday' in name
+    byGate4 = 'weekday' in name or 'no kind' in name
     cmd = ['node','gate4.mjs'] if byGate4 else [sys.executable,'gate2.py']
     r=subprocess.run(cmd,cwd=d,capture_output=True,text=True)
-    verdict = 'gate4: the key says' if byGate4 else 'GATE 2: FAIL'
+    verdict = ('gate4: the key says' if 'weekday' in name else 'GATE 4 (') if byGate4 else 'GATE 2: FAIL'
     if r.returncode!=0 and verdict not in (r.stdout+r.stderr):
         print("  CRASHED       %-32s  <-- died before reporting; a traceback is not a catch"%name); failed+=1
     elif r.returncode!=0: print("  caught        %-32s"%name); passed+=1

@@ -1,8 +1,9 @@
 // Cascade Part A — screen 1, the list.
 //
-// The first screen built against MVP.md rather than against the example. The
-// Stage 3 harness at `index.html` stays where it is: it draws every field and
-// is what `check_render` pins, and this file draws what a person sees.
+// The first screen built against MVP.md rather than against the example. It was
+// built BESIDE the Stage 3 harness rather than instead of it, which is what let
+// three re-skins happen without a check going red. The harness is deleted now:
+// this file is the list, and there is no second drawing of it anywhere.
 //
 // It reads `listOnly()`, so the cards here and the cards under the capture box
 // come out of one pass. A second ordering written for the screen is the defect
@@ -27,7 +28,7 @@ const { readClashes, readClashDialog, readDeadlineClashes, readDeadlineDialog } 
 const { ask } = await import(`./mvp.dialog.js${v}`);
 const { el } = await import(`./mvp.paint.js${v}`);
 const { rowOf, blockOf } = await import(`./mvp.row.js${v}`);
-const { SHELL_VERSION } = await import(`./render.js${v}`);
+const { SHELL_VERSION } = await import(`./version.js${v}`);
 
 const TABS = ["Tasks", "Ideas", "Done"];
 const SLOTS = ["Today", "Tomorrow", "Upcoming"];
@@ -279,7 +280,12 @@ export function mountList(root, { openEdit, openAccount, openAlarms, onTasks } =
   tools.appendChild(acct);
   const syncSlot = el("div", "sync-slot");
   // Always on screen. Asking "did my push arrive" should not need a second press.
-  headRight.append(tools, syncSlot, el("div", "build", `build ${SHELL_VERSION}`));
+  // ONE LINE, NOT TWO (session 139): the sync pill and the build number were
+  // stacked, and the build's own row was 20px of the header's height for eight
+  // characters. Both still always visible, which is the point of each.
+  const headFoot = el("div", "head-foot");
+  headFoot.append(syncSlot, el("div", "build", `build ${SHELL_VERSION}`));
+  headRight.append(tools, headFoot);
   headBlock.appendChild(headRight);
 
   const bar = el("div", "bar");

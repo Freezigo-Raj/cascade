@@ -76,7 +76,7 @@ Every task where `canAlarm()` holds and `alarm_type` is not `none` — the same 
 | Alarm off | one per row | `alarm_type = "none"`. On a repeating task this ends the ring for the SERIES, because `spawn()` inherits `alarm_type`. Drawn as a pill (session 126, his call: button-like feel) |
 | Clear snooze | 0 or 1 | Only while one is pending. The one piece of alarm state a person sets without seeing it |
 | Stop repeat | 0 or 1 | Only on a repeating task. `recurrence = null`; the date and the alarm are left alone |
-| Delete | one per row | The task, with undo. On a repeat this ends the series: a spawn needs a closed occurrence to count from |
+| Delete | one per row | The task. On a repeat this ends the series: a spawn needs a closed occurrence to count from |
 
 **The lock screen carries four push rungs, two pickers and two cancels** (sessions 128 and 131). The rungs scroll sideways; `Tomorrow` and beyond are not offered there, because moving a task to another day is a decision worth being awake for. `Pick time` is one dialog for the same day and sends a time already gone to tomorrow; `Pick date & time` is two. Both sit on their own line below the rungs. `Cancel alarm` ends this ring and touches nothing else, so a repeat rings again on its own schedule. `Cancel this one` / `Cancel task` closes the occurrence as `cancelled` and hands a repeat its next occurrence. The wording follows the payload's `repeats` flag; the shell cannot see the record. It also carries five push targets in a sideways scroller and a `Pick…` button opening a date then a time dialog, which is the one place the Android shell composes a date.
 
@@ -84,7 +84,7 @@ Every task where `canAlarm()` holds and `alarm_type` is not `none` — the same 
 
 **Repeats the calendar walked past are stepped forward on open** (session 125, his call). An occurrence whose own date plus one whole interval has passed is closed as `cancelled` and the schedule's next future date is spawned, before the list draws and before the alarms are armed. `cancelled` and not `done`, because it was not done: the row keeps `closed_at` and shows on the Done tab beside the finished ones, so the miss is visible and countable. One interval and not one minute — a weekly task an hour late is still this week's task. Nothing else in the app ever moves a date on its own: a one-off is left exactly where it is, however late.
 
-**The catch-up takes no undo slot.** Undo holds one entry and it belongs to the last thing a person did. The cancelled row is the way back.
+**The catch-up leaves a way back on the screen.** The overtaken occurrence is closed as `cancelled` rather than erased, and `Revive` on the Done tab brings it back. There is no undo to spend: it was removed in session 132.
 
 **Two views: Alarms and Repeats** (session 129). `Alarms` is everything the shell will ring; `Repeats` is everything that recurs, alarm or not. They overlap and neither contains the other — a repeat with no alarm is invisible on the first, a one-off alarm invisible on the second. A repeat row carries Stop repeat, Alarm off and Delete.
 
@@ -115,7 +115,7 @@ Today  ·  Tomorrow  ·  Upcoming
 | Bell / loop | 0-2 per row | Not controls (session 132). A bell means the task has an alarm, a loop means it repeats. Beside the title, no hit area, `aria-hidden` with the fact in the title's label |
 | Revive | one per Done row | A word beside the filled circle, doing the same thing (session 126, his word). The one control drawn twice on purpose: the circle has meant Undone since session 104 and nothing said so |
 | Pin | one per row | A pin glyph, filled while pinned; the word stays for screen readers. Pinned tasks sort above everything |
-| Delete | one per row | A bin glyph; the word stays for screen readers. The row goes for real. One step of undo holds the only copy |
+| Delete | one per row | A bin glyph; the word stays for screen readers. The row is CANCELLED, not erased, and `Revive` on the Done tab brings it back. `Delete for good` on a Done row is the one press that cannot be taken back |
 | Push | 4 or 5 per row | Moves the date without opening the task. Each says only where it lands. A column that scrolls vertically, capped at two and a half rungs |
 | Undone | one per Done row | Brings the task back |
 | Alarms | 1 | After `Done` in the tab row (session 125, his ask). Not a tab: it opens screen 4, which lists every armed alarm |
@@ -237,7 +237,7 @@ The box is at the top. The tap buttons are with it. The matching tasks are below
 
 **It reads OPEN tasks only** (session 134). Done, cancelled and archived rows are not compared against, which is the same set the search panel under the box reads — the two answer the same question and a dialog naming something the person cannot see is worse than no dialog. A finished task with the same name is what `Revive` on the Done tab is for.
 
-**The undo toast** reads `Added "Call markan" · this morning` with `[Undo]`, and holds 8 seconds. The undo entry outlives the toast.
+**The toast** reads `Added "Call markan" · this morning` and holds 8 seconds (`config.undo_ui_timeout_sec`). There is no `[Undo]` on it and nothing outlives it: undo was removed in session 132, and the setting kept its name because a config key is stored per version and renaming one costs a version for no behaviour.
 
 ---
 
@@ -377,5 +377,37 @@ The same list the account screen draws. `decided` means it was chosen against an
 ## Not in the MVP
 
 Tabs. Reminders and alarms that fire. Projects. Blockers and workflow. Sub-tasks. `Park`.
+
+
+## The 70% rule — how much of the screen is tasks
+
+His number, session 139, from two phone screenshots side by side: **at least 70% of the viewport height belongs to tasks.** Everything above the first row is a budget of 30vh and no more — the header, the tab row, the search box, the slot toggle, the group heading.
+
+It was 41% chrome on his narrow phone and 35% on his wide one. The reason it was worse on the narrow one is that every number up there was a fixed pixel count: a fixed 32px title is a bigger share of a 785px screen than of a 915px one, so the small phone paid twice for the same header.
+
+| Where the height went | Before | Now |
+|---|---|---|
+| header (kicker, title, date, avatar, sync, build) | 113px | 71px |
+| tab row + search | 86px, on two lines | 35px, on one |
+| slot toggle | 39px, 54px when it wrapped | 32px, never wraps |
+| group heading | 32px | 27px |
+
+**The tab row is one line.** `flex-wrap: wrap` put the search box on a row of its own on every phone: 44px of a 30vh budget for a control 34px tall. The tabs keep their intrinsic width and the search takes what is left. Nothing is hidden and nothing moved; the row it used to wrap onto is gone. On a narrow phone the placeholder is wider than the box, so it ellipsises — a label cut mid-letter reads as a defect where an ellipsis reads as a label that did not fit.
+
+**The sync pill and the build number are on one line.** They were stacked, and the build's own row was 20px for eight characters. Both are still always visible, which is the point of each.
+
+**The sizes that drive the budget are `clamp()`ed against `vw`.** A smaller screen gets a smaller header rather than the same header taking a larger bite. Nothing is a media query, so there is no third breakpoint to state twice.
+
+**Wider tasks, his second ask.** The push ladder is an `auto` grid track, so every pixel it takes comes off the title beside it. Narrower pills, tighter row padding and a smaller gap give the title 152px at 360 where it had 130.
+
+**Measured, not asserted.** `python3 tools/measure_layout.py` loads the real app in a headless browser at four phone sizes and prints the percentage. It is a tool and not one of the checks: it needs playwright, and the standing call is that screens are read on the phone.
+
+| Viewport | Tasks before | Tasks now |
+|---|---|---|
+| 320 x 690 | 51.6% | 71.3% |
+| 360 x 785 (his narrow phone) | 59.1% | 74.1% |
+| 393 x 852 | 62.6% | 75.6% |
+| 412 x 915 (his wide phone) | 65.1% | 76.9% |
+
 
 **Arrived since this page was written**, and now on it: recurrence, sync, the duration control, notes, firmness. **Decided and deliberately still absent:** Cancel and Archive as row actions. A row carries Done, Pin, Delete and its push targets, and a Done row carries Undone. Cancel and Archive stay members of `row_action` with no control on any screen, which is stated here so the gap reads as a decision rather than an oversight.

@@ -51,7 +51,7 @@ export type BlockerReason = "none";
 
 // --- Inputs: handed in, never computed ---
 
-export type RowAction = "done" | "cancel" | "archive" | "pin" | "edit" | "undo";
+export type RowAction = "done" | "cancel" | "archive" | "pin" | "edit";
 
 /** Half-open character range in `typed_line`, `[start, end)`. */
 export interface CharSpan {
@@ -179,19 +179,15 @@ export interface Task {
   push_count: number;
   /** Where it was first due, before any push. Empty until the first one. */
   first_due_at: LocalTimestamp | null;
-  /** The completion that produced this occurrence, so undoing it can remove this one. */
+  /** The completion that produced this occurrence, so Undone can take back what Done made. */
   spawned_from: string | null;
 }
 
-export type UndoAction = RowAction | "create";
-
-export interface UndoEntry {
-  action: UndoAction;
-  task_id: Uuid;
-  /** The complete Task before the action. Null when action is "create". */
-  prior_state: Task | null;
-  created_at: LocalTimestamp;
-}
+// UNDO IS GONE (session 137). One entry restoring a whole record with a fresh
+// stamp is the wrong shape for a store that merges newest-wins, and the bin
+// cancelling plus `Revive` cover what it protected. `UndoAction`, `UndoEntry`
+// and `undo_toast` were deleted here; `cascade_undo` is left standing in
+// `schema.sql`, unwritten, because the workflow work may want a shape like it.
 
 // --- Outputs, shown ---
 
@@ -305,10 +301,6 @@ export interface ResolveOutput {
   list: ListView;
   capture: CaptureView;
 }
-
-/** 'Added "<title>" · <date_phrase>'. Held for config.undo_ui_timeout_sec;
- *  the UndoEntry outlives it. */
-export type undo_toast = string;
 
 // --- Working values: computed in between, never persisted ---
 

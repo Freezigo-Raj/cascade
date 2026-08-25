@@ -43,9 +43,9 @@ One screen, four states, two fields. Reached before the app, never beside it.
 | Tasks | yes | the point |
 | Settings | yes | `capacity_min_per_day`, `duplicate.threshold`, one row per account |
 | Config | once per version | the `config_version` stamp has to point at something |
-| Undo | **no** | it must work offline, and it is about this device |
+| ~~Undo~~ | — | removed from the app in session 132 and from the contract in 137. `cascade_undo` is left standing, unwritten |
 
-**Undo is local, and this reverses session 92.** The entry is the previous state of a task on the device that changed it. A row fetched over a network cannot be read with no network, and pressing Undo on a phone should not reverse something done on a laptop an hour ago.
+**Undo was local, and then it was gone.** The reasoning that kept it off the wire is what eventually removed it: one entry restoring a whole record with a fresh `updated_at` is the wrong shape for a store that merges newest-wins, and a restored older stamp is silently refused by the trigger. The bin cancels, `Revive` brings a task back, and `Delete for good` is the one press that cannot be taken back.
 
 ---
 
@@ -77,9 +77,9 @@ One screen, four states, two fields. Reached before the app, never beside it.
 | `shell/gate.js` | the four states above |
 | `shell/boot.js` | gate or app, decided before either draws |
 | `shell/store.sync.js` | cache, outbox, pull, realtime |
-| `shell/store.select.js` | which of the three stores `app.js` gets |
+| `shell/store.select.js` | which of the three stores the app gets |
 
-`app.js` changed by three lines: the import, the store line, and a listener for a task arriving from elsewhere.
+The app changed by three lines: the import, the store line, and a listener for a task arriving from elsewhere. (That app was `app.js`, the Stage 3 harness, deleted in session 137; `mvp.js` inherited the same three lines.)
 
 ---
 

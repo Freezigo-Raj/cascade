@@ -1,0 +1,39 @@
+CASCADE — sessions 137 to 139. READ THIS BEFORE COMMITTING.
+
+A zip can add and overwrite files. It cannot delete one. Six files were DELETED
+this session and they must be removed from the repository BY HAND, or the build
+will still carry the Stage 3 harness and gate2.py will fail saying so.
+
+Delete these six, from D:\AI data\CascadeApp\cascade :
+
+  shell\app.js
+  shell\boot.js
+  shell\index.html
+  shell\render.js
+  shell\resolve.stage3.js
+  shell\check_render.mjs
+
+WHY: they were the Stage 3 harness. It drew a screen in text characters that
+nobody has opened since session 98, and check_render.mjs proved that drawing
+matched a picture in example.md. A green check about a screen that does not
+exist reads as coverage and is not.
+
+WHAT MOVED: SHELL_VERSION lived inside render.js. It now lives in a new file,
+shell\version.js, which holds nothing else. That file IS in this zip.
+
+AFTER DELETING, run this and it must say GATE 2: PASS —
+
+  python3 gate2.py
+
+If gate2 says "shell/app.js is back", one of the six is still there.
+
+BEFORE YOU RUN gate2.py, install the two tools it uses:
+
+  npm i -g typescript eslint
+
+tsc missing is a FAILURE. eslint missing is a warning. Session 138 fixed the
+reason gate2 said "tsc is not installed" on Windows even when it was: npm
+installs them as tsc.cmd and eslint.cmd, and Windows cannot start a .cmd the
+way the gate was starting it. That is fixed in this zip.
+
+Header should read build 55.

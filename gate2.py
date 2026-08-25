@@ -1,12 +1,22 @@
 # -*- coding: utf-8 -*-
 """Gate 2, both directions. Every count is read from a file, never from prose.
 
-  contract.md  <->  types.ts  <->  config.ts        item-for-item, all five groups
-  example.md    ->  contract.md                     every rendered string, discovered
-  contract.md   ->  example.md                      every item used, or excused
+  contract.md  <->  types.ts  <->  config.ts        item-for-item, all four groups
+  example.md    ->  contract.md                     every field and config name used
+  contract.md   ->  example.md                      every item demonstrated, or excused
+  config.ts     ->  itself                          every vocabulary member reachable,
+                                                    mapped, and mapped into its own set
+  answer_key.md ->  itself                          every reconciled row declared
   spec.md       ->  reality                          versions and counts it claims
+
+NOT CHECKED ANY MORE (session 137): the ASCII panels. `example.md` drew the
+screen in box characters, and this file measured the drawing — every fragment
+against a template, every badge against the task table, every box corner, every
+panel's right edge. The drawing was of a layout three redesigns old and no
+person ever opened it. The rendered STRINGS still matter and are still held to
+the contract by the Example-value check below; the picture is gone.
 """
-import io,re,sys,glob,shutil,subprocess
+import io,os,re,sys,glob,shutil,subprocess
 
 C=io.open('contract.md',encoding='utf-8').read()
 T=io.open('types.ts',encoding='utf-8').read()
@@ -44,7 +54,7 @@ excused=[i for i,v in _ex if not v.strip()]
 # A row with a value excuses only that value, which the Example check below
 # handles by item name; nothing needs the pairs separately.
 
-task_t, undo_t = iface('Task'), iface('UndoEntry')
+task_t = iface('Task')
 cfg_t   = [k for k in iface('Config') if k!='version']
 inp_t   = iface('CaptureInput')
 wv_t    = iface('WorkingValues')
@@ -67,8 +77,21 @@ def both(label,a,an,b,bn):
 both('Inputs',inputs,'contract',inp_t,'types')
 both('WorkingValues',working,'contract',wv_t,'types')
 both('Task',task_c,'contract',task_t,'types')
-both('UndoEntry',undo_c,'contract',undo_t,'types')
 both('Shown',shown,'contract',shown_t,'types')          # the check that was missing
+
+# UNDO IS DELETED FROM THE DOCUMENTS (session 137) and the table is left standing
+# in schema.sql for the workflow work. A name coming back into the contract or
+# the machine half without the table's shape being redesigned is a feature
+# reappearing by copy-paste, so it is named here rather than left to a reading.
+# Declarations and table rows only. Prose naming a deleted thing is the record:
+# the contract has to be able to say what was removed and why.
+for _n in ('UndoEntry','UndoAction','undo_toast'):
+    if re.search(r'^export (?:type|interface) %s\b'%_n,T,re.M):
+        bad('types.ts still declares `%s`; undo was deleted in session 137'%_n)
+    if re.search(r'^\| `%s` \|'%_n,C,re.M):
+        bad('contract.md still gives `%s` a contract row; undo was deleted in session 137'%_n)
+if re.search(r'^\| `row_action`.*`undo`',C,re.M):
+    bad('contract.md still lists `undo` as a row_action member')
 both('Config',cfg_c,'contract',cfg_t,'types')
 both('Config',cfg_t,'types',cfg_a,'config.ts')
 
@@ -112,107 +135,30 @@ for tbl in ['verb_to_type','duration_defaults']:
     for k in sorted(keys-members):
         bad('config: %s has an entry for `%s`, which is not a member'%(tbl,k))
 
+# THE CHECK THE KEY WAS DOING BY ACCIDENT (session 137). Section A stated
+# `commitment_type`, `context` and `est_duration_min` for all 33 verbs, which is
+# `config.verb_to_type[v]`, `config.verb_to_context[v]` and
+# `config.duration_defaults[v]` copied by hand into a second file. It tested that
+# two copies of one table agreed and went red whenever a number changed with no
+# defect present. The columns are gone. What they were worth is this: every
+# mapping has to land INSIDE its own vocabulary, and `verb_to_context` — the one
+# deliberately partial table — must not carry an entry for a verb that is not a
+# member. A value outside its vocabulary is a record the store will not accept.
+for _tbl,_vocab in [('verb_to_type','commitment_types'),('verb_to_context','contexts')]:
+    for _k,_v in re.findall(r'(\w+): "(\w+)"',obj(_tbl)):
+        if _k!='other' and _k not in members:
+            bad('config: %s maps `%s`, which is not an action_verbs member'%(_tbl,_k))
+        if _v not in _voc[_vocab]:
+            bad('config: %s maps `%s` to `%s`, which is not a %s member'%(_tbl,_k,_v,_vocab))
+for _k,_v in re.findall(r'(\w+): (\d+)',obj('duration_defaults')):
+    if int(_v)<=0: bad('config: duration_defaults.%s is %s; the contract says duration is positive'%(_k,_v))
+
 # ---------- 2. example -> contract, discovered not hardcoded ----------
 for f in re.findall(r'^\| `(\w+)`',
         re.search(r'## 3\. What was stored.*?Thirty-seven',E,re.S).group(0),re.M):
     if f not in task_c: bad('example field `%s` has no contract item'%f)
 for k in set(re.findall(r'`config\.([a-z_.]+)`',E)):
     if k.split('.')[0] not in cfg_a: bad('example names `config.%s`, absent from config.ts'%k)
-# every line drawn inside a box, reduced to its rendered fragments
-drawn=set()
-for line in re.findall(r'^[│┌└├┃┏┗].*$',E,re.M):
-    body=re.sub(r'[│┌└├┤┐┘─┃┏┓┗┛━┳┻╋]',' ',line)
-    for cell in re.split(r'\s{2,}',body):      # 2+ spaces is a column break
-        cell=cell.strip()
-        if not cell: continue
-        for frag in re.findall(r'\[[^\]]+\]|⟨[^⟩]+⟩|[^\[\]⟨⟩]+',cell):
-            frag=frag.strip()
-            if frag: drawn.add(frag)
-if len(drawn)<20: bad('rendered-fragment scan found only %d fragments; the scanner is broken'%len(drawn))
-
-# Every drawn fragment must match an anchored template or be a known task title.
-_tbl=section('## Tasks in this example',r'\n---\n',E)
-_hdr=re.search(r'^\| Typed \|(.*)$',_tbl,re.M)
-if not _hdr: bad('the task table has no header row; card_title cannot be checked')
-_cols=[c.strip().replace('`','') for c in ('Typed|'+_hdr.group(1)).split('|') if c.strip()]
-def _col(name,row):
-    cells=[c.strip() for c in row.strip().strip('|').split('|')]
-    return cells[_cols.index(name)].replace('`','') if name in _cols and len(cells)==len(_cols) else ''
-_rows=[r for r in _tbl.split('\n') if r.startswith('| `')]
-_t=[(_col('Typed',r),_col('title as drawn',r)) for r in _rows]
-_t=[(a,b) for a,b in _t if a]
-titles=set([a for a,b in _t])|set([b for a,b in _t if b])
-# Every box drawn in the example must close under the corner it opened at. The
-# bound-task box had its rails one column right of its own sides and one column
-# narrow, and thirty-four Gate 1 passes read past it: the rows were all 68 wide,
-# so nothing but an eye was looking.
-_SPEC=[('\u250c','\u2510','\u2514','\u2518','\u2502\u251c\u2524'),
-       ('\u250f','\u2513','\u2517','\u251b','\u2503\u2523\u252b')]
-_blocks=[];_blk=[];_in=False
-for _n,_l in enumerate(E.split('\n'),1):
-    if _l.strip()=='```':
-        if _in: _blocks.append(_blk); _blk=[]
-        _in=not _in; continue
-    if _in: _blk.append((_n,_l))
-for _b in _blocks:
-    for _i,(_n,_l) in enumerate(_b):
-        for _tl,_tr,_bl,_br,_side in _SPEC:
-            for _m in re.finditer(re.escape(_tl),_l):
-                _L=_m.start(); _R=_l.find(_tr,_L)
-                if _R<0: continue
-                for _j in range(_i+1,len(_b)):
-                    _n2,_l2=_b[_j]
-                    if len(_l2)<=_R:
-                        bad('example.md line %d is too short for the box opened at line %d'%(_n2,_n)); break
-                    if _l2[_L]==_bl:
-                        if _l2[_R]!=_br: bad('example.md line %d: bottom rail does not close under its top rail'%_n2)
-                        break
-                    if _l2[_L] not in _side or _l2[_R] not in _side:
-                        bad('example.md line %d: box edge is not under the corner opened at line %d'%(_n2,_n)); break
-
-if not titles: bad('no task list found in the example; card_title cannot be checked')
-TEMPLATES=[r'^Default$', r'^Ideas$', r'^Sort:?$', r'^Add$', r'^Edit$',
-           r'^(ACTIVE|IDEAS|DONE)$', r'^Newest$', r'^results$',
-           r'^(%s) ·$'%'|'.join(sorted(members)), r'^What needs', r'^Duration ▾$',
-           r'^\[[^\]]+\]$', r'^⟨.*⟩$',
-           r'^(Due|Overdue)\s+(today|tomorrow|this (morning|afternoon|evening)|since \w+|\w+day|\d)',
-           r'^(%s) · \d+m$'%'|'.join(sorted(members)),
-           r'^due \w+ · (%s) · \d+m$'%'|'.join(sorted(members)),
-           r'^\d+m$',
-           r'^Added ".+" · .+$', r'^".+" already exists', r'^\(none\)$',
-           r'^(You called this a deadline|you marked it high)']
-def covered(frag):
-    if frag in titles: return True
-    if any(t in frag for t in titles): return True
-    return any(re.match(p,frag) for p in TEMPLATES)
-for frag in sorted(drawn):
-    if not covered(frag):
-        bad('drawn text %r matches no template and is not a known task title'%frag)
-
-# A badge drawn on the same line as a title must carry that task's verb.
-# Shape alone cannot catch this: `submit · 30m` is well-formed and wrong.
-verb_of={}
-for r in _rows:
-    a,b,v=_col('Typed',r),_col('title as drawn',r),_col('action_verb',r)
-    if a and v: verb_of[a]=v; verb_of[b]=v
-lines=E.split('\n')
-for ln,line in enumerate(lines,1):
-    if not re.match(r'^\s*[│┃]',line): continue          # panels are indented
-    hit=[t for t in verb_of if t and t in line]
-    if not hit: continue
-    t=max(hit,key=len)
-    # a card is two lines: title, then reason and badge. Look at both.
-    for off in (0,1):
-        if ln-1+off>=len(lines): break
-        cand=lines[ln-1+off]
-        if off and max([x for x in verb_of if x and x in cand]+[''],key=len): break
-        b=re.search(r'\b(%s) ·\s*\d+m'%'|'.join(sorted(members)),cand)
-        if b:
-            if b.group(1)!=verb_of[t]:
-                bad('example line %d: `%s` drawn with badge `%s`, task table says `%s`'
-                    %(ln+off,t,b.group(1),verb_of[t]))
-            break
-
 # ---------- 3. contract -> example ----------
 # Each item states an Example value. That value must appear on the example,
 # or the item must be listed with a written reason. Backticked-name presence is
@@ -228,29 +174,36 @@ excused_txt=' '.join(excused)  # exact item names only
 for start,stop,col in [('# 1. Inputs','# 2. Working values',5),
                        ('# 2. Working values','# 3. Outputs',4),
                        ('# 4. Outputs — shown','# 5. Cross-field',3),
-                       ('## 3a. `Task`','### Values with no instance',5),
-                       ('## 3b. `UndoEntry`','\n---\n',5)]:
+                       ('## 3a. `Task`','### Values with no instance',5)]:
     for item,ex in examples(start,stop,col).items():
         if item in excused or not ex or ex in ('—','none','empty'): continue
         if ex not in E:
             bad('contract item `%s` gives Example %r, which is not on the example'%(item,ex))
 
-# ---------- 3a2. drawn panels are rectangular ----------
-# Session 26 shortened four badge lines by substituting a verb and never
-# re-padded, leaving five panels with ragged right edges. Gate 6 is
-# character-for-character, so a panel the shell cannot reproduce is a defect.
-_pan=[]; _cur=[]
-for _i,_l in enumerate(E.split('\n'),1):
-    if _l.lstrip()[:1] in '\u250c\u2502\u251c\u2514' and _l.strip(): _cur.append((_i,_l))
-    else:
-        if _cur: _pan.append(_cur); _cur=[]
-if _cur: _pan.append(_cur)
-for _p in _pan:
-    _w={len(_l) for _,_l in _p}
-    if len(_w)>1:
-        for _n,_l in _p:
-            if len(_l)!=max(_w):
-                bad('example line %d is %d wide in a %d-wide panel: %r'%(_n,len(_l),max(_w),_l))
+# ---------- 3a3. a reconciled key row is declared ----------
+#
+# The answer key opens by claiming every value in it was written by hand from
+# the contract before any logic existed. That claim has always had exceptions:
+# rows edited to agree with the engine after the engine already ran. A
+# reconciled row cannot catch the engine it was copied from, and four of them
+# said so only in a Note cell where nobody counts them.
+#
+# Session 137 gave them a home. Any row whose note admits a reconciliation must
+# have its case id in RECONCILED ROWS, or the claim at the top of the key is
+# false and nothing says so.
+_REC=re.compile(r'what the engine does|reconciled|fitted rather than derived|[Cc]orrected at version',re.I)
+_recblk=section('## RECONCILED ROWS','\n## ',K)
+if not _recblk:
+    bad('answer_key.md has no RECONCILED ROWS block; a row fitted to the engine has nowhere to be declared')
+else:
+    _declared=set(re.findall(r'\b[A-I]\d+\b',_recblk))
+    for _ln in K.split('\n'):
+        if _ln.startswith('|') and _recblk.find(_ln)>=0: continue
+        if not _REC.search(_ln): continue
+        _ids=set(re.findall(r'\b[A-I]\d+\b',_ln))
+        if not _ids: continue
+        for _id in sorted(_ids-_declared):
+            bad('answer_key.md: %s reads as reconciled to the engine and is not in RECONCILED ROWS'%_id)
 
 # ---------- 3b. the decision log is append-only ----------
 # A hash per dated entry, in order. New entries may be appended; an existing
@@ -294,15 +247,16 @@ ev=re.search(r'Stage 1 deliverable, version (\d+)',E).group(1)
 cv=re.search(r'Stage 2 deliverable, version (\d+)',C).group(1)
 gv=re.search(r'version: "([^"]+)"',F).group(1)
 kv=re.search(r'Stage 4 deliverable, version (\d+)',K).group(1)
-# The shell states its own number in render.js. Without it Gate 3 was the one
-# signature whose staleness could not be read at all.
+# The shell states its own number in shell/version.js. It lived in render.js
+# until render.js was deleted with the rest of the Stage 3 harness; six other
+# numbers are held to it below, so it needs a home that is nothing else.
 try:
-    _R=io.open('shell/render.js',encoding='utf-8').read()
+    _R=io.open('shell/version.js',encoding='utf-8').read()
     _m=re.search(r'export const SHELL_VERSION = (\d+);',_R)
     sv=_m.group(1) if _m else None
-    if sv is None: bad('shell/render.js states no SHELL_VERSION; Gate 3 has nothing to be stale against')
+    if sv is None: bad('shell/version.js states no SHELL_VERSION; six other numbers have nothing to be held to')
 except IOError:
-    sv=None; bad('shell/render.js is missing')
+    sv=None; bad('shell/version.js is missing')
 # The stylesheet is loaded from a static link, so it cannot carry a date the way
 # every module does. It carries the shell version instead, in the link in
 # index.html and the five @import lines inside mvp.edit.css. A number a person
@@ -449,18 +403,53 @@ for _f,_txt in _COMPANIONS:
 # A missing compiler FAILS rather than skips. A check that quietly says nothing
 # when its tool is absent reads as a tooling problem and hides an untested gate,
 # which has happened here four times.
+# ---------------------------------------------------------------- finding a tool
+#
+# WINDOWS RUNS THIS FILE TOO (session 138). `npm` installs `tsc` and `eslint` as
+# `tsc.cmd` and `eslint.cmd`, and Windows cannot start a `.cmd` through
+# CreateProcess, which is what `subprocess.run([...])` calls. So a machine with
+# TypeScript correctly installed reported "tsc is not installed" and failed the
+# gate, and the report named the wrong thing: the repository was fine and the
+# call was wrong.
+#
+# `shutil.which` already knows about PATHEXT, so it finds the `.cmd`. What it
+# cannot do is make it startable. A `.cmd` or `.bat` is handed to the shell; a
+# real executable is started directly, as before.
+def _tool(*names):
+    """The first of these that exists on PATH, as an argv prefix, or None."""
+    for n in names:
+        p=shutil.which(n)
+        if p: return p
+    return None
+
+def _run(exe, args, timeout=None):
+    """Start `exe` with `args`. A Windows .cmd/.bat goes through the shell."""
+    if exe.lower().endswith(('.cmd','.bat')):
+        line=' '.join('"%s"'%a if ' ' in a else a for a in [exe]+args)
+        return subprocess.run(line,shell=True,capture_output=True,text=True,timeout=timeout)
+    return subprocess.run([exe]+args,capture_output=True,text=True,timeout=timeout)
+
 import subprocess
-try:
-    _tsc=subprocess.run(['npx','tsc','--noEmit','--strict','types.ts','config.ts'],
-                        capture_output=True,text=True,timeout=180)
-    if _tsc.returncode!=0:
-        bad('the contract does not compile under tsc --strict')
-        for _l in (_tsc.stdout+_tsc.stderr).strip().split('\n')[:6]:
-            if _l.strip(): bad('  %s'%_l.strip())
-except FileNotFoundError:
-    bad('tsc is not installed; the machine contract is the one artefact with no check under it')
-except subprocess.TimeoutExpired:
-    bad('tsc did not finish; the machine contract is unchecked this run')
+# `tsc` on PATH first, because it is the direct answer and needs no network. A
+# local install next. `npx` last: it is the one that fetches, and a fetch inside
+# a gate is a gate that fails when the wifi does.
+_TSC=_tool('tsc','tsc.cmd') \
+     or _tool(os.path.join('node_modules','.bin','tsc'),
+              os.path.join('node_modules','.bin','tsc.cmd')) \
+     or _tool('npx','npx.cmd')
+if not _TSC:
+    bad('tsc is not installed, so the machine contract is unchecked. Install it: `npm i -g typescript`')
+    bad('  (this is a missing tool on this machine, not a defect in the repository)')
+else:
+    _args=['tsc'] if os.path.basename(_TSC).lower().startswith('npx') else []
+    try:
+        _tsc=_run(_TSC,_args+['--noEmit','--strict','types.ts','config.ts'],timeout=180)
+        if _tsc.returncode!=0:
+            bad('the contract does not compile under tsc --strict')
+            for _l in (_tsc.stdout+_tsc.stderr).strip().split('\n')[:6]:
+                if _l.strip(): bad('  %s'%_l.strip())
+    except subprocess.TimeoutExpired:
+        bad('tsc did not finish; the machine contract is unchecked this run')
 
 # ---------- 4c. the example's config stamp ----------
 #
@@ -572,6 +561,19 @@ if _sch is not None:
         for _x in sorted(_fields-_base):
             bad('schema.sql: Task.%s has no column; the record cannot be stored whole'%_x)
 
+# ------------------------------------------------------- the harness stays gone
+# THE STAGE 3 HARNESS IS DELETED (session 137). It drew an ASCII panel that no
+# person opened, and `check_render.mjs` proved the panel matched a picture in
+# `example.md` — a green check about a screen that did not exist. A file
+# reappearing here means the two-apps-in-one-repo problem has come back.
+for _dead in ('shell/app.js','shell/render.js','shell/resolve.stage3.js',
+              'shell/check_render.mjs','shell/boot.js','shell/index.html'):
+    try:
+        io.open(_dead,encoding='utf-8').read()
+        bad('%s is back; the Stage 3 harness was deleted in session 137'%_dead)
+    except IOError:
+        pass
+
 # ---------------------------------------------------------------- versioned imports
 # EVERY RELATIVE IMPORT IN `shell/` CARRIES THE VERSION (session 129). The whole
 # cache-busting scheme is one query string: `index.html` asks for `mvp.js?v=N`
@@ -633,10 +635,9 @@ for _f in sorted(_glob.glob('shell/*.js')):
 # It is a WARNING when eslint is not installed rather than a failure, because a
 # missing tool is not a broken repository — but it says so loudly, because a
 # check that quietly does not run is worse than one that was never written.
-_lint = shutil.which('eslint')
+_lint = _tool('eslint','eslint.cmd')
 if _lint:
-    _r = subprocess.run([_lint, '--no-config-lookup', '-c', 'eslint.config.mjs', 'shell', '.'],
-                        capture_output=True, text=True)
+    _r = _run(_lint, ['--no-config-lookup', '-c', 'eslint.config.mjs', 'shell', '.'])
     if _r.returncode not in (0,):
         for _line in (_r.stdout or _r.stderr).strip().splitlines():
             if 'no-undef' in _line or 'error' in _line.lower():
@@ -645,8 +646,8 @@ else:
     warns.append('eslint is not installed, so no-undef did not run. `npm i -g eslint`. '
                  'This is the check that catches a name that does not exist.')
 
-print('inputs %d | working %d | shown %d | Task %d | Undo %d | config %d | excused %d | drawn %d'
-      %(len(inputs),len(working),len(shown),len(task_c),len(undo_c),len(cfg_a),len(excused),len(drawn)))
+print('inputs %d | working %d | shown %d | Task %d | config %d | excused %d'
+      %(len(inputs),len(working),len(shown),len(task_c),len(cfg_a),len(excused)))
 for x in warns: print('   warning:',x)
 print('GATE 2: FAIL' if fails else 'GATE 2: PASS')
 for x in fails: print('  ',x)

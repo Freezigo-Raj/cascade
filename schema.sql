@@ -203,8 +203,12 @@ create policy "task delete own" on cascade_task
 -- stands. Carrying the old stamp back would have it refused by the trigger,
 -- silently, on any task another device had touched since.
 --
--- The table is no longer written by the shell. Undo is local — see the note at
--- the foot of this file.
+-- KEPT, AND WRITTEN BY NOTHING (session 137). Undo was removed from the app in
+-- session 132 and from `contract.md` and `types.ts` in 137. This table stays
+-- standing on purpose: dropping a table is the one storage change that cannot
+-- be taken back, and the workflow work may want a shape like it. It has no
+-- contract item and no `Task` field, so `gate2.py`'s schema-vs-contract diff
+-- must not read it. See the note at the foot of this file.
 
 create table if not exists cascade_undo (
   owner        uuid primary key references auth.users(id) on delete cascade,

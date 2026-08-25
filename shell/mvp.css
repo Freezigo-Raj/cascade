@@ -46,7 +46,7 @@
      serving an old stylesheet has now cost three sessions of guessing at what
      had and had not arrived. A number that can be read is worth more than a
      number that has to be trusted. */
-  --css-version: 52;
+  --css-version: 55;
 
   --step: 4px;
   --r-card: 18px;
@@ -115,10 +115,24 @@ html, body {
  * has to be hidden and no screen has to know where it is.
  */
 
+/* THE 70% RULE (session 139, his number, from two phone screenshots).
+   AT LEAST 70% OF THE VIEWPORT HEIGHT BELONGS TO TASKS. Everything above the
+   first row — header, tabs, search, the slot toggle, the group heading — is a
+   budget of 30vh and no more, on the smallest phone this runs on.
+
+   It was 41% chrome on his narrow phone and 35% on his wide one, and the reason
+   it was worse on the narrow one is that every number up there was a fixed
+   pixel count: a fixed 32px title is a bigger share of a 785px screen than of a
+   915px one, so the small phone paid twice. The sizes that drive the budget are
+   `clamp()`ed against `vw` now, so a smaller screen gets a smaller header
+   rather than the same one taking a larger bite.
+
+   Measured, not asserted: `python3 tools/measure_layout.py` loads the real app
+   in a headless browser at four phone sizes and prints the percentage. */
 #app {
   max-width: 680px;
   margin: 0 auto;
-  padding: calc(var(--step) * 4) calc(var(--step) * 4) calc(var(--step) * 24);
+  padding: calc(var(--step) * 2.5) clamp(10px, 3.2vw, 16px) calc(var(--step) * 24);
 }
 #aside:empty { display: none; }
 
@@ -131,7 +145,7 @@ html, body {
   align-items: flex-start;
   justify-content: space-between;
   gap: calc(var(--step) * 3);
-  padding: calc(var(--step) * 2) calc(var(--step) * 1) calc(var(--step) * 3);
+  padding: 0 var(--step) calc(var(--step) * 2);
 }
 .kicker {
   font-size: 13px;
@@ -143,20 +157,27 @@ html, body {
 .head-title {
   font-family: var(--face-display);
   font-weight: 600;
-  font-size: 32px;
+  /* Was a flat 32px, which is 4.1% of a 785px screen and 3.5% of a 915px one.
+     The floor is what a narrow phone gets and the ceiling is today's size. */
+  font-size: clamp(25px, 7.4vw, 32px);
   line-height: 1;
-  margin: 2px 0 0;
+  margin: 1px 0 0;
 }
-.head-date { font-size: 14px; color: var(--quiet); margin-top: 5px; }
+.head-date { font-size: 13px; color: var(--quiet); margin-top: 2px; }
 
-.head-right { display: flex; flex-direction: column; align-items: flex-end; gap: calc(var(--step) * 2); }
+/* The right column was three stacked rows — avatar, then `synced`, then
+   `BUILD n` — and the third was 20px of height for eight characters. `synced`
+   and the build sit on one line now. Both are still always on screen, which is
+   the point of each: asking whether a push arrived should not need a press. */
+.head-right { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+.head-foot { display: flex; align-items: center; gap: calc(var(--step) * 2); }
 .head-tools { display: flex; align-items: center; gap: calc(var(--step) * 2); }
 
 /* The way to screen 3. A circle rather than a word, because it is the only
    control up here that is not about the list. */
 .avatar {
-  width: 42px;
-  height: 42px;
+  width: clamp(34px, 10vw, 42px);
+  height: clamp(34px, 10vw, 42px);
   border-radius: 50%;
   border: 0;
   background: var(--signal);
@@ -211,30 +232,45 @@ html, body {
 
 /* --------------------------------------------------------------------- tabs */
 
-.bar { display: flex; align-items: center; gap: calc(var(--step) * 4); flex-wrap: wrap;
-       padding: 0 var(--step) calc(var(--step) * 3); }
+/* ONE LINE, NOT TWO (session 139). `flex-wrap: wrap` put the search box on a
+   row of its own on every phone, which cost 44px of the 30vh budget for a
+   control that is 34px tall. The tabs keep their intrinsic width and the search
+   takes what is left, down to a floor where it is still a box you can type in.
+   Nothing is hidden and nothing moved: the row it used to wrap onto is gone. */
+.bar { display: flex; align-items: center; gap: clamp(9px, 3vw, 16px); flex-wrap: nowrap;
+       padding: 0 var(--step) calc(var(--step) * 2); }
 .tab {
   font-family: var(--face-display);
-  font-size: 17px;
+  font-size: clamp(15px, 4.4vw, 17px);
   font-weight: 400;
+  white-space: nowrap;
+  flex-shrink: 0;
   color: var(--quiet);
   background: none;
   border: 0;
   padding: 0;
   cursor: pointer;
 }
-.tab[aria-selected="true"] { font-size: 20px; font-weight: 600; color: var(--ink); }
+.tab[aria-selected="true"] { font-size: clamp(17px, 5.2vw, 20px); font-weight: 600; color: var(--ink); }
 
 .search {
   margin-left: auto;
   font-family: inherit;
-  font-size: 13px;
+  font-size: 12.5px;
   color: var(--ink);
   background: var(--sunk);
   border: 1.5px solid transparent;
   border-radius: var(--r-pill);
-  padding: calc(var(--step) * 2) calc(var(--step) * 3.5);
-  width: 150px;
+  padding: 5px calc(var(--step) * 2.5);
+  /* Takes the width the tabs leave, never more than it needs. `min-width: 0`
+     is what lets it shrink at all inside a flex row. */
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 190px;
+  /* His words stay ("search all tasks", session 123). On a narrow phone the box
+     is smaller than they are, and a placeholder cut mid-letter reads as a
+     defect where an ellipsis reads as a label that did not fit. */
+  text-overflow: ellipsis;
 }
 .search::placeholder { color: var(--quiet); }
 .search:focus-visible { outline: 0; border-color: var(--signal); background: var(--sheet); }
@@ -261,22 +297,31 @@ html, body {
    toggle lives inside Tasks and nowhere else. */
 .slots {
   display: flex;
-  gap: calc(var(--step) * 1.5);
+  gap: var(--step);
   background: var(--sunk);
   border-radius: var(--r-pill);
-  padding: var(--step);
-  margin: 0 var(--step) calc(var(--step) * 4);
+  padding: 3px;
+  margin: 0 0 calc(var(--step) * 2.5);
 }
+/* WIDER, AND ONE LINE EACH (session 139, his words: "increase width of the
+   Today etc tabs"). `Tomorrow · 2h 5m` wrapped to two lines on a narrow phone,
+   which made the whole track 54px instead of 39 and read as a defect. The
+   track now spans the full content width, the label never wraps, and the type
+   shrinks with the viewport so the longest label fits rather than folding. */
 .slot {
   flex: 1;
+  min-width: 0;
   font-family: inherit;
-  font-size: 13px;
+  font-size: clamp(11px, 3.3vw, 13px);
   font-weight: 600;
   color: var(--quiet);
   background: none;
   border: 0;
   border-radius: var(--r-pill);
-  padding: calc(var(--step) * 2) 0;
+  padding: 6px 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   cursor: pointer;
 }
 .slot[aria-pressed="true"] { background: var(--sheet); color: var(--ink); box-shadow: 0 1px 3px rgba(46, 43, 37, 0.14); }
@@ -290,9 +335,9 @@ html, body {
   display: flex;
   align-items: center;
   gap: calc(var(--step) * 2);
-  padding: 0 calc(var(--step) * 2) calc(var(--step) * 2);
+  padding: 0 calc(var(--step) * 2) calc(var(--step) * 1.5);
 }
-.group-name { font-family: var(--face-display); font-size: 19px; }
+.group-name { font-family: var(--face-display); font-size: clamp(16px, 4.8vw, 19px); }
 .group-count { font-size: 13px; font-weight: 600; color: var(--quiet); }
 .group-dot {
   width: 8px; height: 8px; border-radius: 50%;
@@ -317,10 +362,10 @@ html, body {
   background: var(--sheet);
   border: 1.5px solid var(--edge);
   border-radius: var(--r-card);
-  padding: calc(var(--step) * 3) calc(var(--step) * 3.5);
+  padding: calc(var(--step) * 2.5) calc(var(--step) * 2.5);
   display: grid;
   grid-template-columns: auto 1fr auto;
-  gap: calc(var(--step) * 3);
+  gap: clamp(7px, 2.6vw, 12px);
   align-items: start;
 }
 .row.pinned { border-color: var(--signal); }
@@ -329,8 +374,8 @@ html, body {
    thing on a row a thumb finds without reading. The word left the action row
    with it: two ways to do one thing is how two of them come to disagree. */
 .tick {
-  width: 30px;
-  height: 30px;
+  width: clamp(26px, 7.6vw, 30px);
+  height: clamp(26px, 7.6vw, 30px);
   border-radius: 50%;
   border: 2.4px solid var(--edge);
   background: none;
@@ -350,7 +395,7 @@ html, body {
   display: block;
   width: 100%;
   font-family: inherit;
-  font-size: 15.5px;
+  font-size: clamp(14.5px, 4.2vw, 15.5px);
   font-weight: 600;
   line-height: 1.25;
   color: var(--ink);
@@ -400,15 +445,19 @@ html, body {
   mask-image: linear-gradient(to bottom, black calc(100% - 12px), transparent);
 }
 .nudges::-webkit-scrollbar { display: none; }
+/* NARROWER, SO THE TITLE IS WIDER (session 139, his words: "increase width of
+   tasks"). The ladder is an `auto` track, so every pixel it takes comes
+   straight off the title beside it, and `Send cost of ownership to Dishit` was
+   wrapping to three lines inside 130px. */
 .nudge {
   font-family: inherit;
-  font-size: 11.5px;
+  font-size: clamp(10.5px, 3.1vw, 11.5px);
   font-weight: 600;
   color: var(--signal-deep);
   background: var(--sunk);
   border: 0;
   border-radius: var(--r-pill);
-  padding: 4px 10px;
+  padding: 3px clamp(6px, 2.2vw, 10px);
   cursor: pointer;
   white-space: nowrap;
 }

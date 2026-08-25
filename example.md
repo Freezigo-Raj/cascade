@@ -1,6 +1,6 @@
 # spec/example.md — Cascade Part A
 
-Stage 1 deliverable, version 42. Written by hand. No code anywhere in this file.
+Stage 1 deliverable, version 43. Written by hand. No code anywhere in this file.
 Scope: **Part A only.** Parts B, C and D each get their own example at their turn.
 
 ---
@@ -101,31 +101,20 @@ Fourteen. Six are captured in front of you in sections 2 and 5. Eight were alrea
 
 ## 1. The screen as he opens it
 
-```
-┌──────────────────────────────────────────────────────────────────┐
-│  Default                                                         │
-├──────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│   Social alpha application                                       │
-│   Due today. You called this a deadline.           submit · 30m  │
-│                                                                  │
-│   file form 8                                                    │
-│   Overdue since Friday.                              file · 30m  │
-│                                                                  │
-│   Reply to bharti singhal                                        │
-│   Due this morning.                                 reply ·  5m  │
-│                                                                  │
-│   check sensor                                                   │
-│   Due today.                                       check ·  15m  │
-│                                                                  │
-├──────────────────────────────────────────────────────────────────┤
-│  ┌────────────────────────────────────────────────┐  ┌────────┐  │
-│  │                                                │  │  Add   │  │
-│  └────────────────────────────────────────────────┘  └────────┘  │
-│  [This afternoon][Tonight][Tomorrow morning][Weekend][Pick date] │
-│  [Pick time]                             [Low][**Normal**][High] │
-└──────────────────────────────────────────────────────────────────┘
-```
+**What the screen holds.** Stated, not drawn. This section carried a picture of the screen for forty-two versions, and the picture was of a layout three redesigns old: rows have not shown a verb or a duration since the quiet-field rule, and the real screen is `MVP.md` and the app. A drawing of a screen nobody opens is documentation pretending to be evidence, so it is gone, and what the engine produced is stated instead.
+
+| Where | What renders | From |
+|---|---|---|
+| header | `Default` | `list_header` |
+| row 1 | `Social alpha application` — `Due today. You called this a deadline.` | `card_title`, `card_reason` |
+| row 2 | `file form 8` — `Overdue since Friday.` | `card_title`, `card_reason` |
+| row 3 | `Reply to bharti singhal` — `Due this morning.` | `card_title`, `card_reason` |
+| row 4 | `check sensor` — `Due today.` | `card_title`, `card_reason` |
+| capture row | an empty box, and `Add` beside it | `input_field` `unbound`, `add_button` |
+| chip row | `[This afternoon][Tonight][Tomorrow morning][Weekend][Pick date][Pick time]` | `chip_row`, from `chip_presets` |
+| significance | `[Low][**Normal**][High]` | `significance_row` |
+
+No parsed-date chip, because nothing is typed. No type chip, for the same reason.
 
 **Part A has two lists and no tabs.** `Default` holds every task carrying a date, ranked. `Ideas` holds every task carrying none, sorted by duration. A date means `due_at` or `earliest_start`, so a task you cannot start until Friday is in Default with nothing due, ranked below everything that has a deadline. Those are the only two routes a capture can take and the rule for each is stated. Projects, Upcoming and Settings are Part C: drawing a tab that nothing fills would put a line of text on this example with no rule behind it, which is what Gate 1 forbids.
 
@@ -161,30 +150,22 @@ When both apply, both render, in tier then factor order: `Due today. You called 
 
 He types `Call markan morning`, then taps **High**.
 
-```
-┌──────────────────────────────────────────────────────────────────┐
-│  ┌──── results ────────────────────────────────────────────────┐ │
-│  │  ACTIVE                                                     │ │
-│  │    Call kushan                        due Wed · call · 15m  │ │
-│  │  IDEAS      (none)                                          │ │
-│  │  DONE       (none)                                          │ │
-│  └─────────────────────────────────────────────────────────────┘ │
-├──────────────────────────────────────────────────────────────────┤
-│  ┌────────────────────────────────────────────────┐  ┌────────┐  │
-│  │ Call markan morning                            │  │  Add   │  │
-│  └────────────────────────────────────────────────┘  └────────┘  │
-│  [✓ this morning][This afternoon][This evening][Tonight]         │
-│  [Tomorrow morning][Tomorrow afternoon][Tomorrow evening]        │
-│  [Weekend][Next weekend][Next week][Next month]                  │
-│  ⟨action ▾⟩                              [Low][Normal][**High**] │
-└──────────────────────────────────────────────────────────────────┘
-```
+**What the screen holds now.**
+
+| Where | What renders | From |
+|---|---|---|
+| results | `ACTIVE`, then `Call kushan` reading `due Wed` | `group_header`, `title`, `result_row` |
+| results | `IDEAS      (none)` and `DONE       (none)` | `group_header`, with `(none)` for an empty group |
+| box | `Call markan morning` | `input_field` `unbound` |
+| chip row | `[✓ this morning][This afternoon][This evening][Tonight][Tomorrow morning][Tomorrow afternoon][Tomorrow evening][Weekend][Next weekend][Next week][Next month]` | `chip_row`, the parsed chip first and ticked |
+| type chip | `⟨action ▾⟩` | `type_chip` |
+| significance | `[Low][Normal][**High**]` | `significance_row`, High tapped |
 
 Four things happened while he typed. He asked for none of them.
 
 - **Search ran.** `Call kushan` surfaced on the shared token `call`. Not a duplicate, so nothing interrupts.
 - **The parser read `morning`.** It is 10:40 and the morning band runs 09:00 to 12:00, so he is inside it. The band does not roll to tomorrow.
-- **A parsed-date chip appeared at the front of the row**, reading `this morning`, already selected. The presets stay available to override it. Highlighting a preset would misrepresent a parsed value that rarely matches one exactly.
+- **A parsed-date chip appeared at the front of the row**, reading `this morning`, already ticked. The presets stay available to override it. Highlighting a preset would misrepresent a parsed value that rarely matches one exactly.
 - **A type chip appeared**, reading `action`, tappable to change.
 
 He hits enter.
@@ -261,40 +242,23 @@ Markers and hedges appear both inside `title` and in their own fields. That is d
 
 ## 4. What he sees a second later
 
-```
-┌──────────────────────────────────────────────────────────────────┐
-│   Social alpha application                                       │
-│   Due today. You called this a deadline.           submit · 30m  │
-│                                                                  │
-│   file form 8                                                    │
-│   Overdue since Friday.                              file · 30m  │
-│                                                                  │
-│   Call markan                                                    │
-│   Due today, and you marked it high.                 call · 15m  │
-│                                                                  │
-│   Reply to bharti singhal                                        │
-│   Due this morning.                                 reply ·  5m  │
-│                                                                  │
-│   check sensor                                                   │
-│   Due today.                                       check ·  15m  │
-│                                                                  │
-│  ┌────────────────────────────────────────────────────────┐      │
-│  │  Added "Call markan" · this morning          [Undo]    │      │
-│  └────────────────────────────────────────────────────────┘      │
-├──────────────────────────────────────────────────────────────────┤
-│  ┌────────────────────────────────────────────────┐  ┌────────┐  │
-│  │                                                │  │  Add   │  │
-│  └────────────────────────────────────────────────┘  └────────┘  │
-│  [This afternoon][Tonight][Tomorrow morning][Weekend][Pick date] │
-│  [Pick time]                             [Low][**Normal**][High] │
-└──────────────────────────────────────────────────────────────────┘
-```
+**What the screen holds now.** Five rows, in this order, and the box empty again.
+
+| # | Row | Sentence |
+|---|---|---|
+| 1 | `Social alpha application` | `Due today. You called this a deadline.` |
+| 2 | `file form 8` | `Overdue since Friday.` |
+| 3 | `Call markan` | `Due today, and you marked it high.` |
+| 4 | `Reply to bharti singhal` | `Due this morning.` |
+| 5 | `check sensor` | `Due today.` |
+
+A toast says the task was added and names its date. It is the only thing on the screen that was not there a second ago.
 
 **The box went empty, and that is the confirmation.** No other UI is needed. It is the same signal as sending a message. Significance resets to Normal, and the type chip disappears with the text that produced it.
 
 **The new task landed third.** Below the one carrying a deadline word, below the overdue one, above two tasks also due today. High significance lifted it past both and could not lift it past a hard deadline or past being late. That is tier 1, then factors 1 and 2, and if it reads wrong the thing to change is the tier membership or the factor order in config, not code.
 
-The toast holds for 8 seconds (`config.undo_ui_timeout_sec`) and disappears. **The undo entry does not.** It survives until the next undoable action supersedes it, reachable through the engine after the button is gone.
+The toast holds for 8 seconds (`config.undo_ui_timeout_sec`) and goes. Nothing outlives it. The setting keeps the name it was given when it timed an Undo button; undo itself was removed in session 132 and the name was left alone, because a config key is stored per version and renaming one costs a version for no behaviour.
 
 ---
 
@@ -409,12 +373,7 @@ Types `GST filing deadline`, hits enter.
 
 Types `check sensor`. Live results show the existing one immediately. He hits enter anyway.
 
-```
-  ┌────────────────────────────────────────────────────────┐
-  │  "check sensor" already exists, due today.             │
-  │                       [Add anyway]        [Cancel]     │
-  └────────────────────────────────────────────────────────┘
-```
+A dialog interrupts, reading `"check sensor" already exists, due today.` with `[Add anyway]` and `[Cancel]`.
 
 He taps **Add anyway**. A second task is created with a distinct `id`. No merge offer and no third button. Merging two records into one is not a Part A operation at all: the way to reach an existing task is to tap it in the live results, which binds it for editing. Cancel, tap, edit.
 
@@ -424,13 +383,7 @@ He taps **Add anyway**. A second task is created with a distinct `id`. No merge 
 
 He types `bharti`.
 
-```
-  ┌──── results ───────────────────────────────────────────┐
-  │  ACTIVE                                                │
-  │      Reply to bharti singhal   due today · reply ·  5m │
-  │    bharti sighla VC          due Thu   · meet   · 60m  │
-  └────────────────────────────────────────────────────────┘
-```
+Both surface, under `ACTIVE`: `Reply to bharti singhal` reading `due today`, and `bharti sighla VC` reading `due Thu`.
 
 Both surface. `bharti sighla VC` and `bhati sighla VC` are near-duplicates from his real backlog, and **live search is where that gets handled**, silently, with no dialog.
 
@@ -464,18 +417,15 @@ Word match carries the reordered case, which trigrams miss. Trigrams carry the t
 
 He taps `Reply to bharti singhal`:
 
-```
-├──────────────────────────────────────────────────────────────────┤
-│  ⟨ Reply to bharti singhal ✕ ⟩   [Done] [Cancel] [Archive]       │
-│  ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓  ┌────────┐  │
-│  ┃ Reply to bharti singhal                        ┃  │  Edit  │  │
-│  ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛  └────────┘  │
-│  [✓ this morning][This afternoon][This evening][Tonight]         │
-│  [Tomorrow morning][Tomorrow afternoon][Tomorrow evening]        │
-│  [Weekend][Next weekend][Next week][Next month]                  │
-│  ⟨action ▾⟩                              [Low][**Normal**][High] │
-└──────────────────────────────────────────────────────────────────┘
-```
+**What the screen holds now.**
+
+| Where | What renders | From |
+|---|---|---|
+| above the box | `⟨ Reply to bharti singhal ✕ ⟩` | `bound_task_chip` |
+| beside it | `[Done] [Cancel] [Archive]` | `action_row` |
+| box | `Reply to bharti singhal`, drawn as bound | `input_field` `bound` |
+| button | `Edit` | `add_button` |
+| chips, significance | the task's current values, not the defaults | `chip_row`, `significance_row` |
 
 **Tapping a row is how you reach the actions.** Done and Cancel each set `task_state` and stamp `closed_at`. Archive flips the `archived` boolean and touches neither, so an archived task keeps whatever outcome it had. All three appear beside the bound-task chip, grouped with the task they act on. No buttons sit on list rows, and no gesture is required anywhere.
 
@@ -487,7 +437,7 @@ He enters the bound state by tapping a result. He leaves it by saving, by emptyi
 
 The chips and the significance buttons now show the task's current values, not defaults.
 
-He appends ` about the invoice`, taps Edit. The task updates, the box empties, one undo entry is written, no new row is created.
+He appends ` about the invoice`, taps Edit. The task updates, the box empties, no new row is created.
 
 **Binding is entered only by tapping a result. It is left by saving, by clearing the field to empty, or by tapping the ✕. There is no other path either way.**
 
@@ -495,19 +445,15 @@ He appends ` about the invoice`, taps Edit. The task updates, the box empties, o
 
 ## 7. Ideas, at the end of the session
 
-```
-┌──────────────────────────────────────────────────────────────────┐
-│  Ideas                                                           │
-├──────────────────────────────────────────────────────────────────┤
-│  Sort:  [Duration ▾]   Newest                                    │
-│                                                                  │
-│    Srilanka tickets                                           5m │
-│    Kena investment                                            5m │
-│    GST filing                                       file ·  30m  │
-│    Payments to coolindia, sudhi, laptop               pay ·  30m │
-│    oncology map software                             make ·  60m │
-└──────────────────────────────────────────────────────────────────┘
-```
+**What the screen holds.**
+
+| Where | What renders | From |
+|---|---|---|
+| header | `Ideas` | `list_header` |
+| sort | `Sort:  [Duration ▾]   Newest` | `sort_header` |
+| rows | `Srilanka tickets`, `Kena investment`, `GST filing`, `Payments to coolindia, sudhi, laptop`, `oncology map software` | `ideas`, shortest first |
+
+The first two are 5m, the next two 30m, the last 60m. No duration is drawn on a row; it is stated here because the order is the thing being shown.
 
 Two pairs tie, and factor 9 orders each. At 5m, Srilanka tickets was captured this session and Kena investment was not touched at all. At 30m, GST filing was captured after the payments.
 
@@ -556,7 +502,7 @@ Ordering runs in three tiers. A tier is only reached when the one above it ties.
 
 **Factor 9 is last touch, not creation.** Editing a task means you are thinking about it, so it rises among the things it ties with. Comparison is on the absolute instant, not the local clock reading, so tasks captured under different offsets order correctly against each other.
 
-`updated_at` moves on every change, including Done. **An undo restores the previous `updated_at` along with everything else it reverses.** Otherwise a reversed action leaves a mark it cannot remove and the task stays misordered by something that did not happen. This is a golden case.
+`updated_at` moves on every change, including Done. **`Revive` on a cancelled task takes a fresh stamp, and the cost is stated rather than hidden:** the task moves to the top of its ties, because it was just touched. The alternative, restoring the stamp it had, is what undo used to do, and it is the wrong shape for a store that merges newest-wins — a restored older stamp is silently refused by the newest-wins trigger and the change never lands.
 
 ## Closed since version 1
 

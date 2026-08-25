@@ -1,5 +1,5 @@
 # PROJECT: Cascade — Part A (Intake)
-Last updated: 4 August 2026  |  Session #: 33
+Last updated: 26 August 2026  |  Session #: 137
 
 ## WHAT IT IS
 
@@ -10,10 +10,10 @@ The user is Vishal, running two businesses, capturing commitments that arrive fr
 ## STAGE
 
 Current stage: 5
-Gates passed: **Gate 1**, **Gate 2**, **Gate 3** and **Gate 4**, each on an older file than the one it names. All four signatures are stale and all four are waiting on a hand. See VERSIONS.
+The six hand-signed gates were RETIRED in session 135. `gate2.py` and `gate4.mjs` keep their names because they are checks that run. Nothing in this file is waiting on a hand.
 Stage 4 is closed and signed. Stage 5 is open: the rules go in one at a time and the same command is read the other way round, so a case that still fails names a rule not yet written. `gate4.mjs` reads the stage out of the line above and inverts its own verdict on it. Every case in the key agrees with the engine. Section I taps a type, a significance and a bound task, which no case did before, and section B and H state what the card says. `gate4.mjs` reads Stage 5 and passes: 142 run, 142 green, 0 on invariants alone, 0 errored. Nine rules are written and every obligation the contract records is now met except the ranking, which is Stage 6's. Gate 5 is the hand that says Stage 5 is finished.
 
-Status: the contract is written in the protocol's three groups, with Name, Type, Required, Unit, Range, Example and From per item. 13 inputs, 13 working values, the 44-field `Task`, the 4-field `UndoEntry`, 40 rendered outputs, 14 cross-field invariants, and config at 37 objects populated. `tsc --strict` compiles clean and `gate2.py` passes. The Stage 3 shell is built and Gate 3 is signed: the panel drew correctly by hand, and deleting `card_badge` from the placeholder produced a red box naming `resolve.js` and the missing field rather than a blank screen. `resolve()` now returns three keys, `task`, `list` and `capture`, and the contract names that shape. The answer key holds 144 key cases.
+Status: the contract is written in the protocol's three groups, with Name, Type, Required, Unit, Range, Example and From per item. 13 inputs, 13 working values, the 44-field `Task`, 39 rendered outputs, 13 cross-field invariants, and config at 37 objects populated. `tsc --strict` compiles clean and `gate2.py` passes. `resolve()` returns three keys, `task`, `list` and `capture`, and the contract names that shape. The answer key holds 144 key cases. `UndoEntry` left the contract in session 137 with the rest of undo, and the Stage 3 shell was deleted in the same session.
 
 D-1: **Typing the thought is the whole of the work.**
 
@@ -28,22 +28,19 @@ Last contract change: Session 20, 1 August 2026. Ranking tiers, `card_reason` co
 
 ## HOW TO RUN
 
-Run app:   py -m http.server 8000, then http://localhost:8000/  (both screens, what a person
-           sees; the same address the phone installs). The Stage 3 harness is still at
-           /shell/ and still draws every field
-           (live: every keystroke
-           re-resolves; no build step, shell/config.js is checked against config.ts by gate2.py)
-Run tests (install eslint first: npm i -g eslint): python3 gate2.py && python3 selftest.py && node gate4.mjs && node shell/check_render.mjs && node shell/check_loud.mjs && node shell/check_alarm.mjs && node shell/check_search.mjs && node shell/check_writes.mjs
-Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section B for one section,
-           --placeholder to run the current key against the frozen Stage 3 file under the Stage 4 reading)
+Run app:   py -m http.server 8000, then http://localhost:8000/  (the app, and the only
+           address there is; the same one the phone installs. No build step,
+           and shell/config.js is checked against config.ts by gate2.py)
+Run tests (install the two tools first: npm i -g typescript eslint): python3 gate2.py && python3 selftest.py && node gate4.mjs && node shell/check_loud.mjs && node shell/check_alarm.mjs && node shell/check_search.mjs && node shell/check_writes.mjs
+Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section B for one section)
 
 ## VERSIONS
 
-  example      42
-  contract     54
+  example      43
+  contract     55
   config       a.19
-  answer_key   28
-  shell        52
+  answer_key   29
+  shell        55
   gate1        signed on example 35
   gate2        signed on contract 32
   gate3        signed on shell 1
@@ -57,9 +54,9 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 **Working and verified:**
 - `gate2.py` — the gate, run as a script. Reads every count rather than trusting prose.
 - `selftest.py` — 28 deliberately broken copies, each breaking one file in one way. The gate catches every one of them, and a gate that dies on a traceback is counted as a miss rather than a catch. One fixture is read by `gate4.mjs` rather than `gate2.py`, because a weekday that contradicts its date is a defect only the key runner can see.
-- `shell/` — the Stage 3 shell. `check_render.mjs` reproduces example section 1 character for character from the placeholder; `check_loud.mjs` proves six deliberate breaks are loud; `check_alarm.mjs` covers the alarm records and the three tier-1 overrides, which is the first check ever to reach `rank_key`.
+- `shell/` — the app. `check_loud.mjs` proves six deliberate breaks in `resolve()`'s return shape are loud; `check_alarm.mjs` covers the alarm records and the three tier-1 overrides, which is the first check ever to reach `rank_key`; `check_search.mjs` covers the four search tiers; `check_writes.mjs` asserts the shape of every call the write paths make. The Stage 3 harness that lived beside all this is deleted.
 - `android/` — the alarm shell: six Kotlin files and the manifest additions. `shell/alarm.bridge.js` is the only thing that talks to it, and every timing number travels in the payload so nothing in Kotlin states a policy.
-- `gate4.mjs` — the runner. Reads every expected value out of the answer key at run time and holds none of its own. A case that fails on a contract invariant and on nothing the key states fails the gate rather than being counted. `--placeholder` runs the current key against `shell/resolve.stage3.js` under the Stage 4 reading, so a key edit can still be checked the Stage 4 way after the engine has rules.
+- `gate4.mjs` — the runner. Reads every expected value out of the answer key at run time and holds none of its own, FIELD KINDS included. A case that fails on a contract invariant and on nothing the key states fails the gate rather than being counted. A case that differs only on a `choice` field is reported and counted and does not fail: a number this project picked has changed, and nothing is broken. A field compared with no row in FIELD KINDS fails the run.
 
 **Built, and only as verified as the gate above it:**
 - `spec/example.md` — Stage 1 finished example. Gate 1 signed on the current file.
@@ -79,29 +76,62 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 
 ## THIS SESSION'S JOB
 
-Session 136: `Later today` moves by BAND, his rule.
+Session 137: the checks stop measuring a screen nobody opens, and the key stops re-typing config.
 
-**FOUR HOURS WAS THE WRONG UNIT ALL ALONG.** Session 132 clamped the rung so it stopped crossing
-midnight, which was right about the day and still wrong about what the words mean. Four hours reached
-the next band from some starting points and the middle of the same one from others: 09:00 became
-13:00, which is the afternoon by accident, and 12:30 became 16:30, which is the afternoon it was
-already in.
+**THERE WERE TWO APPS IN THE REPOSITORY AND THE CHECKS TESTED THE DEAD ONE.** `shell/app.js` and
+`shell/render.js` drew an ASCII panel in box characters. Nothing has opened it since session 98.
+`check_render.mjs` proved that panel matched a picture in `example.md`, so it reported green about a
+screen that does not exist, and `gate2.py` spent four separate checks measuring the picture: every
+drawn fragment against a template, every badge against the task table, every box corner against the
+corner it opened at, every panel's right edge. The panels were also wrong: they drew a verb and a
+duration on every row, which rows have not shown since the quiet-field rule in session 88. Six files
+deleted, four gate checks deleted, five selftest fixtures deleted. What each panel RENDERED is stated
+in a table instead, so the ten contract Example values that lived only inside a box survive and the
+Example-value check still holds them. `SHELL_VERSION` moved to `shell/version.js`, which is nothing
+else, and gate2 fails if any of the six files comes back.
 
-His rule: morning to afternoon, afternoon to evening, evening to tonight. Stated in the engine as THE
-FIRST BAND THAT STARTS AFTER IT, read from `config.time_bands`, which gives all three of his moves
-exactly and also answers the case his sentence does not reach — 07:00 goes to 09:00, the morning,
-because that is the first band ahead of it. Nothing at all when the day has no band left, which is
-his other half: do not offer it when it cannot move later in the same day.
+**UNDO WAS DELETED FROM THE APP IN 132 AND THE DOCUMENTS DESCRIBED IT FOR FIVE MORE SESSIONS.**
+`UndoEntry`, `undo_toast`, the `undo` member of `row_action` and invariant 14 are out of
+`contract.md` and `types.ts`, and gate2 fails if any of the names comes back as a declaration or a
+table row while passing prose that explains the removal. `cascade_undo` stays standing in
+`schema.sql`, unwritten, at his call: dropping a table cannot be taken back and the workflow work may
+want the shape.
 
-**AND THE HOUR RUNGS OBEY THE SAME LINE.** His second sentence is about exact times, and the honest
-reading of it is wider than the one label. `+4 hours` on a task at 22:00 is a perfectly TRUE label
-for an instant that is tomorrow morning, and a person pressing it on a lock screen is not doing
-arithmetic about midnight. Any rung offered as a move within today is dropped when it lands on
-another day: a 22:00 task keeps `+1 hour` and nothing else, a 23:30 task keeps none of them, and the
-day rungs below — Tomorrow, +2 days, Next week — say which day they mean and are untouched.
+**A THIRD OF THE ANSWER KEY WAS `config.ts` TYPED TWICE.** Section A stated `commitment_type`,
+`context` and `est_duration_min` for all 33 verbs. Each is one line in `resolve()` reading one config
+table, so those 99 assertions tested that two copies of one table agreed, and every one of them went
+red whenever a number in `config.ts` changed with no defect present. That is the answer to what made
+the key feel impossible to keep green. The columns are gone from section A and kept where a rule
+rather than a lookup produces them. What they were worth is now a gate2 check: every `verb_to_type`
+and `verb_to_context` mapping must land inside its own vocabulary and name no verb that is not a
+member.
 
-The pull-in rung goes with them. `now + 1 hour` at 23:30 was a `Today` that meant tomorrow, which is
-the same fault in the one rung that names the day outright.
+**FACTS AND CHOICES USED TO FAIL IDENTICALLY.** `friday` being 7 August is a fact the world can
+contradict. A `call` taking 15 minutes is a number this project picked. Every compared field is now
+declared one or the other in a FIELD KINDS table the key states and `gate4.mjs` reads at run time,
+scoped per section where a section differs — `commitment_type` is a choice everywhere and a fact in
+section I, where a tap has to override the verb. A fact that differs fails. A choice that differs is
+reported, counted and green. Proved both ways: `duration_defaults.call` 15 → 20 reports four CHOICE
+cases and stays PASS; `verb_lexicon.call` pointed at `check` fails seven cases on `action_verb`. A
+field compared with no row in the table fails the run, and the lookup happens when a field is
+COMPARED rather than when it differs, because written the other way an unclassified field is
+invisible for exactly as long as it agrees.
+
+**THE KEY'S OPENING CLAIM HAD FOUR HOLES IN IT AND NOTHING COUNTED THEM.** It says every value was
+written by hand from the contract before any logic existed. A2, A26, A21, G5 and the comma rule were
+reconciled to the engine after the engine ran, each admitting it in a Note cell. They are now listed
+in a RECONCILED ROWS block with what happened and why each was kept, the claim names its own
+exceptions, and gate2 fails any row whose note reads as reconciled without its id in the block. It
+caught C1 undeclared on the first run.
+
+**HIS CALL, RECORDED: no check will ever import a screen.** `shell/mvp*.js` is 3,400 lines with
+nothing over it. He reads the actual screens on the phone. A headless harness would be a second
+description of the same screen, which is exactly how the Stage 3 shell came to exist and stay for
+forty sessions. The cost is in FOUND, NOT FIXED: `eslint no-undef` is the only thing that catches a
+name that does not exist in a screen file, and it must be installed to run.
+
+All eight checks green: gate2 PASS, selftest 28 caught 0 missed, gate4 142/142 with 0 choice-moved,
+check_loud 6/6, check_alarm PASS, check_search PASS, check_writes PASS. Decision log sealed at 545.
 
 ## NEXT THREE JOBS
 
@@ -206,17 +236,13 @@ Lines typed into the live shell that came out wrong. Open until each is either f
 
 - The ranking is checked by reading the screen. No case in the key names `cards`, `rank_key` or `decided_by`, so the nine factors could be reordered and every gate would still pass. The example's four-row ordering is the only worked example, and it is prose rather than a case.
 
-- The badge the engine draws is not the badge the example drew. The contract's template is `action_verb · est_duration_min m` and the four hand-drawn cards pad the number three different ways, one of them with a stray space. The engine follows the template; the drawing is the illustration. Gate 6 has to reconcile them, and until then the app and section 1 disagree by whitespace.
-
-- The panel heading was the typed task's destination rather than the name of the list under it, so it read `Ideas` while the Default list sat below. Invisible while the cards were constants. The renderer takes the heading as an option now and `list_header` keeps its own meaning, but no rule says which list a screen is drawing, because Part A has always assumed one.
-
 - `existing_tasks` is documented as every open task handed in whole, and the answer key hands in two fields per task. `cards.js` skips a task with no title, so the key's cases build no cards and stay green. The gap is in the key rather than in the engine, and closing it means writing whole records into section D.
-
-- The empty capture panel is drawn by the renderer but reached by no harness. `resolve()` refuses an empty line, so `check_render.mjs` can only check the typed panel. The screen supplies `chip_row` and `significance_row` from config without asking the engine, and that path is Gate 6's.
 
 - Two Example cells in the contract disagreed with rules the contract itself states: `card_title` kept the marker word, and `significance_row` emphasised nothing. Both were corrected by reading rather than by any gate. `gate2.py` checks shape and counts in those tables, never whether a cell obeys the rule beside it.
 
 - Earlier records call the answer key an 80-case key; it declares 88. The count is now stated once above, and `gate2.py` reads the real one out of the key.
+
+- NO CHECK IMPORTS A SCREEN, and none ever will. `shell/mvp*.js` is roughly 3,400 lines and every check imports the engine underneath it instead. His call in session 137: he checks against the actual screens on the phone, and a headless test of a screen would be a second description of the same thing, which is how the Stage 3 harness came to exist. The consequence is stated rather than hidden: a name that does not exist in a screen file is caught by `eslint no-undef` in `gate2.py` and by nothing else, and eslint has to be installed for that to run.
 
 - Part B carries a constraint from Part A's window rule: it must decide chase behaviour from `date_firmness`, not from `deadline_band`. If it ever chases on band alone, every window-dated task pesters the user from its midpoint. Recorded now so it is not rediscovered later.
 
@@ -922,3 +948,19 @@ have landed. That is the price of the single table and it is accepted.
 - 20 Aug 2026 — The six gates are retired, his call — five were owed since session 101 while the app shipped to a phone daily, and every real defect in thirty sessions was found by a check, by `no-undef`, or by him on the phone — a ceremony nobody performs is not a safeguard.
 - 20 Aug 2026 — `Later today` moves to the first band that starts after the task, his rule — four hours reached the next band from some starting points and the middle of the same one from others, so 09:00 became the afternoon by accident and 12:30 stayed in the afternoon it was in — nothing is offered when the day has no band left.
 - 20 Aug 2026 — Any rung offered as a move within today is dropped when it lands on another day, hour rungs and the pull-in included — `+4 hours` on a 22:00 task is a true label for an instant that is tomorrow, and `Today` at 23:30 was `now + 1 hour` meaning tomorrow — the day rungs name their day and are left alone.
+- 26 Aug 2026 — The Stage 3 harness is DELETED: `shell/app.js`, `shell/render.js`, `shell/resolve.stage3.js`, `shell/boot.js`, `shell/index.html` and `check_render.mjs` — it drew an ASCII panel that no person had opened since session 98, `check_render` proved that panel matched a picture in `example.md`, and a green check about a screen that does not exist is worse than no check because it reads as coverage — `SHELL_VERSION` moves to `shell/version.js`, which is nothing else, and `gate2.py` fails if any of the six files reappears.
+- 26 Aug 2026 — Every ASCII panel leaves `spec/example.md` and what each one rendered is stated in a table instead — the drawings were of a layout three redesigns old, still showing a verb and a duration on every row that the quiet-field rule removed in session 88, and keeping them meant every UI decision had to be redrawn in box characters, which is what carried the example to version 42 — the rendered STRINGS still matter and the contract's Example-value check still holds every one of them; the picture is what went.
+- 26 Aug 2026 — `gate2.py` stops measuring the drawing: the fragment-versus-template scan, the badge-versus-task-table check, the box-corner check and the panel-rectangularity check are gone with the panels they read — five selftest fixtures went with them, which is the honest count of what those checks were worth.
+- 26 Aug 2026 — Undo leaves `contract.md` and `types.ts`: `UndoEntry`, `undo_toast`, the `undo` member of `row_action` and cross-field invariant 14 — it was removed from the app in session 132 and the documents kept describing it for five sessions, so `gate2.py` was proving the contract matched a feature that had been deleted — `cascade_undo` is left standing in `schema.sql`, unwritten, at his call, because dropping a table cannot be taken back and the workflow work may want the shape; `config.undo_ui_timeout_sec` keeps its name because a config key is stored per version and renaming one costs a version for no behaviour.
+- 26 Aug 2026 — `commitment_type`, `context` and `est_duration_min` leave section A of the answer key, all 33 cases — each is one line in `resolve()` reading one config table, so the key was asserting that two copies of one table agreed and going red whenever a number in `config.ts` changed with no defect present — what those columns were worth is now a `gate2.py` check that every `verb_to_type` and `verb_to_context` mapping lands inside its own vocabulary and names no verb that is not a member; the columns stay where a rule rather than a lookup produces them, `est_duration_min` in section C and `commitment_type` in section I.
+- 26 Aug 2026 — Every field the key runner compares is declared a `fact` or a `choice` in a FIELD KINDS table the key states and `gate4.mjs` reads at run time, per section where a section differs — a fact is a value the world can contradict and a choice is a number this project picked, and both used to fail identically, so changing your mind about a guess read as breaking the build — a choice that differs is reported and counted and does not fail; a field compared with no row in the table fails the run, because an unclassified cell is one nobody decided about.
+- 26 Aug 2026 — The key's claim that every value in it was written by hand before any logic existed is amended, and its exceptions are listed in a RECONCILED ROWS block naming A2, A26, A21, G5, C1, C3 and the duplicate threshold — a row edited to agree with the engine cannot catch the engine it was copied from, and four of them said so only in a Note cell where nothing counted them — `gate2.py` now fails any row whose note reads as reconciled without its id appearing in the block, and it caught C1 undeclared on the first run.
+- 26 Aug 2026 — `trigram` and `word_match` are named in `IGNORED_COLUMNS` — `resolve()` returns `similarity` and neither number behind it, so the two columns were never compared, and they were excluded only because their headers carry no backticks — an exclusion by formatting accident is not a decision.
+- 26 Aug 2026 — `gate4.mjs` looks a field's kind up when the field is COMPARED rather than when it differs — written the other way, an unclassified field stayed invisible for exactly as long as it agreed, which is every run except the one that needed it — the same shape as every check in this project that only ran on the unhappy path.
+- 26 Aug 2026 — No check will import a screen, his call — `shell/mvp*.js` is 3,400 lines with nothing over it, and the answer is that he reads the actual screens on the phone rather than that a headless harness reads a description of them, which is how the Stage 3 shell came to exist and stay for forty sessions — the cost is stated in FOUND, NOT FIXED: `eslint no-undef` inside `gate2.py` is the only thing that catches a name that does not exist in a screen file, and it has to be installed to run.
+- 26 Aug 2026 — `gate2.py` finds `tsc` and `eslint` itself instead of assuming `npx`, and hands a Windows `.cmd` to the shell — `npm` installs both as `tsc.cmd` and `eslint.cmd`, Windows cannot start a `.cmd` through CreateProcess, and `subprocess.run(['npx',...])` therefore raised FileNotFoundError on a machine where TypeScript was correctly installed; the gate then reported "tsc is not installed" and failed, which named the wrong thing entirely — the repository was fine and the call was wrong — the order is `tsc` on PATH, then `node_modules/.bin`, then `npx` last, because npx is the one that fetches and a fetch inside a gate is a gate that fails when the wifi does; a genuinely missing compiler still FAILS rather than skips and now names the install line.
+- 26 Aug 2026 — THE 70% RULE, his number from two phone screenshots: at least 70% of the viewport height belongs to tasks, and everything above the first row is a budget of 30vh — it was 41% chrome on his narrow phone and 35% on his wide one, and the reason the narrow one was worse is that every number up there was a fixed pixel count, so a 32px title is a bigger share of a 785px screen than of a 915px one and the small phone paid twice — the sizes that drive the budget are `clamp()`ed against `vw` now, which is a slope rather than a third breakpoint to state twice.
+- 26 Aug 2026 — The tab row stops wrapping and the search box takes the width the tabs leave — `flex-wrap: wrap` gave the search a row of its own on every phone, 44px of a 30vh budget for a control 34px tall — the placeholder ellipsises rather than being cut mid-letter, because his words from session 123 stay and a truncation that looks deliberate is not a defect.
+- 26 Aug 2026 — The sync pill and the build number sit on one line under the avatar — they were stacked and the build's own row was 20px of header height for eight characters — both are still always on screen, which is the whole point of each.
+- 26 Aug 2026 — The push ladder is narrower and the row's padding and gap are smaller, his second ask: the title gets 152px at 360 where it had 130 — the ladder is an `auto` grid track, so every pixel it takes comes straight off the title beside it, which is the same geometry that ate the whole row in session 120.
+- 26 Aug 2026 — `tools/measure_layout.py` loads the real app in a headless browser at four phone sizes and prints how much of the height is tasks — the 70% claim was going to be an assertion in a comment otherwise, and this project has been wrong four times about numbers nothing could read — it is a TOOL and not a check and is deliberately not in the run line: it needs playwright, and the standing call from session 137 is that screens are read on the phone rather than by a harness.
