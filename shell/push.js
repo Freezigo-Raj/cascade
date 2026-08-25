@@ -16,6 +16,9 @@
 // already holding, because pushing into a fuller day is the mistake the whole
 // control exists to prevent.
 
+const v = new URL(import.meta.url).search;
+const { isOpen } = await import(`./cards.js${v}`);
+
 const MIN = 60 * 1000;
 const HOUR = 60 * MIN;
 const DAY = 24 * HOUR;
@@ -49,7 +52,7 @@ function write(t, offset) {
 export function dayLoad(existing, dayStart) {
   let tasks = 0, minutes = 0;
   for (const t of existing ?? []) {
-    if (!t || t.task_state !== "ready" || t.archived || !t.due_at) continue;
+    if (!isOpen(t) || !t.due_at) continue;
     if (midnightOf(t.due_at) !== dayStart) continue;
     tasks++;
     minutes += t.est_duration_min ?? 0;

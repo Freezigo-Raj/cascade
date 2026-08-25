@@ -95,7 +95,7 @@ function firstDifference(a, b) {
 export function readIdeas(existing) {
   if (!Array.isArray(existing)) return [];
   return existing
-    .filter((t) => t && t.task_state === "ready" && !t.archived)
+    .filter(isOpen)
     .filter((t) => !t.due_at && !t.earliest_start)
     .filter((t) => typeof t.title === "string" && t.title !== "" && "est_duration_min" in t)
     .sort((a, b) => a.est_duration_min - b.est_duration_min ||

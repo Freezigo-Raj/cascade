@@ -133,6 +133,9 @@ export function spawn(closed, newId, now) {
 export function overtaken(task, now) {
   const rule = task?.recurrence;
   if (!rule || !rule.unit || !task.due_at) return false;
+  // The same open test the rest of the engine uses, written out: this file
+  // is imported BY `cards.js`'s consumers and by `alarm.js`, and an import back
+  // into `cards.js` would be the graph's one cycle. One line, and named here.
   if (task.task_state !== "ready" || task.archived) return false;
   const anchor = task.first_due_at || task.due_at;
   return step(parse(anchor), rule) <= parse(now);

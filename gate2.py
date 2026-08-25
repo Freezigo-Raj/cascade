@@ -583,24 +583,44 @@ if _sch is not None:
 #
 # Session 126 wrote exactly that line in `alarm.js` and it went unnoticed for
 # three builds, which is what this rule is for.
-# THE TWO ENGINE FILES ARE A WARNING AND NOT A FAILURE, and the reason is
-# stated rather than assumed: `resolve.js` and `resolve.stage3.js` are imported
-# as plain modules by `gate4.mjs`, `check_render.mjs` and the key runner, which
-# have no version to pass. Their imports are engine-internal and the engine
-# always ships whole. They are the next thing to convert, not a rule to drop.
-_ENGINE_EXCUSED = {'shell/resolve.js', 'shell/resolve.stage3.js'}
+# NO EXCUSES LEFT (session 135). `resolve.js` and `resolve.stage3.js` were
+# excused because the node checks import them with no version to pass — an
+# excuse worth nothing, since a relative specifier does not inherit its
+# importer's query either way. The engine's imports carry the version now; in
+# node the query is empty and nothing changes there.
+#
+# JSDoc is not an import: `@param {import("./types.js").CaptureInput}` is a type
+# annotation inside a comment, and matching it was this rule's own false
+# positive. Comments are stripped before the scan.
+def _strip_comments(src):
+    out, i, n = [], 0, len(src)
+    while i < n:
+        c = src[i]
+        if c == '/' and i + 1 < n and src[i+1] == '/':
+            j = src.find('\n', i)
+            i = n if j < 0 else j
+        elif c == '/' and i + 1 < n and src[i+1] == '*':
+            j = src.find('*/', i + 2)
+            i = n if j < 0 else j + 2
+        elif c in '"\'`':
+            q, i = c, i + 1
+            out.append(q)
+            while i < n and src[i] != q:
+                if src[i] == '\\': out.append(src[i]); i += 1
+                if i < n: out.append(src[i]); i += 1
+            out.append(q); i += 1
+        else:
+            out.append(c); i += 1
+    return ''.join(out)
+
 import glob as _glob
 for _f in sorted(_glob.glob('shell/*.js')):
-    _src = open(_f, encoding='utf-8').read()
-    # Static: import ... from "./x.js"   (no query)
+    _src = _strip_comments(open(_f, encoding='utf-8').read())
     for _m in re.finditer(r'^\s*import\s[^;\n]*?from\s+["\'](\.\/[^"\']+?)["\']', _src, re.M):
         if '?' not in _m.group(1):
-            _say = warns.append if _f.replace('\\', '/') in _ENGINE_EXCUSED else bad
-            _say('%s: `%s` is imported without ?v= — the browser will answer it from cache' % (_f, _m.group(1)))
-    # Dynamic: import("./x.js") without a template carrying ${v}
+            bad('%s: `%s` is imported without ?v= — the browser will answer it from cache' % (_f, _m.group(1)))
     for _m in re.finditer(r'import\(\s*["\'](\.\/[^"\']+?)["\']\s*\)', _src):
-        _say = warns.append if _f.replace('\\', '/') in _ENGINE_EXCUSED else bad
-        _say('%s: `%s` is imported without ?v= — the browser will answer it from cache' % (_f, _m.group(1)))
+        bad('%s: `%s` is imported without ?v= — the browser will answer it from cache' % (_f, _m.group(1)))
 
 # ------------------------------------------------------------------ no-undef
 # THE CHECK THAT WOULD HAVE CAUGHT SESSION 132 (session 133). `say()` was

@@ -43,7 +43,7 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
   contract     54
   config       a.19
   answer_key   28
-  shell        50
+  shell        51
   gate1        signed on example 35
   gate2        signed on contract 32
   gate3        signed on shell 1
@@ -79,32 +79,32 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 
 ## THIS SESSION'S JOB
 
-Session 134: his question, and the answer was yes.
+Session 135: the two things named as owed at the end of 134, and the gates retired.
 
-**THE DUPLICATE CHECK WAS READING THE WHOLE STORE.** His report: the dialog said a task already
-exists, overdue since Monday, while the panel under the box showed nothing at all. He asked whether
-done and cancelled tasks were being checked for similarity. They were.
+**THE ENGINE'S IMPORTS CARRY THE VERSION, AND THE EXCUSE LIST IS GONE.** Four plain relative imports
+in `resolve.js` were excused by gate2 because the node checks import that file with no version to
+pass. That excuse was worth nothing: A RELATIVE SPECIFIER DOES NOT INHERIT ITS IMPORTER'S QUERY, so
+`resolve.js?v=50` asking for `./cards.js` got whatever the browser had cached under that bare name —
+possibly from build 30 — and one stale engine file with a missing export takes the whole app down.
+That is precisely what session 129 found in `alarm.js`, fixed there, and left standing in five other
+places. In node the query is empty, so nothing about `gate4.mjs` or any check changed.
 
-`readDuplicate()` was the ONLY rule in the engine reading `existing_tasks` unfiltered. `cards.js`,
-`clash.js`, `push.js` and the search panel all filter to `ready` and not archived. So the dialog
-warned about work finished weeks ago, and about every cancelled row — and since session 130 the bin
-CANCELS rather than erases, so that set only grows, which is why this surfaced now and not a year
-ago.
+gate2's rule is universal now, and it strips comments before scanning: `@param {import("./types.js")
+.CaptureInput}` is a type annotation, not an import, and matching it was the rule's own false
+positive.
 
-THE PANEL AND THE DIALOG ANSWER THE SAME QUESTION AND MUST ANSWER IT FROM THE SAME SET. Otherwise
-the dialog is talking about something the person cannot see, which is exactly what he was looking
-at. A finished task with this name is not a reason to refuse a new one; `Revive` on the Done tab is
-what a finished task with this name is for.
+**ONE OPEN-TASK PREDICATE, NOT FIVE.** With the imports settled, `isOpen` from `cards.js` is what
+`search.js`, `clash.js` and `push.js` ask, and what the duplicate rule asks since 134. Session 134's
+defect was one file out of five disagreeing about what "still open" means; there are two copies left
+and both are named in the code — `repeat.js` and `alarm.js` sit on the other side of the graph from
+`cards.js` and importing back into it would make the graph's only cycle.
 
-`cards.js` exports `isOpen` now and `resolve.js` uses it. `check_search.mjs` asserts that a done and
-a cancelled task raise no dialog and appear in no panel, and that an open one still does both.
-
-**THE PREDICATE STILL HAS FOUR COPIES, and that is named rather than half-fixed.** `search.js`,
-`clash.js` and `push.js` each write it out. None of them imports anything at all, and adding a
-static relative import to an engine file is exactly what gate2 refuses without a version (session
-129) — so consolidating them needs the engine's import style settled first. That is a job of its own
-and it is worth doing: this defect was one file out of five disagreeing, and there are still three
-places for that to happen again.
+**THE SIX GATES ARE RETIRED**, his call. Five have been owed since session 101 while the app shipped
+to a phone every day. A ceremony nobody performs is not a safeguard; it is a line in a document that
+makes a project look more reviewed than it is. What replaces them is what has been catching things:
+eight checks, `no-undef`, and his own pass on the phone. Every real defect in the last thirty
+sessions was found by one of those three and none by a gate. `gate2.py` and `gate4.mjs` keep their
+names — they are checks that run, not reviews that wait.
 
 ## NEXT THREE JOBS
 
@@ -113,8 +113,18 @@ places for that to happen again.
    survival, closed-app outcome drain, ringing through silent and DND, and the auto chain reaching
    its limit and writing `alarm_unanswered_at`.
 2. Use it for a few days on the phone. Every defect worth having in this project was found that way.
-3. The workflow migration, recorded in full under DECIDED, NOT BUILT, then Gate 6 and the five gates
-   already owed.
+3. The workflow migration, recorded in full under DECIDED, NOT BUILT.
+
+**THE SIX GATES ARE RETIRED** (session 135, his call: "forget the gates now"). Gates 1 to 6 were the
+hand-signed reviews the build protocol asked for at each stage, and five of them have been owed
+since session 101 while the app went on shipping to a phone every day. A ceremony nobody performs is
+not a safeguard; it is a line in a document that makes the project look more reviewed than it is.
+
+What replaces them is what has actually been catching things: eight automated checks, `no-undef`
+across the shell, and his own pass on the phone. Every real defect in the last thirty sessions was
+found by one of those three and none by a gate. The stage line above stays as history — it says how
+the engine was built — and `gate2.py` and `gate4.mjs` keep their names, because they are checks that
+run rather than reviews that wait.
 
 ## TYPED, AND WRONG
 
@@ -910,3 +920,6 @@ have landed. That is the price of the single table and it is accepted.
 - 20 Aug 2026 — A missing eslint is a loud warning and not a failure — a tool that is not installed is not a broken repository, but a check that quietly does not run is worse than one never written.
 - 20 Aug 2026 — The duplicate check reads OPEN tasks only, his report — it was the one rule in the engine reading the whole store, so it warned about work done weeks ago while the panel under the box showed nothing — and since the bin started cancelling rather than erasing, that set only grows.
 - 20 Aug 2026 — `cards.js` exports `isOpen` and `resolve.js` uses it; `search.js`, `clash.js` and `push.js` keep their own copies — none of those files imports anything, and a static relative import in an engine file is what gate2 refuses without a version — consolidating them needs the engine's import style settled, and it is named as its own job rather than half-done.
+- 20 Aug 2026 — Every relative import in the project carries `?v=`, engine included, and gate2's excuse list is gone — a relative specifier does not inherit its importer's query, so the node checks having no version to pass was never a reason for the browser to be served a module from build 30 — comments are stripped before the scan, because a JSDoc type annotation is not an import.
+- 20 Aug 2026 — `isOpen` in `cards.js` is the engine's one open-task predicate, used by search, clash, push and the duplicate rule — session 134's defect was one file out of five disagreeing about what open means — two copies remain in `repeat.js` and `alarm.js`, named in the code, because importing back into `cards.js` would make the graph's only cycle.
+- 20 Aug 2026 — The six gates are retired, his call — five were owed since session 101 while the app shipped to a phone daily, and every real defect in thirty sessions was found by a check, by `no-undef`, or by him on the phone — a ceremony nobody performs is not a safeguard.

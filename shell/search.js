@@ -12,6 +12,9 @@
 // with its own threshold, and a fuzzy match is far too weak to interrupt anyone
 // with. False positives here cost nothing, because a result is not a question.
 
+const v = new URL(import.meta.url).search;
+const { isOpen } = await import(`./cards.js${v}`);
+
 /** Tokens of a normalised string. Empty in, empty out. */
 function tokens(s) {
   return String(s || "").split(/\s+/).filter(Boolean);
@@ -81,13 +84,11 @@ function tierOf(query, target, threshold) {
  * about having cut it.
  */
 function searchable(t) {
-  // The same test `cards.js` exports as `isOpen`, written out rather than
-  // imported: this file has no imports, and adding a static one would be a
-  // relative import with no version, which gate2 refuses for good reason
-  // (session 129). Consolidating the engine's four copies of this predicate
-  // needs the engine's import style settled first, and that is a job of its
-  // own — named in spec.md rather than half-done here.
-  return Boolean(t) && typeof t === "object" && t.task_state === "ready" && !t.archived;
+  // ONE PREDICATE (session 135). Four files carried their own copy of this and
+  // one of them — the duplicate rule — did not carry it at all, which is what
+  // he found in session 134. The engine's imports carry the version now, so
+  // this can be the same function the cards use rather than a fifth copy.
+  return isOpen(t);
 }
 
 /**

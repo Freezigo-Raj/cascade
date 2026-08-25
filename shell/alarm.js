@@ -79,6 +79,9 @@ function write(t, offset) {
  * this project refuses everywhere else.
  */
 export function canAlarm(task) {
+  // Written out rather than imported, for the same reason as `repeat.js`:
+  // `cards.js` is not on this file's side of the graph. Two copies left, both
+  // named (session 135).
   return Boolean(task && task.due_at && task.has_time && task.task_state === "ready" && !task.archived);
 }
 

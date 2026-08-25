@@ -12,6 +12,9 @@
 // names the other task and its time and never the overlap. A warning that
 // cannot state its own arithmetic is the shape this decision produces.
 
+const v = new URL(import.meta.url).search;
+const { isOpen } = await import(`./cards.js${v}`);
+
 const MIN = 60 * 1000;
 const at = (iso) => Date.parse(iso.slice(0, 19) + "Z");
 
@@ -21,10 +24,9 @@ const at = (iso) => Date.parse(iso.slice(0, 19) + "Z");
  * make every task due today clash with every other.
  */
 function occupies(t) {
-  return Boolean(
-    t && t.task_state === "ready" && !t.archived &&
-    t.has_time && t.due_at && t.date_anchor === "point"
-  );
+  // `isOpen` from `cards.js` (session 135): one predicate rather than four
+  // copies, now that the engine's imports carry the version.
+  return Boolean(isOpen(t) && t.has_time && t.due_at && t.date_anchor === "point");
 }
 
 /** `5pm` / `5:30pm`, the same clock the card sentence uses. */
@@ -117,10 +119,7 @@ export function dayWord(iso, nowIso) {
 
 /** A promise, rather than a plan: hard, open, and carrying a date. */
 function promises(t) {
-  return Boolean(
-    t && t.task_state === "ready" && !t.archived &&
-    t.due_at && t.date_firmness === "hard"
-  );
+  return Boolean(isOpen(t) && t.due_at && t.date_firmness === "hard");
 }
 
 /**

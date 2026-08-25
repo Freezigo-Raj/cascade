@@ -3111,3 +3111,25 @@ Colour meant one thing and now means three. Accent is pressable, `#c0492b` is ov
 **Named, not done:** three engine files still carry their own copy of the open-task predicate. Consolidating them needs the engine's static-import style settled against gate2's version rule.
 
 **Still owed:** the nine alarm tests. Gates 1-6.
+
+---
+
+## Session 135 — 20 August 2026
+
+**Job:** The two items named as owed at the end of 134, and "forget the gates now".
+
+**Stage before / after:** 5 / 5
+
+**Files changed:**
+- `shell/resolve.js` — five imports carry the version
+- `shell/search.js`, `shell/clash.js`, `shell/push.js`, `shell/cards.js` — one `isOpen`
+- `shell/repeat.js`, `shell/alarm.js` — the two remaining copies, named in place
+- `gate2.py` — the excuse list removed, comments stripped before the import scan
+- `spec.md` — the gates retired
+- `shell/render.js` 51 and the five other version sites
+
+**Tests:** all eight green, `no-undef` clean.
+
+**The gates.** Retired rather than deferred. Five of six had been owed since session 101 and the app shipped to his phone every day regardless. The checks, the linter and his own use are what have been finding defects; the gates were finding none because nobody was running them.
+
+**Still owed:** the nine alarm tests on the phone, and the workflow migration under DECIDED, NOT BUILT.

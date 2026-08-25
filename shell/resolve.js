@@ -7,15 +7,30 @@
 // cost is that a line typed in the first second or two may miss a lemma-only
 // verb; the next keystroke re-resolves and has it. Harnesses that must be
 // deterministic await `lemmaReady` before running a case.
+//
+// THE ENGINE CARRIES THE VERSION TOO (session 135). These four were the last
+// plain relative imports in the project, and gate2 excused them because the
+// node checks import this file with no version to pass. That excuse was worth
+// exactly nothing: a relative specifier does not inherit its importer's query,
+// so `resolve.js?v=50` asking for `./cards.js` gets whatever the browser cached
+// under that bare name — possibly from build 30. One stale engine file with a
+// missing export takes the whole app down, which is what session 129 found in
+// `alarm.js` and fixed there and nowhere else.
+//
+// In node the query is empty, so `./cards.js${v}` is `./cards.js` and nothing
+// changes for `gate4.mjs` or any check. In a browser every edge of the graph
+// now carries the same number. The excuse list in gate2 is gone with it.
+const v = new URL(import.meta.url).search;
 let lemmasNow = null;
-export const lemmaReady = import("./lemma.js")
+export const lemmaReady = import(`./lemma.js${v}`)
   .then((m) => { lemmasNow = m.lemmas; })
   .catch(() => {});
 const lemmas = (line) => (lemmasNow ? lemmasNow(line) : null);
-import { readCards, readIdeas, readDone, rankKeyFor, isOpen } from "./cards.js";
-import { readResults } from "./search.js";
-import { readPushOptions } from "./push.js";
-import { readClashes, readClashDialog, readDeadlineClashes, readDeadlineDialog } from "./clash.js";
+const { readCards, readIdeas, readDone, rankKeyFor, isOpen } = await import(`./cards.js${v}`);
+const { readResults } = await import(`./search.js${v}`);
+const { readPushOptions } = await import(`./push.js${v}`);
+const { readClashes, readClashDialog, readDeadlineClashes, readDeadlineDialog } =
+  await import(`./clash.js${v}`);
 
 // Cascade Part A — Stage 5, rule 1: the verb.
 //
