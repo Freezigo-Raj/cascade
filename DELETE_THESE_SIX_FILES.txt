@@ -1,4 +1,4 @@
-CASCADE — sessions 137 to 139. READ THIS BEFORE COMMITTING.
+CASCADE — sessions 137 to 140. READ THIS BEFORE COMMITTING.
 
 A zip can add and overwrite files. It cannot delete one. Six files were DELETED
 this session and they must be removed from the repository BY HAND, or the build
@@ -32,8 +32,6 @@ BEFORE YOU RUN gate2.py, install the two tools it uses:
   npm i -g typescript eslint
 
 tsc missing is a FAILURE. eslint missing is a warning. Session 138 fixed the
-reason gate2 said "tsc is not installed" on Windows even when it was: npm
-installs them as tsc.cmd and eslint.cmd, and Windows cannot start a .cmd the
-way the gate was starting it. That is fixed in this zip.
+reason gate2 said "tsc is not installed" on Windows even when it was.
 
-Header should read build 55.
+Header should read build 56.

@@ -316,6 +316,63 @@ console.log("\na length of time, spaced either way");
   say(labels(exact("22:00")).join().startsWith("+1 hour,Tomorrow"),
       "a 22:00 task keeps only the hour that stays in the day");
   say(labels(exact("23:30"))[0] === "Tomorrow", "and a 23:30 task keeps none of them");
+
+  // ------------------------------------------------------------------------
+  // A DAY RUNG IS COUNTED FROM TODAY (session 140, his rule: "Today and
+  // Tomorrow should not be relative to the current task date. It should be
+  // absolute.").
+  //
+  // Every rung was `due_at + n days`, so on a task due next Friday `Tomorrow`
+  // meant Saturday. The clock below is 06:00 on the 25th throughout.
+  const far = task({ due_at: "2026-08-29T09:00:00+05:30", date_precision: "day" });
+  const farRungs = rungs(far);
+  const to = (label) => farRungs.find((o) => o.push_label === label)?.push_to ?? "";
+
+  say(to("Today").startsWith("2026-08-25"), "a task due on the 29th can come to TODAY, not to the 29th");
+  say(to("Tomorrow").startsWith("2026-08-26"), "and Tomorrow means the 26th, not the day after the 29th");
+  say(to("+2 days").startsWith("2026-08-27"), "+2 days is two days from today");
+  say(to("Next week").startsWith("2026-09-01"), "and Next week is seven, both counted from the clock");
+  say(to("Today") === "2026-08-25T09:00:00+05:30", "the rung keeps the task's own clock time");
+
+  // The overdue ladder used to be a branch of its own, written separately so
+  // that its day rungs could be absolute. With every rung absolute it says the
+  // same thing, so it is gone — and this is what proves it.
+  const late = rungs(task({ due_at: "2026-08-22T09:00:00+05:30", date_precision: "day" }));
+  say(late[0].push_label === "Today" && late[0].push_to.startsWith("2026-08-25"),
+      "an overdue task still leads with Today, from the one ladder rather than a branch of its own");
+
+  // A rung that changes nothing is not a rung.
+  say(!rungs(task({ due_at: "2026-08-26T09:00:00+05:30", date_precision: "day" }))
+        .some((o) => o.push_label === "Tomorrow"),
+      "a task already due tomorrow is offered no Tomorrow");
+  say(!rungs(task({ due_at: "2026-08-25T18:00:00+05:30", date_precision: "day" }))
+        .some((o) => o.push_label === "Today"),
+      "and one already due today is offered no Today");
+
+  // `Later today` names today while being computed from the task's own day.
+  say(!rungs(task({ due_at: "2026-08-28T09:00:00+05:30", date_precision: "band" }))
+        .some((o) => o.push_label === "Later today"),
+      "`Later today` is not offered on a task due on another day");
+  // It also has to be ahead of the CLOCK, not just ahead of the task. A task
+  // due at 09:00 and still sitting there at 14:00 was offered 12:00.
+  const stale = readPushOptions(
+    task({ due_at: "2026-08-25T09:00:00+05:30", date_precision: "band" }),
+    [], config, "2026-08-25T14:00:00+05:30",
+  ).find((o) => o.push_label === "Later today");
+  say(stale.push_to === "2026-08-25T18:00:00+05:30",
+      "and it starts from the clock when the task's own hour has gone");
+
+  // Absolute day rungs and relative hour rungs interleave.
+  const mixed = rungs(task({ due_at: "2026-08-28T15:00:00+05:30", date_precision: "time" }));
+  say(mixed.every((o, i) => i === 0 || mixed[i - 1].push_to <= o.push_to),
+      "the ladder is in the order the rungs happen, whatever branch wrote them");
+
+  // Week precision was never given a day, so it is offered none.
+  const weekly = rungs(task({ due_at: "2026-09-01T09:00:00+05:30", date_precision: "week" }));
+  say(!weekly.some((o) => ["Today", "Tomorrow"].includes(o.push_label)),
+      "week precision is offered no single day, because none was ever given");
+  say(weekly.find((o) => o.push_label === "+2 weeks").push_to.startsWith("2026-09-08"),
+      "but its own rungs are absolute too: +2 weeks is two weeks from today");
 }
 
 console.log(`\n${bad === 0 ? "CHECK ALARM: PASS" : `CHECK ALARM: ${bad} FAILED`}\n`);

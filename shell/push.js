@@ -99,9 +99,16 @@ const dayOf = (ms) => Math.floor(ms / DAY) * DAY;
  *
  * Nothing when the day has no band left, which is his other half: do not offer
  * it when it cannot move later in the same day.
+ *
+ * COUNTED FROM THE LATER OF THE TASK AND THE CLOCK (session 140). It read the
+ * task's own time alone, so a task due at 09:00 that was still sitting there at
+ * 14:00 offered `Later today` at 12:00 — a rung two hours in the past, which is
+ * the exact fault this rung has now been fixed for three times. The band it
+ * names has to be ahead of BOTH.
  */
-function laterToday(at, config) {
-  const midnight = dayOf(at);
+function laterToday(at, nowMs, config) {
+  const from = Math.max(at, nowMs);
+  const midnight = dayOf(from);
   const starts = Object.values(config?.time_bands ?? {})
     .map((b) => String(b?.start ?? ""))
     .filter((t) => /^\d{1,2}:\d{2}$/.test(t))
@@ -110,7 +117,7 @@ function laterToday(at, config) {
       return midnight + h * 60 * 60 * 1000 + m * 60 * 1000;
     })
     .sort((a, b) => a - b);
-  const next = starts.find((t) => t > at);
+  const next = starts.find((t) => t > from);
   return next === undefined ? [] : [{ label: "Later today", at: next }];
 }
 
@@ -126,109 +133,109 @@ function laterToday(at, config) {
  */
 const sameDay = (at) => (rung) => dayOf(rung.at) === dayOf(at);
 
+/**
+ * A DAY RUNG NAMES A DAY, AND THE DAY IT NAMES IS COUNTED FROM TODAY (session
+ * 140, his rule: "Today and Tomorrow should not be relative to the current task
+ * date. It should be absolute.").
+ *
+ * Every rung below was `task.due_at + n days`. On a task due next Friday,
+ * `Tomorrow` meant Saturday and `+2 days` meant Sunday — labels that name a day
+ * and land on a different one. Only the OVERDUE branch counted from today, and
+ * only because it was written separately for that reason; that branch is gone
+ * now, because with the rungs absolute it said exactly what this says.
+ *
+ * `Today` at the task's own clock time. If that hour has already gone, an hour
+ * from now, because a pull-forward that arrives overdue is a trap rather than a
+ * favour — and dropped entirely when an hour from now is tomorrow, which is the
+ * same rule session 136 gave `Later today` and the hour rungs.
+ *
+ * The rungs that do NOT name a day are still relative and still should be:
+ * `+1 hour` on a task due tomorrow at 09:00 means tomorrow at 10:00, and that
+ * is what the words say. `Later today` is the exception among them, because it
+ * names today while being computed from the task's own day: it is offered only
+ * when the task is actually due today.
+ */
 function targetsFor(task, now, config) {
   const at = Date.parse(task.due_at.slice(0, 19) + "Z");
-  const today = Math.floor(Date.parse(now.slice(0, 19) + "Z") / DAY) * DAY;
-  // Overdue is the one case that does not push further out. A task already late
-  // is not helped by being later; bringing it back to a day you will see it on
-  // is what the press means.
-  if (at < Date.parse(now.slice(0, 19) + "Z")) {
-    return [
-      { label: "Today", at: today + (at % DAY) },
-      { label: "Tomorrow", at: today + DAY + (at % DAY) },
-      { label: "+2 days", at: today + 2 * DAY + (at % DAY) },
-      { label: "Next week", at: today + 7 * DAY + (at % DAY) },
-    ];
-  }
-  // A TASK ON A LATER DAY CAN COME TO TODAY (session 124, his ask): the
-  // ladders only ever pushed outward, so a tomorrow that freed up could not
-  // be pulled in. The rung lands on today at the task's own clock time; if
-  // that instant has already gone, one hour from now, because a pull-forward
-  // that arrives overdue is a trap, not a favour.
   const nowMs = Date.parse(now.slice(0, 19) + "Z");
-  const pullIn = [];
-  if (at - (at % DAY) > today && ["time", "band", "day"].includes(task.date_precision)) {
-    const atToday = today + (at % DAY);
-    // The pull-in has to land today as well (session 136). `now + 1 hour` at
-    // 23:30 is tomorrow, wearing a label that says Today — the same fault the
-    // rungs above were carrying, in the one rung that names the day outright.
-    const pulled = atToday > nowMs ? atToday : nowMs + HOUR;
-    if (dayOf(pulled) === today) pullIn.push({ label: "Today", at: pulled });
-  }
+  const today = Math.floor(nowMs / DAY) * DAY;
+  const clock = ((at % DAY) + DAY) % DAY;
+
+  const dayRung = (label, days) => {
+    const landing = today + days * DAY;
+    let t = landing + clock;
+    if (days === 0 && t <= nowMs) t = nowMs + HOUR;
+    if (dayOf(t) !== landing) return [];
+    return [{ label, at: t }];
+  };
+  const TODAY = dayRung("Today", 0);
+  const TOMORROW = dayRung("Tomorrow", 1);
+  const D2 = dayRung("+2 days", 2);
+  const W1 = dayRung("Next week", 7);
+  const W2 = dayRung("+2 weeks", 14);
+  const M1 = dayRung("Next month", 28);
+  const M2 = dayRung("+2 months", 56);
+  const M3 = dayRung("+3 months", 84);
+
+  // `Later today` is computed from the task's own day, so on a task due later
+  // in the week it named today and landed on a Thursday. It is a rung about
+  // today; it is offered when the task is due today.
+  const later = dayOf(at) === today ? laterToday(at, nowMs, config) : [];
+
   // Each set is a STANDARD LADDER at the precision the person gave (session
   // 119): the row scrolls sideways, so four or five rungs cost no height and a
-  // push no longer has to be made twice to reach a fortnight. The rules under
-  // them are unchanged — offsets from the task's own date, the coarsest rung
-  // one step beyond the precision, and the load still drops full days.
-  switch (task.date_precision) {
-    case "time":
-      return [...pullIn,
-        // FOUR HOURS, ONE RUNG EACH (session 128, his slide on the lock
-        // screen: "give more options with scroll like +1hr, +2hrs, +3hrs,
-        // +4hrs"). An exact time is the precision where an hour is a real
-        // answer, and +1 then +4 made the middle two reachable only by pushing
-        // twice. The rows scroll, so rungs cost no height.
-        ...[
-          { label: "+1 hour", at: at + HOUR },
-          { label: "+2 hours", at: at + 2 * HOUR },
-          { label: "+3 hours", at: at + 3 * HOUR },
-          { label: "+4 hours", at: at + 4 * HOUR },
-        ].filter(sameDay(at)),
-        { label: "Tomorrow", at: at + DAY },
-        { label: "+2 days", at: at + 2 * DAY },
-        { label: "Next week", at: at + 7 * DAY },
-      ];
-    case "band":
-      // `Later today` HAS TO LAND TODAY (session 132, his report: pressing it
-      // moved the task to tomorrow).
-      //
-      // It was `at + 4 hours` and nothing stopped that crossing midnight. A
-      // task in the evening band sits at 18:00 and four hours later is 22:00,
-      // which is fine; one in the night band sits at 21:00 and four hours later
-      // is 01:00 the next day, wearing a label that says today. The rung read
-      // as a small delay and was a whole day.
-      //
-      // It is clamped to the last band the day has — `time_bands.night.start`,
-      // the same 21:00 every other screen means by tonight — and DROPPED
-      // ENTIRELY when the task is already at or past it, because `Later today`
-      // with nothing later today left is not a smaller lie than the first one.
-      return [...pullIn,
-        ...laterToday(at, config),
-        { label: "Tomorrow", at: at + DAY },
-        { label: "+2 days", at: at + 2 * DAY },
-        { label: "Next week", at: at + 7 * DAY },
-        { label: "+2 weeks", at: at + 14 * DAY },
-      ];
-    case "day":
-      return [...pullIn,
-        { label: "Tomorrow", at: at + DAY },
-        { label: "+2 days", at: at + 2 * DAY },
-        { label: "Next week", at: at + 7 * DAY },
-        { label: "+2 weeks", at: at + 14 * DAY },
-        { label: "Next month", at: at + 28 * DAY },
-      ];
-    case "span":
-    case "week":
-      return [
-        { label: "Next week", at: at + 7 * DAY },
-        { label: "+2 weeks", at: at + 14 * DAY },
-        { label: "Next month", at: at + 28 * DAY },
-        { label: "+2 months", at: at + 56 * DAY },
-      ];
-    case "month":
-      return [
-        { label: "Next month", at: at + 28 * DAY },
-        { label: "+2 months", at: at + 56 * DAY },
-        { label: "+3 months", at: at + 84 * DAY },
-      ];
-    default:
-      return [
-        { label: "Tomorrow", at: at + DAY },
-        { label: "+2 days", at: at + 2 * DAY },
-        { label: "Next week", at: at + 7 * DAY },
-        { label: "+2 weeks", at: at + 14 * DAY },
-      ];
-  }
+  // push no longer has to be made twice to reach a fortnight. The coarsest rung
+  // is still one step beyond the precision, and the load still drops full days.
+  const ladder = (() => {
+    switch (task.date_precision) {
+      case "time":
+        return [...TODAY,
+          // FOUR HOURS, ONE RUNG EACH (session 128, his slide on the lock
+          // screen: "give more options with scroll like +1hr, +2hrs, +3hrs,
+          // +4hrs"). An exact time is the precision where an hour is a real
+          // answer, and +1 then +4 made the middle two reachable only by pushing
+          // twice. These stay RELATIVE: they name an interval, not a day.
+          ...[
+            { label: "+1 hour", at: at + HOUR },
+            { label: "+2 hours", at: at + 2 * HOUR },
+            { label: "+3 hours", at: at + 3 * HOUR },
+            { label: "+4 hours", at: at + 4 * HOUR },
+          ].filter(sameDay(at)),
+          ...TOMORROW, ...D2, ...W1];
+      case "band":
+        return [...TODAY, ...later, ...TOMORROW, ...D2, ...W1, ...W2];
+      case "day":
+        return [...TODAY, ...TOMORROW, ...D2, ...W1, ...W2, ...M1];
+      case "span":
+      case "week":
+        // NO `Today` AND NO `Tomorrow` HERE, and that is not an oversight: a
+        // task said `next week` was given at week precision, and a rung naming
+        // a single day claims an exactness nobody offered. The rungs are
+        // absolute now like the rest — `Next week` was the task's own date plus
+        // seven days, so on a task three months out it meant three months and a
+        // week.
+        return [...W1, ...W2, ...M1, ...M2];
+      case "month":
+        return [...M1, ...M2, ...M3];
+      default:
+        return [...TODAY, ...TOMORROW, ...D2, ...W1, ...W2];
+    }
+  })();
+
+  // IN THE ORDER THEY HAPPEN. With the day rungs absolute and the hour rungs
+  // relative, the two can interleave: on a task due Friday at 15:00, `+1 hour`
+  // is Friday and `Tomorrow` is Wednesday, and the ladder listed them in the
+  // order the branch happened to write them. A row of dates out of order reads
+  // as a defect whatever each label says on its own.
+  //
+  // A RUNG THAT CHANGES NOTHING IS NOT A RUNG. With the day rungs counted from
+  // today, a task already due today grows a `Today` that lands exactly where it
+  // already is, and a press on it would write a record identical to the one on
+  // screen. Dropped here rather than in each branch, because every branch has
+  // the same answer.
+  return ladder
+    .filter((r) => write(r.at, offsetOf(task.due_at)) !== task.due_at)
+    .sort((a, b) => a.at - b.at);
 }
 
 /**

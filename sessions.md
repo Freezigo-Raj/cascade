@@ -3235,3 +3235,46 @@ His two screenshots are 587x1280 and 702x1568, which are 1080x2356 and 1440x3216
 **Shell 55.** Engine, contract, key and config all untouched: this is a stylesheet session plus two lines in `mvp.list.js` that move the build number onto the sync line. All eight checks green, log sealed 550.
 
 **OPEN, and his to answer:** slide 2 of the deck is `Other requirements` with an empty body.
+
+---
+
+## Session 140 — 26 August 2026
+
+**Two reports from the phone.** Lock-screen Done did not put the task on the Done tab. And a push rung named a day it did not land on.
+
+### The alarm's Done wrote, and nobody was told
+
+The write always landed. `applyOutcome` sets `task_state: "done"`, `readDone` picks up exactly that, and both have been correct since session 127.
+
+What never happened was an announcement. Screen 1 holds its own snapshot of the tasks and redraws from it. It refreshes that snapshot on its own presses and on `cascade:store-changed`, and that event is fired by `store.sync.js` for writes arriving FROM THE SERVER and by nothing else. A local write made behind the screen's back — which is exactly what an alarm outcome is, since the drain runs after `showList()` — moved the record and left the list drawing the version it had.
+
+On the synced store the sixty-second pull eventually announced and the row appeared, which is why this read as slow rather than broken. With no Supabase configured nothing announced at all and the row never moved.
+
+**The event goes in `alarm.bridge.js`, not in the store.** Every screen already repaints after its own presses, so announcing every local write would mean two repaints for each one, and screen 2 would reload the panel under a caret being typed into — the exact defect session 121 removed listeners to stop. The bridge is the one place that writes while somebody else is drawing.
+
+### A rung that names a day is counted from TODAY
+
+His rule: "Today and Tomorrow should not be relative to the current task date. It should be absolute."
+
+Every rung was `task.due_at + n days`. On a task due next Friday, `Tomorrow` meant Saturday and `+2 days` meant Sunday. **The overdue ladder was the only one counting from today** — written as a separate early-return branch for exactly that reason. That branch is DELETED, because with every rung absolute it says the same thing in more lines.
+
+- `Today` lands at the task's own clock time. If that hour has gone, an hour from now, because a pull-forward that arrives overdue is a trap. Dropped entirely when an hour from now is tomorrow — the same rule session 136 gave `Later today` and the hour rungs.
+- **A rung whose target is exactly where the task already sits is dropped.** With the day rungs absolute, a task due today grew a `Today` that would write a record identical to the one on screen. Filtered once at the end rather than in each branch, because every branch has the same answer.
+- **The rungs that do not name a day stay relative**, and should: `+1 hour` on a task due tomorrow at 09:00 means tomorrow at 10:00, which is what the words say.
+- **`Later today` is the exception among them.** It names today while being computed from the task's own day, so it is offered only when the task is due today.
+
+### Two more faults found in the same file
+
+**`Later today` counted from the task's time alone.** A task due at 09:00 and still sitting there at 14:00 was offered a rung at 12:00, two hours in the past. It starts from the later of the task's time and the clock now. Third time this one rung has been fixed and the first time the clock was allowed into it.
+
+**The ladder was not in date order.** Absolute day rungs and relative hour rungs interleave: on a task due Friday at 15:00 the branch wrote `+1 hour` (Friday) before `Tomorrow` (Wednesday). Sorted by instant now — a row of dates out of order reads as a defect whatever each label says alone.
+
+### Verified in a browser, not by reading
+
+`verify_push.py` loaded the real app at 412x915, put a task four days out, opened Later, and read the ladder: `Today Tomorrow +2 days Next week +2 weeks Next month`. Pressing `Today` emptied the Later tab and the task appeared under Today. Then a done write plus the announce put a task on the Done tab. Twelve new assertions in `check_alarm.mjs` cover the rules themselves.
+
+### Open, his to answer
+
+`Today` and `Tomorrow` are still NOT offered at week, span or month precision. A task given at week precision was never given a day, and a rung naming one claims an exactness nobody offered. Their own rungs are absolute now like the rest, so `Next week` on a task three months out no longer means three months and a week. Whether a coarse task should be pullable to a single day at all is a decision, and it is his.
+
+**Shell 56.** `push.js`, `alarm.bridge.js` and `check_alarm.mjs`. No contract, key or config change. All eight checks green, log sealed 557.

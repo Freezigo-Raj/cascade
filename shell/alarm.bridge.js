@@ -189,7 +189,28 @@ export function syncAlarms(all) {
  */
 async function apply(id, verb, tsMs) {
   const { applyOutcome } = await import(`./alarm.apply.js${v}`);
-  return applyOutcome(tasks, id, verb, tsMs, crypto.randomUUID());
+  await applyOutcome(tasks, id, verb, tsMs, crypto.randomUUID());
+  // AND THEN SAY SO (session 140, his report: "clicking Done on the alarm does
+  // not put the task on the Done tab").
+  //
+  // The write always landed. What never happened was anyone being told. Screen
+  // 1 holds its own snapshot of the tasks and redraws from it; it refreshes
+  // that snapshot on its own presses and on `cascade:store-changed`, and that
+  // event is fired by `store.sync.js` for writes arriving FROM THE SERVER and
+  // by nothing else. A local write made behind the screen's back — which is
+  // exactly what an alarm outcome is — moved the record and left the list
+  // drawing the version it had.
+  //
+  // On the synced store the sixty-second pull eventually announced and the row
+  // appeared, which is why this read as slow rather than broken. With no
+  // Supabase configured nothing ever announced and the row never moved at all.
+  //
+  // The event goes here rather than inside the store: every screen already
+  // repaints after its own presses, so announcing every local write would mean
+  // two repaints for each one, and screen 2 would reload the panel under a
+  // caret that is being typed into. This file is the one that writes while
+  // somebody else is drawing.
+  window.dispatchEvent(new CustomEvent("cascade:store-changed", { detail: "alarm-outcome" }));
 }
 
 /**

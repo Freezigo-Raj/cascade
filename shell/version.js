@@ -15,4 +15,4 @@
 //
 // Bump it when anything under `shell/` changes, and bump the six numbers above
 // with it or gate2 fails.
-export const SHELL_VERSION = 55;
+export const SHELL_VERSION = 56;

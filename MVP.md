@@ -178,6 +178,14 @@ Some fields exist only so the suggestions are better, and never appear on any sc
 
 A push is offered on everything, hard deadlines and pins included. The record counts the pushes and remembers where the task was first due.
 
+**A rung that names a day is counted from TODAY, not from the task's date** (session 140, his rule). Every rung used to be the task's own `due_at` plus an interval, so on a task due next Friday, `Tomorrow` meant Saturday and `+2 days` meant Sunday. Only the overdue ladder counted from today, and only because it had been written separately for that reason; that branch is gone, because with the rungs absolute it said the same thing.
+
+`Today` lands at the task's own clock time, or an hour from now when that hour has already gone, and is not offered at all when an hour from now is tomorrow. A rung whose target is exactly where the task already sits is dropped, which is why a task due today has no `Today` and one due tomorrow has no `Tomorrow`.
+
+**The rungs that do not name a day are still relative**, and should be: `+1 hour` on a task due tomorrow at 09:00 means tomorrow at 10:00, which is what the words say. `Later today` is the exception among them, because it names today while being computed from the task's day: it is offered only when the task is due today, and it starts from the later of the task's time and the clock.
+
+**The ladder is in the order the rungs happen.** Absolute day rungs and relative hour rungs interleave, and a row of dates out of order reads as a defect whatever each label says on its own.
+
 **Repeats.**
 
 A repeat spawns its next occurrence when the current one is marked done, and only then. There is never more than one open occurrence, so three weeks late on a weekly task is one row and not three.
