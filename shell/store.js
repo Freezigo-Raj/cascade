@@ -41,6 +41,33 @@ function backing() {
   }
 }
 
+/**
+ * EVERY WRITE TO A TASK SAYS SO (session 142).
+ *
+ * `cascade:store-changed` is the screens' event and is deliberately fired only
+ * for writes arriving FROM THE SERVER, because a screen already repaints after
+ * its own presses and firing it locally means two repaints and, on the capture
+ * screen, a panel reloading under a caret being typed into.
+ *
+ * The alarm bridge is not a screen. It arms what AlarmManager will ring, it has
+ * no press of its own to repaint after, and it was listening on the screens'
+ * event because that was the only one there was. So adding a task with an alarm
+ * while the app was open armed NOTHING until the next sixty-second pull — and
+ * offline there is no pull, so it armed nothing at all. That is the second half
+ * of "the alarm did not ring with no internet".
+ *
+ * This event is for that. No screen listens to it, so it cannot cause a
+ * repaint; it fires on every local task write, whoever made it.
+ */
+function wrote(namespace) {
+  if (namespace !== "task" || typeof window === "undefined") return;
+  try {
+    window.dispatchEvent(new CustomEvent("cascade:tasks-written"));
+  } catch {
+    // A CustomEvent that cannot be built is not a reason to lose a write.
+  }
+}
+
 export function makeStore(namespace) {
   const db = backing();
   const key = (id) => `${PREFIX}:${namespace}:${id}`;
@@ -77,12 +104,14 @@ export function makeStore(namespace) {
         throw new Error(`store.add: ${record.id} already exists; use update`);
       }
       db.setItem(key(record.id), JSON.stringify(record));
+      wrote(namespace);
       return record;
     },
 
     async update(id, record) {
       if (db.getItem(key(id)) === null) throw new Error(`store.update: ${id} is not here`);
       db.setItem(key(id), JSON.stringify(record));
+      wrote(namespace);
       return record;
     },
 
@@ -91,6 +120,7 @@ export function makeStore(namespace) {
       const raw = db.getItem(key(id));
       if (raw === null) return null;
       db.removeItem(key(id));
+      wrote(namespace);
       try {
         return JSON.parse(raw);
       } catch {

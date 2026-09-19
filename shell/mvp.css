@@ -46,7 +46,7 @@
      serving an old stylesheet has now cost three sessions of guessing at what
      had and had not arrived. A number that can be read is worth more than a
      number that has to be trusted. */
-  --css-version: 57;
+  --css-version: 58;
 
   --step: 4px;
   --r-card: 18px;
@@ -531,3 +531,19 @@ html, body {
   z-index: 5;
 }
 .fab:hover, .fab:focus-visible { background: var(--signal-deep); }
+
+/* A SCREEN THAT COULD NOT LOAD (session 142). Drawn by `load()` in `mvp.js`,
+   above whatever is on screen, and it goes on a tap. It should never appear —
+   the service worker pre-caches every module — and it is here because the
+   failure it replaces was a button that did nothing at all. */
+.screen-failed {
+  margin: 0 0 calc(var(--step) * 3);
+  padding: calc(var(--step) * 3);
+  border-radius: var(--r-card);
+  background: var(--sunk);
+  border: 1.5px solid var(--signal);
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.45;
+  cursor: pointer;
+}

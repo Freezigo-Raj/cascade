@@ -24,11 +24,96 @@
 
 const STORE = "cascade-shell";
 
+/**
+ * THE SHELL VERSION, AND IT IS HELD TO `shell/version.js` BY `gate2.py`.
+ * Bump it with every other number when the shell changes.
+ */
+const SHELL = 58;
+
+/**
+ * PRE-CACHED, AND THAT IS A REVERSAL (session 142, his report: "in airplane
+ * mode, Add task, some tasks and the Alarms tab do nothing").
+ *
+ * This file used to say: no pre-cache list, because the app is a few dozen
+ * small modules and a list here would be a second inventory to keep in step
+ * with the first. The reasoning was right and the conclusion was wrong.
+ *
+ * What is cached is what has been FETCHED. Screen 1 loads at boot, so it is
+ * always cached. `mvp.edit.js`, `mvp.alarms.js`, `mvp.account.js`,
+ * `mvp.detail.js` and `mvp.rail.js` are imported the first time their button is
+ * pressed — so on a phone that has never opened the capture screen while
+ * online, that import fails with no network, the promise rejects inside a click
+ * handler, and the button does NOTHING. Not an error, not a message. Nothing.
+ * Which is exactly what he saw, and the worst failure this app has had.
+ *
+ * The second inventory is real, and it is answered rather than avoided:
+ * `gate2.py` reads the `shell/` directory and fails if this list is missing a
+ * file or names one that is not there. A list a check holds is not a list that
+ * can drift.
+ */
+const PRECACHE = [
+  "shell/alarm.apply.js",
+  "shell/alarm.bridge.js",
+  "shell/alarm.js",
+  "shell/auth.js",
+  "shell/cards.js",
+  "shell/catchup.js",
+  "shell/clash.js",
+  "shell/config.js",
+  "shell/env.js",
+  "shell/gate.js",
+  "shell/lemma.js",
+  "shell/mvp.account.css",
+  "shell/mvp.account.js",
+  "shell/mvp.alarms.js",
+  "shell/mvp.chips.js",
+  "shell/mvp.chrome.css",
+  "shell/mvp.clock.js",
+  "shell/mvp.css",
+  "shell/mvp.detail.js",
+  "shell/mvp.dialog.js",
+  "shell/mvp.edit.css",
+  "shell/mvp.edit.js",
+  "shell/mvp.js",
+  "shell/mvp.list.js",
+  "shell/mvp.paint.js",
+  "shell/mvp.panel.js",
+  "shell/mvp.rail.js",
+  "shell/mvp.row.js",
+  "shell/mvp.tap.js",
+  "shell/mvp.truth.js",
+  "shell/mvp.web.css",
+  "shell/mvp.wide.css",
+  "shell/mvp.words.js",
+  "shell/push.js",
+  "shell/repeat.js",
+  "shell/resolve.js",
+  "shell/search.js",
+  "shell/store.js",
+  "shell/store.select.js",
+  "shell/store.supabase.js",
+  "shell/store.sync.js",
+  "shell/supabase.js",
+  "shell/types.js",
+  "shell/version.js",
+];
+
 self.addEventListener("install", (e) => {
-  // No pre-cache list. The app is a few dozen small modules whose names change
-  // as it is built, and a list of them here would be a second inventory to keep
-  // in step with the first. What is cached is what has actually been fetched.
-  e.waitUntil(self.skipWaiting());
+  e.waitUntil((async () => {
+    // Settled, not `addAll`. `addAll` rejects the whole install if ONE request
+    // fails, and an install that fails leaves the old worker serving the old
+    // app with nothing on screen saying so. A file that cannot be fetched now
+    // is fetched on first use, exactly as before.
+    const store = await caches.open(STORE);
+    await Promise.allSettled(
+      PRECACHE.map(async (f) => {
+        const url = new URL(`./${f}?v=${SHELL}`, self.registration.scope).href;
+        const res = await fetch(url, { cache: "reload", credentials: "same-origin" });
+        if (res && res.ok) await store.put(url, res.clone());
+      }),
+    );
+    await self.skipWaiting();
+  })());
 });
 
 self.addEventListener("activate", (e) => {

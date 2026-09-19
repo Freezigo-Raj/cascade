@@ -2,10 +2,15 @@
 """Test the gate before trusting it. Each case breaks one file in one way and
 the gate must report it. A gate that passes on these is worse than no gate."""
 import io,os,shutil,subprocess,sys,tempfile
-SRC=['contract.md','types.ts','example.md','config.ts','spec.md','answer_key.md','gate2.py','gate4.mjs','log.manifest']
+SRC=['contract.md','types.ts','example.md','config.ts','spec.md','answer_key.md','gate2.py','gate4.mjs','log.manifest','sw.js','index.html','eslint.config.mjs']
 # gate2.py now reads the emitted config too, so the sandbox has to carry it.
 # gate4.mjs runs the engine, so the sandbox carries the shell files it imports.
-SRC_DIRS=['shell/config.js','shell/resolve.js','shell/types.js','shell/lemma.js','shell/version.js','shell/cards.js','shell/store.js','shell/search.js','shell/push.js','shell/repeat.js','shell/clash.js','shell/alarm.js']
+# THE WHOLE `shell/` DIRECTORY, not a list (session 142). gate2 now holds the
+# pre-cache list in `sw.js` to what is actually on disk, so a sandbox carrying
+# twelve of the forty-four files would report thirty-two missing ones and the
+# clean case would fail for a reason that is not a defect. Reading the directory
+# is also one less list to keep in step, which is the same lesson.
+SRC_DIRS=sorted('shell/'+f for f in os.listdir('shell') if os.path.isfile(os.path.join('shell',f)))
 def _versions_line(key):
     import re
     m=re.search(r'^\s*%s\s+\S+\s*$'%key,io.open('spec.md',encoding='utf-8').read(),re.M)
@@ -111,6 +116,15 @@ CASES=[
  # A row fitted to the engine with nothing declaring it.
  ("reconciled row not declared", 'answer_key.md',
   "| A21 | version 4 |", "| A99 | version 4 |"),
+ # ---- session 142: the pre-cache list is held to the directory ----
+ # A screen whose module is not pre-cached is a button that does nothing with
+ # no network, which is exactly what happened.
+ ("a screen module left out of the pre-cache", 'sw.js',
+  '  "shell/mvp.alarms.js",\n', ""),
+ ("a pre-cached file that is not there", 'sw.js',
+  '  "shell/mvp.alarms.js",', '  "shell/mvp.alarms.js",\n  "shell/mvp.ghost.js",'),
+ ("sw.js behind the shell version", 'sw.js',
+  _live('sw.js', r'const SHELL = \d+;'), "const SHELL = 99;"),
  # A field compared with nobody having decided whether it can be wrong. Only
  # the key runner can see this one.
  ("compared field with no kind", 'answer_key.md',

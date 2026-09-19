@@ -35,6 +35,12 @@ What it does now:
 
 Measured, offline, expired token: **blank for 26s then the sign-in page → the task list in 2.7s, with the alarm armed.**
 
+## Two more offline faults, session 142
+
+**Buttons that did nothing.** `sw.js` said, in a comment, that it had no pre-cache list because a list there would be a second inventory to keep in step with the first. The reasoning was right and the conclusion was wrong. What it cached was what had been FETCHED, and `mvp.edit.js`, `mvp.alarms.js`, `mvp.account.js`, `mvp.detail.js` and `mvp.rail.js` are imported the first time their button is pressed. On a phone that had never opened those screens with signal, the import failed, the promise rejected inside a click handler, and the button did **nothing** — not an error, not a message. Every file under `shell/` is pre-cached at install now, with `Promise.allSettled` rather than `addAll`, and `gate2.py` reads the directory and fails if the list has drifted either way. A screen that still cannot load draws a line saying so.
+
+**An alarm added offline was armed by nothing.** The bridge listened on `cascade:store-changed`, which is the SCREENS' event and fires only for writes arriving from the server. A task added with an alarm while the app was open was armed by nothing until the next sixty-second pull, and offline there is no pull. `store.js` fires `cascade:tasks-written` on every local task write; no screen listens to it, so arming cannot cause a repaint.
+
 ## The gate
 
 One screen, four states, two fields. Reached before the app, never beside it.

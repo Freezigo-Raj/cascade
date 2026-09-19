@@ -3322,3 +3322,47 @@ The network is needed to SYNC. It is not needed to remember who you are.
 With the Capacitor plugin stubbed and Supabase blocked, the offline launch with an expired token calls `set()` on the alarm: `z1 @ 2026-09-18T18:21:25.000Z`. Before this it called nothing.
 
 **Shell 57.** `auth.js`, `mvp.js`, `store.select.js`, `store.sync.js`. No contract, key or config change, and no Kotlin change. All eight checks green, log sealed 563.
+
+---
+
+## Session 142 — 26 August 2026
+
+**His report:** "No blank page now, signed in instantly. But alarm not working and worse, when in airplane mode pressing some buttons like add tasks or clicking certain tasks or the alarm tab does not work. Those buttons become unresponsive."
+
+Two faults. Session 141 fixed the boot and uncovered both by letting the app get far enough to hit them.
+
+### Buttons that did nothing — the worst failure this app has had
+
+`sw.js` said, in its own comment: no pre-cache list, because the app is a few dozen small modules and a list there would be a second inventory to keep in step with the first. **The reasoning was right and the conclusion was wrong.**
+
+What it cached was what had been FETCHED. Screen 1 loads at boot, so it is always cached. `mvp.edit.js`, `mvp.alarms.js`, `mvp.account.js`, `mvp.detail.js` and `mvp.rail.js` are imported the first time their button is pressed. On a phone that had never opened those screens while online, the import failed with no network, the promise rejected inside a click handler, and the button **did nothing at all** — not an error, not a message, nothing.
+
+- Every file under `shell/` is pre-cached at install, 44 of them, under `?v=<SHELL>`.
+- `Promise.allSettled`, not `addAll`. `addAll` rejects the whole install if one request fails, and a failed install leaves the previous worker serving the previous app with nothing on screen saying so.
+- **The second inventory is answered rather than avoided.** `gate2.py` reads the `shell/` directory and fails if the list is missing a file or names one that is not there. A list a check holds is not a list that can drift. Three selftest fixtures cover it.
+- A screen module that still will not load draws a line saying so, through one `load()` wrapper in `mvp.js`. It should never appear. It exists because a control that swallows a press reads as a broken app, and the app knew.
+
+### An alarm added offline was armed by nothing
+
+The bridge listened on `cascade:store-changed`. That is the SCREENS' event, and session 140 established that it fires only for writes arriving FROM THE SERVER, because a screen already repaints after its own presses.
+
+**The alarm bridge is not a screen.** It arms what AlarmManager will ring, it has no press to repaint after, and it was listening on the screens' event because that was the only one there was. So a task added with an alarm while the app was open armed nothing until the next sixty-second pull — and offline there is no pull, so it armed nothing at all.
+
+`store.js` fires `cascade:tasks-written` on every local task write, whoever made it. No screen listens to it, so arming cannot cause a repaint. That is why it is a second event rather than the store announcing every write.
+
+### Measured in a browser
+
+One ONLINE visit to the list, never pressing Add or Alarms. Cache holds 53 entries including `mvp.edit.js` and `mvp.alarms.js`. Then hard offline:
+
+| Offline action | Before | Now |
+|---|---|---|
+| boot | list | list |
+| Alarms tab | nothing | the alarms screen |
+| floating `+` | nothing | the capture screen |
+| type, alarm on, Add | task saved, armed nothing | task saved, `set()` called on the alarm |
+
+### The selftest sandbox
+
+`SRC_DIRS` is now the whole `shell/` directory read at run time rather than a list of twelve files. gate2 holds the pre-cache list to what is on disk, so a sandbox carrying twelve of forty-four would have reported thirty-two missing files and failed the clean case for a reason that is not a defect. One less list to keep in step, which is the same lesson as the one above.
+
+**Shell 58.** `sw.js`, `gate2.py`, `selftest.py`, `store.js`, `alarm.bridge.js`, `mvp.js`, `mvp.css`. No contract, key, config or Kotlin change. All eight checks green, selftest now 31 caught 0 missed, log sealed 568.

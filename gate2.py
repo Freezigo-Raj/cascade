@@ -303,6 +303,35 @@ if sv:
     if not _mj: bad('index.html does not import shell/mvp.js under ?v=<SHELL_VERSION>; either it is cold on every launch or it can go stale')
     elif _mj.group(1)!=sv: bad('index.html imports mvp.js at v=%s, SHELL_VERSION is %s'%(_mj.group(1),sv))
 
+    # ------------------------------------------------- the service worker's list
+    #
+    # `sw.js` used to say: no pre-cache list, because a list here would be a
+    # second inventory to keep in step with the first. The reasoning was right
+    # and the conclusion was wrong. What it cached was what had been FETCHED, and
+    # `mvp.edit.js`, `mvp.alarms.js`, `mvp.account.js`, `mvp.detail.js` and
+    # `mvp.rail.js` are imported the first time their button is pressed — so on a
+    # phone that had never opened those screens while online, the import failed
+    # with no network, the promise rejected inside a click handler, and the
+    # button DID NOTHING (session 142, his report).
+    #
+    # The second inventory is real. It is answered here rather than avoided: the
+    # list is read against the directory, both ways, every run. A list a check
+    # holds is not a list that can drift.
+    try:
+        _SW=io.open('sw.js',encoding='utf-8').read()
+        _msv=re.search(r'^const SHELL = (\d+);',_SW,re.M)
+        if not _msv: bad('sw.js states no SHELL; its pre-cache list has no version to fetch under')
+        elif _msv.group(1)!=sv: bad('sw.js says SHELL %s, SHELL_VERSION is %s'%(_msv.group(1),sv))
+        _listed=set(re.findall(r'"(shell/[\w.\-]+\.(?:js|css))"',_SW))
+        _ondisk={('shell/'+f) for f in os.listdir('shell')
+                 if f.endswith('.js') or f.endswith('.css')}
+        for _f in sorted(_ondisk-_listed):
+            bad('sw.js does not pre-cache %s; a screen that imports it does nothing with no network'%_f)
+        for _f in sorted(_listed-_ondisk):
+            bad('sw.js pre-caches %s, which is not there'%_f)
+    except IOError:
+        bad('sw.js is missing; the app cannot open with no signal at all')
+
 for key,real in [('example',ev),('contract',cv),('config',gv),('answer_key',kv)]+([('shell',sv)] if sv else []):
     m=re.search(r'^\s*%s\s+(\S+)\s*$'%key,vb.group(1),re.M) if vb else None
     if not m: bad('VERSIONS block does not state %s'%key)

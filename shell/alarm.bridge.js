@@ -235,6 +235,15 @@ export async function initAlarms() {
   window.addEventListener("cascade:store-changed", async () => {
     syncAlarms(await tasks.all());
   });
+  // AND EVERY LOCAL WRITE (session 142). `cascade:store-changed` fires only for
+  // writes arriving from the server, so a task added with an alarm while the
+  // app was open was armed by nothing until the next sixty-second pull — and
+  // offline there is no pull, so it was armed by nothing at all. `store.js`
+  // fires this on every local task write and no screen listens to it, so it
+  // arms without repainting anything.
+  window.addEventListener("cascade:tasks-written", async () => {
+    syncAlarms(await tasks.all());
+  });
   syncAlarms(await tasks.all());
 }
 

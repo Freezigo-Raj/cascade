@@ -123,8 +123,41 @@ window.__cascadeBack = () => {
   return true;
 };
 
+/**
+ * A SCREEN THAT CANNOT LOAD SAYS SO (session 142, his report: "in airplane mode
+ * Add task, some tasks and the Alarms tab do nothing").
+ *
+ * Every screen but the list arrives through a dynamic `import()`, which is a
+ * network fetch the first time. The service worker pre-caches all of them now,
+ * so this should never fire. It exists because of WHAT HAPPENED WHEN IT DID:
+ * the import rejected inside a click handler, the rejection went nowhere, and
+ * the button did nothing at all — not an error, not a message, nothing. A
+ * control that swallows a press reads as a broken app, and the app knew.
+ *
+ * So the import is wrapped, once, here. A failure is drawn on the screen the
+ * person is already looking at.
+ */
+async function load(path, name) {
+  try {
+    return await import(`./${path}${v}`);
+  } catch (e) {
+    console.warn(`screen: ${path} did not load —`, e?.message ?? e);
+    const line = document.createElement("div");
+    line.className = "screen-failed";
+    line.setAttribute("role", "alert");
+    line.textContent =
+      `${name} could not open. Its file is not on this phone yet and there is no `
+      + `connection. Open it once with signal and it is kept.`;
+    line.addEventListener("click", () => line.remove());
+    (document.getElementById("screen") ?? document.body).prepend(line);
+    return null;
+  }
+}
+
 async function showList() {
-  const { mountList } = await import(`./mvp.list.js${v}`);
+  const m = await load("mvp.list.js", "The list");
+  if (!m) return;
+  const { mountList } = m;
   route = "list";
   mark("list", false);
   const list = await put(screen, mountList, "list", {
@@ -145,10 +178,13 @@ async function showList() {
  * something else, which is what a second and third column are for.
  */
 async function wideFrame() {
-  const [{ mountRail }, { mountDetail }] = await Promise.all([
-    import(`./mvp.rail.js${v}`),
-    import(`./mvp.detail.js${v}`),
+  const [railMod, detailMod] = await Promise.all([
+    load("mvp.rail.js", "The side rail"),
+    load("mvp.detail.js", "The detail panel"),
   ]);
+  if (!railMod || !detailMod) return;
+  const { mountRail } = railMod;
+  const { mountDetail } = detailMod;
   if (!bar) {
     bar = mountRail(rail, {
       tab: () => here?.state?.().tab,
@@ -186,7 +222,9 @@ async function openTask(taskId) {
   // Two columns and no detail panel: a press loads the box above the list, which
   // is the only place the task can be shown at that width.
   if (ROOMY.matches) return openPanel(taskId);
-  const { mountEdit } = await import(`./mvp.edit.js${v}`);
+  const m = await load("mvp.edit.js", "The capture screen");
+  if (!m) return;
+  const { mountEdit } = m;
   route = "edit";
   mark("edit", true);
   // `onBack` unwinds through the phone's own history rather than jumping to the
@@ -204,7 +242,9 @@ async function openTask(taskId) {
  * the cursor in a text box steals the first keystroke.
  */
 async function openPanel(taskId, { keepFocus = false } = {}) {
-  const { mountEdit } = await import(`./mvp.edit.js${v}`);
+  const m = await load("mvp.edit.js", "The capture box");
+  if (!m) return null;
+  const { mountEdit } = m;
   if (panel) { if (!keepFocus) panel.load(taskId); return panel; }
   capture.dataset.screen = "edit";
   capture.innerHTML = "";
@@ -225,7 +265,9 @@ function closeWide() {
  * beside, and every control on it changes a task the list is showing.
  */
 async function showAlarms(push = true) {
-  const { mountAlarms } = await import(`./mvp.alarms.js${v}`);
+  const m = await load("mvp.alarms.js", "The alarms screen");
+  if (!m) return;
+  const { mountAlarms } = m;
   route = "alarms";
   mark("alarms", push);
   closeWide();
@@ -238,7 +280,9 @@ async function showAlarms(push = true) {
 }
 
 async function showAccount(push = true) {
-  const { mountAccount } = await import(`./mvp.account.js${v}`);
+  const m = await load("mvp.account.js", "The account screen");
+  if (!m) return;
+  const { mountAccount } = m;
   route = "account";
   mark("account", push);
   // The account screen takes the whole window in both layouts. It is a place you
