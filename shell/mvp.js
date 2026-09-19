@@ -305,7 +305,16 @@ async function start() {
   started = true;
   gateEl.style.display = "none";
   app.style.display = "";
-  whoEmail = (await account.current())?.email ?? "";
+  // NOT AWAITED AT ALL (session 141). This was `await account.current()`, which
+  // is `getUser()`, which is a network call — and it sat in front of the list
+  // being drawn and the alarms being armed, for one address printed on the
+  // account screen. Offline it took twenty-six seconds to fail. `knownEmail()`
+  // is whatever the session said the last time anything asked, held in memory.
+  whoEmail = account.knownEmail();
+  // And then ask the server, because the session's copy is as old as the token
+  // and an address can change. Not awaited: nothing on the boot path may wait
+  // on a network call ever again.
+  account.current().then((u) => { if (u?.email) whoEmail = u.email; }).catch(() => {});
   // BEFORE THE LIST IS DRAWN AND BEFORE THE ALARMS ARE ARMED (session 125, his
   // call). A repeat the calendar walked past is closed as cancelled and its
   // next scheduled occurrence is spawned, so the list shows the row that is
@@ -353,7 +362,21 @@ function gate() {
   mountGate(gateEl, start);
 }
 
+// THE BOOT DECISION, AND WHY IT ASKS THE WAY IT DOES (session 141, his report:
+// "alarms do not ring when the mobile is not connected to the internet").
+//
+// This line used to be `await account.session()`. An access token lasts an
+// hour, and `getSession()` on an expired one tries to refresh it over the
+// network: offline that retries and takes twenty-six seconds to answer `null`.
+// So an offline launch showed a blank screen for half a minute and then the
+// SIGN-IN PAGE, `start()` never ran, and nothing armed a single alarm. The
+// Android half was never at fault — it re-arms from its own store after a
+// reboot with no network at all. It was never being told what to arm.
+//
+// `sessionSoon` asks the same question, waits two and a half seconds for the
+// server, and otherwise trusts what this app wrote down last time. Signing in
+// is local knowledge; the network is for syncing.
 if (!configured()) await start();
 else if (recoveryInUrl()) gate();
-else if (await account.session()) await start();
+else if (await account.sessionSoon()) await start();
 else gate();

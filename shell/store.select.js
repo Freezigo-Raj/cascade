@@ -26,19 +26,28 @@ let mode = "local";
 let sync = null;
 
 const db = client();
-if (db && (await account.session())) {
+// `sessionSoon` rather than `session`, and the difference is the whole of why
+// an offline phone used to show nothing (session 141). See `auth.js`: an
+// expired token makes `getSession()` a network call that takes twenty-six
+// seconds to fail, and this line is awaited at module load, so every screen in
+// the app waited behind it.
+if (db && (await account.sessionSoon())) {
   sync = makeSyncStore(db, partAConfig);
   tasks = sync.tasks;
   undo = sync.undo;
   mode = "sync";
-  // The first pull happens here so the list is right before it is first drawn.
-  // A failure is not fatal: the cache already holds the last known answer, and
-  // the outbox holds anything typed since.
-  try {
-    await sync.start();
-  } catch (e) {
-    console.warn("store: started offline —", e.message ?? e);
-  }
+  // NOT AWAITED (session 141). It used to be, on the reasoning that the list
+  // should be right before it is first drawn — and it is, because `all()` reads
+  // the CACHE and never the network, which is the whole design of the syncing
+  // store. What awaiting actually bought was nothing, and what it cost was the
+  // entire app waiting on `owner()` → `getUser()` → a network call, on a module
+  // every screen imports.
+  //
+  // It runs in the background and announces `cascade:store-changed` when the
+  // pull lands, which is how the list learns about anything it did not already
+  // hold. Offline it fails quietly and the cache is the answer, which is the
+  // same answer it would have given after the wait.
+  sync.start().catch((e) => console.warn("store: started offline —", e?.message ?? e));
 }
 
 export { tasks, undo, mode, sync };

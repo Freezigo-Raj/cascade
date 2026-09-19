@@ -3278,3 +3278,47 @@ Every rung was `task.due_at + n days`. On a task due next Friday, `Tomorrow` mea
 `Today` and `Tomorrow` are still NOT offered at week, span or month precision. A task given at week precision was never given a day, and a rung naming one claims an exactness nobody offered. Their own rungs are absolute now like the rest, so `Next week` on a task three months out no longer means three months and a week. Whether a coarse task should be pullable to a single day at all is a decision, and it is his.
 
 **Shell 56.** `push.js`, `alarm.bridge.js` and `check_alarm.mjs`. No contract, key or config change. All eight checks green, log sealed 557.
+
+---
+
+## Session 141 — 26 August 2026
+
+**His report:** "Alarms do not ring when mobile is not connected to internet. Need to make sure it rings even if tasks are not synced online."
+
+**The Android half was never at fault.** `BootReceiver` re-arms every stored alarm after a reboot with no network at all. It was never being told what to arm.
+
+### Twenty-six seconds, measured
+
+A Supabase access token lasts an hour. `getSession()` on an expired one tries to REFRESH it, which is a network call, and offline it retries with a backoff and takes **twenty-six seconds** to answer `null`. Three awaits sat on the boot path behind that, one after another:
+
+| Where | What it awaited | What it was for |
+|---|---|---|
+| foot of `mvp.js` | `account.session()` | list or sign-in page |
+| `store.select.js`, at module load | `account.session()`, then `sync.start()` → `owner()` → `getUser()` | which store, and the first pull |
+| `start()` | `account.current()` → `getUser()` | one email on the account screen |
+
+So an offline launch showed a **blank screen for half a minute and then the sign-in page**. `start()` never ran. `initAlarms()` is the last thing in it, so nothing armed a single alarm. An access token lasts an hour, so this was every offline launch after the first.
+
+### Being signed in is local knowledge
+
+The network is needed to SYNC. It is not needed to remember who you are.
+
+- **`account.sessionSoon()`** waits two seconds for the server and otherwise trusts what this app wrote down. It skips the wait entirely when `navigator.onLine` is already false, and is asked once per load rather than once per caller — paying the timeout twice made an offline launch twice as slow as its own timeout.
+- **`cascade:signed-in`** is our flag in our namespace, written whenever Supabase answers and cleared on sign-out, before the call rather than after.
+- **The backfill.** An install updating to this build has no flag yet and its first launch could be the offline one, so `wasSignedIn()` scans the KEY NAMES in storage once for a persisted Supabase token. Names only, never contents — as little as can be borrowed from somebody else's storage format and still answer the question.
+- **The fallback returns a MARKER, not a session.** It carries no token, so everything that talks to Supabase still refuses until a real session arrives, which it does silently the moment there is signal. A cached "signed in" that granted access would be a worse bug than the one being fixed.
+- **`sync.start()` is not awaited.** It bought nothing: `all()` reads the cache and never the network, which is the whole design of the syncing store. It cost every screen in the app waiting on `getUser()`.
+- **The email comes from `knownEmail()`**, held in memory from whenever the session was last read. An address printed on one screen is not worth a millisecond of the list not being there.
+- **The sync pill starts from `navigator.onLine`** instead of `true`, and an `offline` event sets it. It is the one line in this app that reports the store's own state, and it was wearing a green `synced` on a phone with no signal.
+
+### Measured in a browser, with Supabase blocked
+
+| | Before | Now |
+|---|---|---|
+| online, token valid | 0.6s to the list | 0.6s |
+| offline, token valid | 0.7s | 0.7s |
+| offline, token EXPIRED | 26s blank, then the SIGN-IN PAGE | **2.7s to the task list** |
+
+With the Capacitor plugin stubbed and Supabase blocked, the offline launch with an expired token calls `set()` on the alarm: `z1 @ 2026-09-18T18:21:25.000Z`. Before this it called nothing.
+
+**Shell 57.** `auth.js`, `mvp.js`, `store.select.js`, `store.sync.js`. No contract, key or config change, and no Kotlin change. All eight checks green, log sealed 563.

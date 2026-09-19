@@ -58,7 +58,11 @@ export function makeSyncStore(db, config) {
 
   let me = null;
   let draining = false;
-  let online = true;
+  // What the browser says, until a call proves otherwise. It used to start
+  // `true` unconditionally, so an offline phone wore a green `synced` pill
+  // until something failed (session 141). The pill is the one line in this app
+  // that reports the store's own state, and it was reporting a guess.
+  let online = typeof navigator === "undefined" ? true : navigator.onLine !== false;
 
   async function owner() {
     if (me) return me;
@@ -226,7 +230,8 @@ export function makeSyncStore(db, config) {
       })
       .subscribe();
 
-    window.addEventListener("online", () => { drain().then(pull); });
+    window.addEventListener("online", () => { online = true; drain().then(pull); });
+    window.addEventListener("offline", () => { online = false; announce("offline"); });
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible") drain().then(pull);
     });

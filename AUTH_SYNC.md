@@ -7,6 +7,34 @@ Positions, sizes, colours and spacing are not decided here.
 
 ---
 
+
+## Offline, and why it used to be broken
+
+**Being signed in is LOCAL knowledge. The network is for syncing, never for remembering who you are** (session 141, his report: "alarms do not ring when the mobile is not connected to the internet").
+
+A Supabase access token lasts an hour. `getSession()` on an expired one tries to REFRESH it, which is a network call, and offline it retries with a backoff and takes **twenty-six seconds** to answer `null`. Measured, not guessed. Three places on the boot path waited on that, one behind another:
+
+| Where | What it awaited | What it was for |
+|---|---|---|
+| foot of `mvp.js` | `account.session()` | deciding whether to show the list or the sign-in page |
+| `store.select.js` at module load | `account.session()`, then `sync.start()` → `owner()` → `getUser()` | choosing the store, and the first pull |
+| `start()` | `account.current()` → `getUser()` | one email address on the account screen |
+
+So an offline launch showed a blank screen for half a minute and then the **sign-in page**. `start()` never ran, and `initAlarms()` is the last thing in it, so **nothing armed a single alarm**.
+
+**The Android half was never at fault.** `BootReceiver` re-arms every stored alarm after a reboot with no network at all. It was never being told what to arm.
+
+What it does now:
+
+- `account.sessionSoon()` waits two seconds for the server and otherwise trusts what this app wrote down last time. It skips the wait entirely when `navigator.onLine` is already false, and asks once per load rather than once per caller.
+- `cascade:signed-in` is this app's own flag, in its own namespace, written whenever Supabase answers and cleared on sign-out. For an install that has never seen it, `wasSignedIn()` scans the KEY NAMES in storage once for a persisted Supabase token and backfills. Names only, never contents.
+- The fallback returns a MARKER, not a session. It carries no token, so everything that talks to Supabase still refuses until a real session arrives, which it does silently the moment there is signal.
+- `sync.start()` is no longer awaited. It bought nothing — `all()` reads the cache and never the network, which is the whole design — and it cost the entire app waiting on `getUser()`, on a module every screen imports.
+- The email comes from `account.knownEmail()`, held in memory from whenever the session was last read. An address printed on one screen is not worth a millisecond of the list not being there.
+- The sync pill starts from `navigator.onLine` instead of `true`, and an `offline` event sets it. It is the one line in this app that reports the store's own state, and it was reporting a guess.
+
+Measured, offline, expired token: **blank for 26s then the sign-in page → the task list in 2.7s, with the alarm armed.**
+
 ## The gate
 
 One screen, four states, two fields. Reached before the app, never beside it.
