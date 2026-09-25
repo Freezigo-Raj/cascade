@@ -3366,3 +3366,55 @@ One ONLINE visit to the list, never pressing Add or Alarms. Cache holds 53 entri
 `SRC_DIRS` is now the whole `shell/` directory read at run time rather than a list of twelve files. gate2 holds the pre-cache list to what is on disk, so a sandbox carrying twelve of forty-four would have reported thirty-two missing files and failed the clean case for a reason that is not a defect. One less list to keep in step, which is the same lesson as the one above.
 
 **Shell 58.** `sw.js`, `gate2.py`, `selftest.py`, `store.js`, `alarm.bridge.js`, `mvp.js`, `mvp.css`. No contract, key, config or Kotlin change. All eight checks green, selftest now 31 caught 0 missed, log sealed 568.
+
+---
+
+## Session 143 — 26 August 2026
+
+**His report:** "Repeat tasks get doubled when not responded or something like that. I get same tasks twice with both overdue. And when I click done for both, I get 2 same tasks repeated."
+
+### Four closers, four uuids
+
+A repeat spawns its next occurrence when the current one is CLOSED. The comment beside the list's Done said it happens "here and only here". By session 128 that was false in four places: the list's Done, the lock screen's DONE, the lock screen's CANCEL, and `catchup.js`. **Each invented a fresh uuid**, so any two of them closing the same occurrence produced two rows.
+
+### The exact sequence
+
+In the order `mvp.js` runs it:
+
+1. An alarm rings on a weekly task. It is slept through.
+2. Done is pressed at the lock screen days later, app closed. The outcome waits in the shell's queue.
+3. The app opens. `catchUpRepeats` runs FIRST, sees an occurrence the calendar has walked past, cancels it and spawns the next.
+4. `initAlarms` drains the queue and applies the DONE **to that same occurrence** — which had no guard against being already closed. It reopened it as done and spawned again.
+
+Two rows, same title, both overdue. Marking each done spawned one more each, which is the second half of what he saw.
+
+### Two rules, either of which alone would have been enough
+
+**The successor's id is derived from the occurrence being closed.** `successorId()` in `repeat.js`, seeded on its id and the date it was carrying. Whoever closes it, and however many of them do, they all compute the same id. `addSuccessor()` refuses an id already present, which is the other half of a derived id: two closers now agree on the id, and `store.add` throws on one that exists, so without the guard the second closer would throw instead of doubling — quieter and no more correct.
+
+**An outcome only lands on an open occurrence.** Nothing an alarm can send is right on a closed row: a Done on something already closed changes nothing, a Snooze or a Push moves a task that has finished, and the ring it came from is long over. `DISMISS` falls through because it writes nothing at all.
+
+### The scope that was too small
+
+`catchup.js` already derived its id, with a comment saying two devices opening at once would otherwise both add an occurrence. The reasoning was right and the scope was wrong: **the race is not between devices, it is between anything that can close the same occurrence.** The derivation moved to `repeat.js` unchanged, so rows the catch-up has already created keep their ids.
+
+### Proved both ways
+
+`check_writes.mjs` plays the whole sequence — catch-up, then a late lock-screen Done on the same store — and asserts one open row. Removing the new guard turns four assertions red:
+
+```
+FAIL  a DONE on an occurrence already closed writes nothing
+FAIL  and spawns nothing — this is the doubling
+FAIL  and an archived task takes no outcome at all
+FAIL  the occurrence stays cancelled — the Done did not reopen something already closed
+```
+
+Also asserted: DONE and CANCEL on one occurrence name the same successor, and the successor's id is derived rather than invented.
+
+**`applyOutcome`'s `newId` parameter is kept and ignored.** It existed because `crypto.randomUUID()` inside made the one interesting branch unassertable, and a derived id is assertable BECAUSE it is derived. The reason for the parameter has gone; the callers that pass it have not.
+
+### Cleaning up what is already on his phone
+
+Rows created before this build carry random ids and will not collapse. Any duplicate pair already showing has to be deleted by hand, once.
+
+**Shell 59.** `repeat.js`, `catchup.js`, `alarm.apply.js`, `mvp.list.js`, `check_writes.mjs`. No contract, key, config or Kotlin change. All eight checks green, log sealed 573.

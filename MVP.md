@@ -418,4 +418,28 @@ It was 41% chrome on his narrow phone and 35% on his wide one. The reason it was
 | 412 x 915 (his wide phone) | 65.1% | 76.9% |
 
 
+
+## One closed occurrence, one successor
+
+A repeat spawns its next occurrence when the current one is CLOSED. Four things can close one:
+
+| Closer | Where |
+|---|---|
+| Done on a row | the list |
+| DONE at the lock screen | the alarm's own screen |
+| CANCEL at the lock screen | cancels the instance, keeps the series |
+| the catch-up | on app open, for an occurrence the calendar has walked past |
+
+Each one used to invent a fresh uuid for the successor, so **two of them closing the same occurrence produced two rows**.
+
+**The double he reported.** An alarm rings on a weekly task and is slept through. Done is pressed at the lock screen days later with the app closed, so the outcome waits in the shell's queue. The app opens: the catch-up runs FIRST and cancels the occurrence the calendar walked past, spawning the next one. Then the drain applies the queued DONE to that same occurrence, reopens it as done, and spawns again. Two rows, same title, both overdue. Marking each done spawned one more each.
+
+Two rules now, and either alone would have been enough:
+
+- **The successor's id is DERIVED from the occurrence being closed** — `successorId()` in `repeat.js`, seeded on its id and the date it was carrying. Whoever closes it, and however many of them do, they all compute the same id. `addSuccessor()` refuses an id already present.
+- **An outcome only lands on an open occurrence.** Nothing an alarm can send is right on a closed row: a Done on something already closed changes nothing, a Snooze or a Push moves a task that has finished, and the ring it came from is long over.
+
+The catch-up already derived its id so two devices opening at once would write one row. That reasoning was right and its scope was too small: the race is between anything that can close the same occurrence, not between devices.
+
+
 **Arrived since this page was written**, and now on it: recurrence, sync, the duration control, notes, firmness. **Decided and deliberately still absent:** Cancel and Archive as row actions. A row carries Done, Pin, Delete and its push targets, and a Done row carries Undone. Cancel and Archive stay members of `row_action` with no control on any screen, which is stated here so the gap reads as a decision rather than an oversight.

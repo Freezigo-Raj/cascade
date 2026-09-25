@@ -32,38 +32,20 @@
 //
 // TWO DEVICES OPENING AT ONCE both roll the same task forward and both add an
 // occurrence, because `add` writes a fresh id and nothing dedupes. The id is
-// derived from the task and its new date instead, so both devices compute the
-// SAME id and newest-wins collapses them into one row. That is the same rule
-// the rest of the store lives under.
+// derived from the task and its date instead, so both devices compute the SAME
+// id and newest-wins collapses them into one row.
+//
+// THAT REASONING WAS RIGHT AND ITS SCOPE WAS TOO SMALL (session 143). The race
+// is not between devices; it is between anything that can close the same
+// occurrence, and by session 128 there were four of those. `successorId()` and
+// `addSuccessor()` live in `repeat.js` now and every closer uses them, so one
+// closed occurrence can produce only one successor. The derivation is the same,
+// so rows this file has already created keep their ids.
 
 const v = new URL(import.meta.url).search;
-const { overtaken, spawn } = await import(`./repeat.js${v}`);
+const { overtaken, spawn, successorId, addSuccessor } = await import(`./repeat.js${v}`);
 const { alarmCleared } = await import(`./alarm.js${v}`);
 const { nowLocal } = await import(`./mvp.clock.js${v}`);
-
-/**
- * A uuid-shaped id derived from the closed occurrence and the date it hands
- * on, so two devices doing this at the same moment write one row rather than
- * two. Not a v4: it is a function of its inputs on purpose, which is the whole
- * point of it.
- */
-function derivedId(seed) {
-  let h1 = 0x811c9dc5, h2 = 0x01000193;
-  for (let i = 0; i < seed.length; i++) {
-    h1 = Math.imul(h1 ^ seed.charCodeAt(i), 16777619) >>> 0;
-    h2 = Math.imul(h2 + seed.charCodeAt(i) * (i + 1), 2654435761) >>> 0;
-  }
-  const hex = (n) => n.toString(16).padStart(8, "0");
-  // `>>> 0` on both: an XOR in JavaScript returns a SIGNED 32-bit integer, and
-  // a negative one renders as `-1a2b3c4d` — a minus sign inside a uuid, which
-  // the column would refuse and no test that only checked determinism would
-  // have caught.
-  const a = hex(h1), b = hex(h2);
-  const c = hex((h1 ^ 0x9e3779b9) >>> 0), d = hex((h2 ^ 0x7f4a7c15) >>> 0);
-  // Version 7 nibble and the variant bits, so it satisfies the same shape
-  // `crypto.randomUUID()` produces and the schema's uuid column accepts.
-  return `${a}-${b.slice(0, 4)}-7${b.slice(5, 8)}-8${c.slice(1, 4)}-${c.slice(4)}${d}`;
-}
 
 /**
  * Called once at start, before the alarms are armed, so the arming pass sees
@@ -92,13 +74,13 @@ export async function catchUpRepeats(store) {
       closed_at: now,
       updated_at: now,
     });
-    const next = spawn({ ...closed }, derivedId(`${task.id}:${task.due_at}`), now);
+    const next = spawn({ ...closed }, successorId(task), now);
     // No next date means a rule that cannot step — a malformed interval. The
     // occurrence is left exactly as it was rather than being closed with
     // nothing to replace it, which would delete a commitment to fix a bug.
     if (!next) continue;
     await store.update(task.id, closed);
-    await store.add(next);
+    await addSuccessor(store, next, all);
     moved++;
   }
   return moved;

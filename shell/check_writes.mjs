@@ -23,6 +23,7 @@
 
 import { partAConfig as config } from "./config.js";
 import { applyOutcome } from "./alarm.apply.js";
+import { successorId } from "./repeat.js";
 import { catchUpRepeats } from "./catchup.js";
 
 let bad = 0;
@@ -107,7 +108,51 @@ const adds = (s) => s.calls.filter((c) => c[0] === "add");
       "stamped past the local copy, so newest-wins cannot resurrect it");
   say(adds(store).length === 1, "a repeat spawns its next occurrence from the lock screen too");
   const next = adds(store)[0][1];
-  say(next.id === "t2" && next.spawned_from === "t1", "and the new row names the one it came from");
+  say(next.spawned_from === "t1", "and the new row names the one it came from");
+  // ONE CLOSED OCCURRENCE, ONE SUCCESSOR (session 143, his report of doubled
+  // repeats). The id is DERIVED from the occurrence being closed rather than
+  // being a fresh uuid, so the four things that can close a repeat — this, the
+  // list's Done, the lock screen's CANCEL and `catchup.js` — all compute the
+  // same one.
+  say(next.id === successorId(store.rows().find((r) => r.id === "t1")),
+      "and its id is derived from the occurrence that produced it, not invented");
+}
+
+{
+  // THE DOUBLE HE REPORTED. An outcome pressed at the lock screen waits in the
+  // shell's queue until the app opens, and `catchUpRepeats` runs BEFORE the
+  // drain. So a Done pressed a week late arrives at an occurrence the catch-up
+  // has already closed. It used to reopen it as done and spawn a SECOND
+  // successor: two rows, same title, both overdue.
+  const closed = task({ recurrence: { every: 1, unit: "week" } });
+  closed.task_state = "cancelled";
+  closed.closed_at = "2026-08-20T09:00:00+05:30";
+  const store = fakeStore([closed]);
+  await applyOutcome(store, "t1", "DONE", NOW_MS, "t2");
+  say(updates(store).length === 0, "a DONE on an occurrence already closed writes nothing");
+  say(adds(store).length === 0, "and spawns nothing — this is the doubling");
+
+  // And an archived row is not a place an outcome lands either.
+  const gone = task({ recurrence: { every: 1, unit: "week" } });
+  gone.archived = true;
+  const store2 = fakeStore([gone]);
+  await applyOutcome(store2, "t1", "SNOOZE:10", NOW_MS, "t2");
+  say(updates(store2).length === 0, "and an archived task takes no outcome at all");
+}
+
+{
+  // BOTH CLOSERS, ONE AFTER THE OTHER, ON THE SAME STORE. The catch-up's own
+  // id and the lock screen's now agree, so even without the guard above the
+  // second write would be refused rather than doubled. Belt and braces, and
+  // the braces are what survives a future fifth closer.
+  const t = task({ recurrence: { every: 1, unit: "week" } });
+  const store = fakeStore([t]);
+  await applyOutcome(store, "t1", "DONE", NOW_MS, "t2");
+  const first = adds(store)[0][1];
+  const store2 = fakeStore([{ ...t }]);
+  await applyOutcome(store2, "t1", "CANCEL", NOW_MS, "t2");
+  const second = adds(store2)[0][1];
+  say(first.id === second.id, "DONE and CANCEL on one occurrence name the same successor");
 }
 
 {
@@ -176,6 +221,29 @@ const adds = (s) => s.calls.filter((c) => c[0] === "add");
       "a repeat still inside its interval is untouched");
   say(store.rows().find((r) => r.id === "once").task_state === "ready",
       "and a one-off is left where it is, however late");
+
+  // ------------------------------------------------------------------------
+  // THE WHOLE SEQUENCE HE REPORTED, in the order `mvp.js` runs it.
+  //
+  // An alarm rings on a weekly task and is slept through. Done is pressed at
+  // the lock screen days later, with the app closed, so the outcome waits in
+  // the shell's queue. The app opens: `catchUpRepeats` runs FIRST and closes
+  // the occurrence the calendar has walked past, then `initAlarms` drains the
+  // queue and applies the DONE to that same occurrence.
+  //
+  // Before session 143 that produced TWO open rows with the same title, both
+  // overdue, and marking each of them done produced one more each.
+  {
+    const late = task({ id: "wk", due_at: iso(past), recurrence: { every: 1, unit: "week" } });
+    const store = fakeStore([late]);
+    await catchUpRepeats(store);                       // the app opens
+    await applyOutcome(store, "wk", "DONE", Date.now(), "fresh-uuid");  // the queue drains
+    const open = store.rows().filter((r) => r.task_state === "ready" && !r.archived);
+    say(open.length === 1, "a late lock-screen Done after the catch-up leaves ONE open occurrence");
+    say(open[0].spawned_from === "wk", "and it is the one the catch-up made");
+    say(store.rows().filter((r) => r.id === "wk")[0].task_state === "cancelled",
+        "the occurrence stays cancelled — the Done did not reopen something already closed");
+  }
 
   // Twice in a row writes nothing the second time, which is what makes it safe
   // to run on every open.

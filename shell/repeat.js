@@ -84,6 +84,73 @@ export function nextDue(task, now) {
 }
 
 /**
+ * THE ID OF THE OCCURRENCE THIS ONE HANDS ON TO, DERIVED FROM IT (session 143,
+ * his report: "repeat tasks get doubled when not responded; I get the same task
+ * twice, both overdue, and marking both done gives two more").
+ *
+ * The id used to be `crypto.randomUUID()` at each call site, and the comment
+ * beside one of them said a repeat spawns its next occurrence "here and only
+ * here". By session 128 that was false in four places: the list's Done, the
+ * lock screen's DONE, the lock screen's CANCEL, and `catchup.js`. Each one
+ * closes an occurrence and each one spawns, and with a random id each spawn is
+ * a different row.
+ *
+ * THE DOUBLE HE SAW. An alarm rings, is slept through, and Done is pressed at
+ * the lock screen a week later. The outcome sits in the shell's queue. The app
+ * opens: `catchUpRepeats` runs FIRST, sees an occurrence the calendar has
+ * walked past, cancels it and spawns the next. Then the drain applies the
+ * queued DONE to the very same occurrence and spawns again. Two rows, same
+ * title, both overdue — and marking each done spawned one more.
+ *
+ * `catchup.js` already derived its id, so that two devices opening at once
+ * would compute the SAME id and newest-wins would collapse them into one row.
+ * That reasoning was right and its scope was too small: the race is not between
+ * devices, it is between anything that can close the same occurrence. The
+ * derivation lives here now and every caller uses it, so ONE CLOSED OCCURRENCE
+ * CAN ONLY EVER PRODUCE ONE SUCCESSOR, whoever closes it and however often.
+ *
+ * Seeded on the occurrence's id and the date it was carrying, which is what
+ * `catchup.js` seeded on — so rows it has already created keep their ids.
+ *
+ * Not a v4. It is a function of its inputs on purpose, which is the whole point
+ * of it.
+ */
+export function successorId(task) {
+  const seed = `${task.id}:${task.due_at}`;
+  let h1 = 0x811c9dc5, h2 = 0x01000193;
+  for (let i = 0; i < seed.length; i++) {
+    h1 = Math.imul(h1 ^ seed.charCodeAt(i), 16777619) >>> 0;
+    h2 = Math.imul(h2 + seed.charCodeAt(i) * (i + 1), 2654435761) >>> 0;
+  }
+  const hex = (n) => n.toString(16).padStart(8, "0");
+  // `>>> 0` on both: an XOR in JavaScript returns a SIGNED 32-bit integer, and
+  // a negative one renders as `-1a2b3c4d` — a minus sign inside a uuid, which
+  // the column would refuse and no test that only checked determinism would
+  // have caught.
+  const a = hex(h1), b = hex(h2);
+  const c = hex((h1 ^ 0x9e3779b9) >>> 0), d = hex((h2 ^ 0x7f4a7c15) >>> 0);
+  // Version 7 nibble and the variant bits, so it satisfies the same shape
+  // `crypto.randomUUID()` produces and the schema's uuid column accepts.
+  return `${a}-${b.slice(0, 4)}-7${b.slice(5, 8)}-8${c.slice(1, 4)}-${c.slice(4)}${d}`;
+}
+
+/**
+ * Add the successor, unless it is already there. The guard is the other half of
+ * a derived id: two closers now compute the SAME id, and `store.add` throws on
+ * an id that exists, so without this the second closer would throw instead of
+ * doubling — which is quieter and no more correct.
+ *
+ * @returns {boolean} whether a row was written.
+ */
+export async function addSuccessor(store, next, existing) {
+  if (!next) return false;
+  const here = existing ?? (await store.all());
+  if (here.some((t) => t && t.id === next.id)) return false;
+  await store.add(next);
+  return true;
+}
+
+/**
  * The record for the next occurrence. A fresh id, no history: `push_count` and
  * `first_due_at` describe one occurrence, not the series, which is what makes
  * "pushed six times" mean something.

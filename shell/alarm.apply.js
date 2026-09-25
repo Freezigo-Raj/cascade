@@ -23,7 +23,7 @@ const v = new URL(import.meta.url).search;
 const { partAConfig } = await import(`./config.js${v}`);
 const { snoozed, unanswered } = await import(`./alarm.js${v}`);
 const { pushed } = await import(`./push.js${v}`);
-const { spawn } = await import(`./repeat.js${v}`);
+const { spawn, successorId, addSuccessor } = await import(`./repeat.js${v}`);
 const { nowLocal } = await import(`./mvp.clock.js${v}`);
 
 /**
@@ -67,9 +67,13 @@ const ms = (iso) => {
 /**
  * @param {object} store  the four-call task store — `all`, `add`, `update`,
  *                        `remove`. Handed in, never imported (see above).
- * @param {string} newId  a fresh id for a spawned occurrence. Handed in for the
- *                        same reason: `crypto.randomUUID()` inside made the one
- *                        interesting branch unassertable.
+ * @param {string} [newId] ignored, and kept so an old caller does not break.
+ *                        It was a fresh id for a spawned occurrence, handed in
+ *                        because `crypto.randomUUID()` inside made the one
+ *                        interesting branch unassertable. `successorId()` is a
+ *                        function of the occurrence being closed, so the reason
+ *                        for the parameter has gone: it is assertable BECAUSE
+ *                        it is derived (session 143).
  */
 export async function applyOutcome(store, id, verb, tsMs, newId) {
   const all = await store.all();
@@ -77,6 +81,19 @@ export async function applyOutcome(store, id, verb, tsMs, newId) {
   // A task deleted while its alarm was pending. Nothing to write, and the
   // ringing already stopped.
   if (!task) return;
+
+  // AN OUTCOME ONLY LANDS ON AN OPEN OCCURRENCE (session 143, his report of
+  // doubled repeats). An outcome pressed at the lock screen sits in the shell's
+  // queue until the app opens, and `catchUpRepeats` runs BEFORE the drain — so
+  // a Done pressed a week late arrived at an occurrence the catch-up had
+  // already cancelled, reopened it as done, and spawned a second successor.
+  //
+  // Nothing here can be right on a closed row: a Done on something already
+  // closed changes nothing, a Snooze or a Push moves a task that has finished,
+  // and the ring the outcome came from is long over. `DISMISS` writes nothing
+  // at all and is left to fall through for the same reason.
+  if (verb !== "DISMISS" && (task.task_state !== "ready" || task.archived)) return;
+
   const now = isoAt(tsMs, task);
 
   if (verb === "DONE") {
@@ -96,8 +113,8 @@ export async function applyOutcome(store, id, verb, tsMs, newId) {
     // exactly as it does from the list (session 123 — before this, only the
     // in-app press spawned, so a weekly task closed from the alarm screen
     // silently ended its series).
-    const next = spawn({ ...task, task_state: "done" }, newId, now);
-    if (next) await store.add(next);
+    const next = spawn({ ...task, task_state: "done" }, successorId(task), now);
+    await addSuccessor(store, next, all);
     return;
   }
   if (verb.startsWith("PUSH:")) {
@@ -132,8 +149,8 @@ export async function applyOutcome(store, id, verb, tsMs, newId) {
       updated_at: stamp,
     };
     await store.update(task.id, closed);
-    const next = spawn({ ...closed }, newId, now);
-    if (next) await store.add(next);
+    const next = spawn({ ...closed }, successorId(task), now);
+    await addSuccessor(store, next, all);
     return;
   }
   // CANCEL THE ALARM, NOT THE TASK (session 128, his slide: "add option to

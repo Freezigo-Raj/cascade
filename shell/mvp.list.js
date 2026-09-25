@@ -20,7 +20,7 @@ const { listOnly } = await import(`./resolve.js${v}`);
 const { tasks, mode, sync } = await import(`./store.select.js${v}`);
 const { pushed } = await import(`./push.js${v}`);
 const { matchTier } = await import(`./search.js${v}`);
-const { spawn, nextDue } = await import(`./repeat.js${v}`);
+const { spawn, nextDue, successorId, addSuccessor } = await import(`./repeat.js${v}`);
 const { alarmCleared } = await import(`./alarm.js${v}`);
 const { nowLocal } = await import(`./mvp.clock.js${v}`);
 const { readClashes, readClashDialog, readDeadlineClashes, readDeadlineDialog } =
@@ -110,10 +110,14 @@ export function mountList(root, { openEdit, openAccount, openAlarms, onTasks } =
       // moment Undone was pressed. One function, called by everything that
       // ends or moves an alarm.
       await tasks.update(id, alarmCleared({ ...task, task_state: "done", closed_at: now(), updated_at: now() }));
-      // A repeat spawns its next occurrence here and only here, so there is
-      // never more than one open at a time.
-      const next = spawn({ ...task, task_state: "done" }, crypto.randomUUID(), now());
-      if (next) await tasks.add(next);
+      // A repeat spawns its next occurrence. NOT "here and only here", which is
+      // what this comment used to claim and what was false in four places by
+      // session 128 — the lock screen's DONE and CANCEL and `catchup.js` all
+      // close an occurrence and all spawn. The id is DERIVED from the
+      // occurrence being closed, so whichever of them gets there first, and
+      // however many of them get there, there is exactly one successor.
+      const next = spawn({ ...task, task_state: "done" }, successorId(task), now());
+      await addSuccessor(tasks, next, all);
       say(`Done "${task.title}"`);
     } else if (what === "undone") {
       // Undoing a done takes back what the done created, so the press leaves
