@@ -143,6 +143,62 @@ export function mountAccount(root, { onBack, onSignedOut } = {}) {
       "If the app looks like the last version, this number is how you tell. A phone can hold on to an old copy; closing the app fully and opening it again fetches this one."));
     root.appendChild(build);
 
+    // THE ANDROID APP, AND WHY IT HAS A GROUP OF ITS OWN (session 146, his
+    // ask: "give a link for the APK in the app itself just like alarm apk").
+    //
+    // THE LINK ALREADY EXISTED AND WAS IN THE ONE PLACE IT WAS NO USE. It sat
+    // inside the Alarms block, after the line that returns early when the
+    // plugin is not present — so it was drawn ONLY inside the Android app, and
+    // never in the browser copy, which is the only place a person would be
+    // looking for it. An APK download offered exclusively to people who have
+    // already installed the APK.
+    //
+    // It is also no longer the alarm's. The APK now carries the alarm shell and
+    // the calendar shell, and naming it after one of them is how somebody comes
+    // to think there are two.
+    //
+    // A Capacitor WebView hands a link to the system browser only when its host
+    // is NOT the app's own. The app is served from `freezigo-raj.github.io` and
+    // so is the APK, so every version of this link up to session 132 — plain,
+    // `download`, `target="_blank"` — asked the WebView to navigate to a binary
+    // on its own host, and it does nothing at all with that: no download, no
+    // error, no sound. `raw.githubusercontent.com` serves the same file from a
+    // DIFFERENT host, which is the whole fix.
+    //
+    // The address is drawn as text underneath either way. A link that silently
+    // does nothing is the failure this has already had twice, and an address a
+    // person can read and type is the one thing that cannot fail.
+    const APK_HOST = "https://raw.githubusercontent.com/freezigo-raj/cascade/main/app-debug.apk";
+    const APK_PAGE = "https://freezigo-raj.github.io/cascade/app-debug.apk";
+    {
+      const app = el("div", "group");
+      app.appendChild(el("div", "label", "The Android app"));
+      const apk = el("a", "act apk-link", "Download the Android app (APK)");
+      apk.href = APK_HOST;
+      apk.target = "_blank";
+      apk.rel = "noopener";
+      app.appendChild(apk);
+      app.appendChild(el("div", "said apk-where", APK_PAGE));
+      const copy = el("button", "act", "Copy the address");
+      copy.type = "button";
+      copy.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(APK_PAGE);
+          copy.textContent = "Copied";
+        } catch {
+          // A clipboard refused is not a dead end: the address is already on
+          // the screen above, selectable.
+          copy.textContent = "Select the address above";
+        }
+      });
+      app.appendChild(copy);
+      app.appendChild(el("div", "said",
+        "The alarms and the Google Calendar writing are in this build and nowhere else. A browser cannot wake a phone, ring through Do Not Disturb, draw over a lock screen, or write to a calendar. " +
+        "Android will ask twice: once to allow installing from this source, and once for the app itself. Both are expected. " +
+        "Installing over the version already on the phone keeps every task — nothing is signed out and nothing is lost."));
+      root.appendChild(app);
+    }
+
     // WHETHER ANYTHING CAN RING, and it says so rather than being inferred. Two
     // installs of this app look identical on a phone: the browser's own home
     // screen shortcut and the Android APK. Only the second carries the alarm
@@ -188,63 +244,11 @@ export function mountAccount(root, { onBack, onSignedOut } = {}) {
           if (stale) {
             const loud = el("div", "said",
               `The alarm shell inside this APK is build ${shellBuild} and the app expects build ${bridge.ALARM_SHELL_EXPECTED}. ` +
-              "The web half updates itself; the Kotlin half cannot. Rebuild and reinstall the APK, then come back here. " +
+              "The web half updates itself; the Kotlin half cannot. The download is under The Android app above: install it over this one and come back here. " +
               "A row reading `unknown` below is a switch this old shell cannot read.");
             loud.dataset.perm = "stale";
             ring.appendChild(loud);
           }
-          // THE APK, ONE PRESS AWAY (session 129, his ask). A sentence telling
-          // a person to rebuild and reinstall is only useful to the person who
-          // can build it; a link is useful to everyone else, and the sentence
-          // above is exactly where somebody reads that they need one.
-          //
-          // It is drawn whether or not the shell is stale, because the other
-          // reason to want it is having no APK at all.
-          // THE APK, AND WHY THIS IS THE THIRD ATTEMPT (session 132: "does
-          // nothing currently").
-          //
-          // A Capacitor WebView hands a link to the system browser only when
-          // its host is NOT the app's own. The app is served from
-          // `freezigo-raj.github.io` and so is the APK, so every version of
-          // this link so far — plain, `download`, `target="_blank"` — asked the
-          // WebView to navigate to a binary on its own host. It does nothing at
-          // all with that: no download, no error, no sound. It was never the
-          // attribute.
-          //
-          // `raw.githubusercontent.com` serves the same file from a DIFFERENT
-          // host, which is the whole fix: the WebView refuses it, Android hands
-          // it to Chrome, and Chrome downloads it and offers to open it.
-          //
-          // The address is drawn as text underneath either way. A link that
-          // silently does nothing is the failure this has already had twice,
-          // and an address a person can read and type is the one thing that
-          // cannot fail — and the one thing that lets him tell me WHICH of the
-          // two hosts works, which no amount of reasoning from here can settle.
-          const APK_HOST = "https://raw.githubusercontent.com/freezigo-raj/cascade/main/app-debug.apk";
-          const APK_PAGE = "https://freezigo-raj.github.io/cascade/app-debug.apk";
-          const apk = el("a", "act apk-link", "Download the alarm APK");
-          apk.href = APK_HOST;
-          apk.dataset.perm = "apk";
-          apk.target = "_blank";
-          apk.rel = "noopener";
-          ring.appendChild(apk);
-          const where = el("div", "said apk-where", APK_PAGE);
-          where.dataset.perm = "apk";
-          ring.appendChild(where);
-          const copy = el("button", "act", "Copy the address");
-          copy.type = "button";
-          copy.dataset.perm = "apk";
-          copy.addEventListener("click", async () => {
-            try {
-              await navigator.clipboard.writeText(APK_PAGE);
-              copy.textContent = "Copied";
-            } catch (e) {
-              // A clipboard refused is not a dead end: the address is already
-              // on the screen above, selectable.
-              copy.textContent = "Select the address above";
-            }
-          });
-          ring.appendChild(copy);
           const p = await bridge.alarmPermissionStatus();
           said.textContent = p.needed
             ? "Each of these is a switch Android holds and the app cannot set. What is missing is listed below."
@@ -325,7 +329,7 @@ export function mountAccount(root, { onBack, onSignedOut } = {}) {
         if (!bridge.isCalendarShell()) {
           calVal.textContent = "not present";
           calSaid.textContent =
-            "This copy cannot write to a calendar. The Android build writes tasks straight into the phone's own calendar, and Google's sync carries them up — no Google sign-in, no permissions to approve online, and it works with no signal. If this IS the Android build, the APK is older than this plugin and needs rebuilding.";
+            "This copy cannot write to a calendar. The Android build writes tasks straight into the phone's own calendar, and Google's sync carries them up — no Google sign-in, no permissions to approve online, and it works with no signal. The download is under The Android app above. If this IS the Android build, that APK is older than this plugin and a newer one has to be installed over it.";
           return;
         }
         calVal.textContent = "present";

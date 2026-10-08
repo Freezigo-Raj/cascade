@@ -3526,3 +3526,19 @@ Two new Kotlin files under `com.cascade.calendar`, two new runtime permissions, 
 **Shell 61, config a.21, contract 57, example 45. Alarm shell still 5, calendar shell 1.** All nine checks green.
 
 **OPEN, his to answer:** whether a timed event should use `est_duration_min` instead of the fixed block.
+
+---
+
+## Session 146 — 8 October 2026
+
+**His ask:** "How to install the APK? Give a link for the APK in the app itself just like the alarm APK."
+
+**The link already existed, and it was in the one place it was no use.** It sat inside the Alarms block, after the line that returns early when the plugin is not present. So it was drawn ONLY inside the Android app, and never in the browser copy — which is the only place a person would be looking for it. An APK download offered exclusively to people who had already installed the APK.
+
+It is a group of its own now, `The Android app`, drawn above Alarms and drawn always. It carries the link, the address as selectable text, a Copy button, and three sentences: what is only in this build, that Android asks twice, and that installing over the existing app keeps every task.
+
+**It is no longer called the alarm's APK.** The build carries the alarm shell and the calendar shell, and naming it after one of them is how somebody comes to think there are two. The two sentences that told a person to rebuild now point at the group instead of at a build step only one person can do.
+
+The `raw.githubusercontent.com` host is unchanged, and the reason stands: a Capacitor WebView hands a link to the system browser only when its host is not the app's own, so the `github.io` address does nothing at all from inside the app.
+
+**Shell 62.** `mvp.account.js` only. No Kotlin change and no APK rebuild needed for this one. All nine checks green.

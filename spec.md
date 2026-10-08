@@ -40,7 +40,7 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
   contract     57
   config       a.21
   answer_key   29
-  shell        61
+  shell        62
   gate1        signed on example 35
   gate2        signed on contract 32
   gate3        signed on shell 1
@@ -990,3 +990,5 @@ have landed. That is the price of the single table and it is accepted.
 - 8 Oct 2026 — `READ_CALENDAR` is asked for alongside `WRITE_CALENDAR` and is not optional — writing alone would let the app insert rows and never see them again, so every sync would be an insert and the calendar would fill with copies; the diff is the whole design and the diff needs the read.
 - 8 Oct 2026 — The task id to provider row id map lives on the PHONE, in `CalendarStore`, because a row id is about one calendar on one device and would be meaningless on the next one or in Supabase — and because the map can be lost, every row this app writes carries `cascade:<task id>` in its description and `set()` looks for that before inserting, so a lost map cannot become a second copy of every event: the duplicate shape that cost session 143, guarded before it could cost anything here.
 - 8 Oct 2026 — `calendar.js` imports NOTHING and holds every rule; `calendar.bridge.js` holds the write path and imports the store — the same seam session 127 cut for the alarm, and `check_calendar.mjs` is the ninth check and reads only the pure half; what it cannot see is stated in its own header: whether the Kotlin inserts the row, whether an all-day banner lands on the right day at +05:30, and whether Google's adapter carries any of it up are phone answers.
+- 8 Oct 2026 — The APK link moves out of the Alarms block into a group of its own, drawn ALWAYS, his ask for a link in the app: it already existed and sat in the one place it was no use — inside the Alarms block, after the line that returns early when the plugin is absent, so it was drawn only INSIDE the Android app and never in the browser copy, which is the only place a person would look for it; an APK download offered exclusively to people who had already installed the APK.
+- 8 Oct 2026 — It is no longer called the alarm's APK: the build now carries the alarm shell and the calendar shell, and naming it after one of them is how somebody comes to think there are two.
