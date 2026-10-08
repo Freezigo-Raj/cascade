@@ -3670,3 +3670,77 @@ The import runs **once per open** rather than on the store's change event. The p
 Whether the Kotlin's `Instances` query returns what it should on his phone, whether `UID_2445` is populated by Google's adapter there, and whether an all-day event lands on the right day at +05:30 are all phone answers. `Import now` on the account screen prints the full report — read, added, updated, removed, cancelled, the first error verbatim, and which UID source answered — for exactly that reason.
 
 **Shell 64. Calendar shell build 2 — the APK must be rebuilt.** `readable()`, `events()` and `uidOf()` are new Kotlin, hand-checked for braces, parens and companion count. Nothing here compiles Kotlin, and that is not a compiler. All nine checks green.
+
+---
+
+## Session 149 — 8 October 2026
+
+**From your first import on the phone.** Build 64 worked end to end: 12 events read, tasks arrived in the lists. One line in the report needed answering.
+
+```
+event ids from: syncid, rowid
+```
+
+| Source | What it is | Verdict |
+|---|---|---|
+| `uid2445` | the iCalendar UID, written by Google's sync adapter | same on every device |
+| `syncid` | Google's own event id | same on every device, nothing to fix |
+| `rowid` | the provider's local row number, my last resort | **the problem** |
+
+`rowid` means the event carried neither an iCalendar UID nor a Google id.
+
+### A row number is sometimes a good identity and sometimes not
+
+That is the whole of this rule.
+
+| The event sits on | Its row number is | Because |
+|---|---|---|
+| a calendar that does not sync (Birthdays, local) | fine | the event exists on this phone and nowhere else, so the row number is as stable as the event |
+| a **Google** calendar | temporary | it is an event created on the phone that Google has not carried up yet, and it will be given a real id within minutes |
+
+Same symptom, opposite answers. So the rule reads the **calendar**, not the event alone.
+
+### What importing one anyway would have cost
+
+The task id is a function of the uid. So when the real id arrives, the same meeting computes a **different** task id:
+
+1. the `row:` task stops appearing in the calendar's answer
+2. the missing-from-calendar branch deletes it
+3. a fresh copy is added under the new id
+
+While the task is still following, that is a row that silently dies and comes back. If you had **edited** it, the task was detached, so step 2 **cancels** it instead, and your correction ends up on the Done tab under a task that no longer exists.
+
+### The rule
+
+An event with only a row id, on a calendar that syncs, is **held** rather than imported. It arrives on a later import, once Google has given it a permanent id.
+
+Held and **counted**, not dropped quietly:
+
+```
+3 events not ready yet: Google has not given them a permanent id.
+They will arrive on a later import.
+```
+
+An event that simply never appears cannot be told from one the window missed. Same reasoning that put a verbatim report behind `Sync now` in session 147.
+
+### The `row:` tasks build 64 already wrote
+
+Left exactly as they are. Deleting one the moment this rule starts holding its event would be the identical harm arriving by the other door, so `planImport` carries the held uids and the missing branch skips them.
+
+When Google answers, the proper task is added and the `row:` one becomes genuinely missing **in the same pass**. So the swap happens once, and nothing is ever both deleted and absent.
+
+### With no calendar list handed in, nothing is held
+
+If `readable()` fails, the set is empty and every row id is accepted. That is the behaviour before this rule, and it is the safe direction when the answer is unknown: a task that arrives and later swaps its id is a smaller harm than a task that never arrives.
+
+The ours and declined gates still run first, so an event this app wrote that also lacks an id is skipped as ours and is not counted as waiting. A number that double-counts is a number you would have to reconcile by hand.
+
+### The report counts per source now
+
+`uid2445 8, syncid 3, rowid 1` rather than `syncid, rowid`. The old line said that both happened and nothing about the split, and the split is the entire question: one `rowid` among twelve is a local event, twelve of twelve is a phone where Google's adapter writes neither id. Ordered most trustworthy first, so it reads as a ladder with the one untrustworthy source last.
+
+### What this cannot see
+
+Whether your phone's events get a `uid2445` once synced, and how many of your 12 were `rowid`. The new report answers both the next time you press `Import now`.
+
+**Shell 65. No Kotlin change, no APK rebuild, no migration.** `events()` has returned `uidFrom` and `readable()` has returned `google` since session 148, so this is three web-half files and the build-64 APK carries everything it needs. Calendar shell stays at build 2. All nine checks green.

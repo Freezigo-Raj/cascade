@@ -523,10 +523,18 @@ export function mountAccount(root, { onBack, onSignedOut } = {}) {
               if (r.read !== undefined) {
                 lines.push(`Read ${r.read} events.`);
                 lines.push(`Added ${r.added}, updated ${r.updated}, removed ${r.removed}, cancelled ${r.cancelled}.`);
-                // WHICH ID THE PHONE COULD GIVE. `rowid` means the event
-                // carried neither an iCalendar UID nor a Google id, so the same
-                // meeting on another phone would import as a different task.
-                // Printed rather than assumed, because nothing here can know it.
+                // HELD, AND NOT SILENTLY (session 149). An event with no stable
+                // id on a syncing calendar has not been given one by Google
+                // yet, so it is left until it has. Printed, because an event
+                // that simply never appears cannot be told from one the window
+                // missed — and because 0 here is the answer he is hoping for.
+                if (r.notReady) {
+                  lines.push(`${r.notReady} event${r.notReady === 1 ? "" : "s"} not ready yet: Google has not given ${r.notReady === 1 ? "it" : "them"} a permanent id. ${r.notReady === 1 ? "It" : "They"} will arrive on a later import.`);
+                }
+                // WHICH ID THE PHONE COULD GIVE, COUNTED PER SOURCE. `uid2445`
+                // and `syncid` are the same on every device; `rowid` is a local
+                // row number and is the one that needs watching. Printed rather
+                // than assumed, because nothing here can know it.
                 lines.push(`Event ids from: ${r.uidFrom}.`);
               }
               if (r.why) lines.push(r.why);

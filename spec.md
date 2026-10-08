@@ -40,7 +40,7 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
   contract     58
   config       a.22
   answer_key   29
-  shell        64
+  shell        65
   gate1        signed on example 35
   gate2        signed on contract 32
   gate3        signed on shell 1
@@ -76,64 +76,57 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 
 ## THIS SESSION'S JOB
 
-Session 148: events come back from his Google Calendar as tasks, and still no Google API is called.
+Session 149: an event with no permanent id is held rather than imported.
 
-**THE SAME ROUTE, THE OTHER WAY.** `CalendarContract.Instances` is read through the phone's own
-provider, and that table EXPANDS RECURRENCE for us: a weekly standup arrives as one row per
-occurrence rather than as an RRULE this app would have to interpret. Writing an RRULE reader would
-be the fourth time this project built a parser for something the platform already answers.
+**FROM HIS FIRST IMPORT ON THE PHONE.** `read 12 events`, tasks arrived, and
+`event ids from: syncid, rowid`. `syncid` is Google's own event id and is the same
+on every device, so it needs nothing. `rowid` means the event carried NEITHER an
+iCalendar UID nor a Google id, and the last resort was the provider's local row
+number.
 
-**HIS ANSWERS.** Every event in a window, from the calendars he ticks; 10 days back and 60 forward.
-One task per series, showing the next occurrence only. Following until he touches it. Google's
-delete travels, but a detached task is cancelled rather than deleted. `task_state` is always
-Cascade's. Multiple accounts, ticked per calendar. The title is never parsed for dates.
+**A ROW NUMBER IS SOMETIMES A GOOD IDENTITY AND SOMETIMES NOT**, which is the
+whole of the rule. An event on a calendar that does not sync, Birthdays or a
+local calendar, exists on this phone and nowhere else: its row number is exactly
+as stable as the event is. An event on a GOOGLE calendar with no sync id is an
+event created on the phone that Google has not carried up yet, and it will be
+given a real id within minutes. Same symptom, opposite answers, so the rule reads
+the CALENDAR rather than the event alone.
 
-**`events`, `holidays` AND `birthdays` ARE EACH THEIR OWN CALENDAR**, which answers his question:
-Google publishes them as separate calendars under the same account, so the choice he asked for IS
-the tick list and nothing else is needed. The account screen groups every readable calendar under
-its account name. Nothing is ticked by default, the same call as the write switch.
+**WHAT IMPORTING ONE ANYWAY WOULD HAVE COST.** The task id is a function of the
+uid, so when the real id arrives the same meeting computes a different task id.
+The `row:` task stops appearing in the calendar's answer, the missing branch
+deletes it, and a fresh copy is added. While the task is still following that is
+a row that silently dies and comes back. If he had EDITED it, the task was
+detached, so the branch CANCELS it instead and his correction ends up on the Done
+tab under a task that no longer exists.
 
-**THE LOOP, AND THE TWO GATES THAT STOP IT.** Without them the push and the import feed each other
-for ever: a task writes an event, the event is read back as a task, that task writes an event. An
-event whose description carries `cascade:` is OURS and is never imported; a task carrying a
-`calendar_uid` is THEIRS and is never pushed. One line on each side, each useless without the other.
-The marker written in session 145 as a guard against a lost id map earns its keep a second time.
+**HELD, COUNTED, AND SAID OUT LOUD.** `3 events not ready yet: Google has not
+given them a permanent id.` An event that never appears cannot be told from one
+the window missed, which is the reasoning that put a verbatim report behind
+`Sync now` in session 147.
 
-**THE ID IS DERIVED FROM THE UID AND THE OCCURRENCE'S START**, never invented — the same mechanism
-as `successorId()` and for the same three reasons: importing twice gives one task rather than two,
-two phones compute the same id so newest-wins collapses them, and clearing storage and importing
-again hands the ids back. Seeded on the START because one UID has many occurrences, and because a
-closed occurrence stays closed exactly when its id is a function of a start time that cannot move.
-The UID itself is `UID_2445`, then `_SYNC_ID`, then `row:<id>` last — and the account screen PRINTS
-which one answered, because `row:<id>` is a local row number and a silent fallback there would look
-like working sync right up to the day he installs the app on a second phone.
+**A TASK WHOSE EVENT IS HELD IS LEFT EXACTLY AS IT IS**, never read as gone.
+Build 64 already wrote some `row:` tasks and deleting one the moment this rule
+starts holding its event would be the identical harm by the other door.
+`planImport` carries the held uids so the missing branch skips them. When Google
+answers, the proper task is added and the `row:` one becomes genuinely missing in
+the SAME pass, so nothing is ever both deleted and absent.
 
-**FOLLOWING UNTIL HE TOUCHES IT.** While a task follows, Google owns its title and date and nothing
-else: the alarm, the pin, the notes, the firmness and the type were always his and are carried
-across every update. The first edit to the title or the date detaches it and Google never touches it
-again — which answers his ask for edit ability in Cascade without writing back. Detaching on the
-EDIT rather than on a switch means the thing he does when the calendar has a date wrong is the thing
-that makes it stick. When Google then deletes the event, a following task goes with it and a
-detached one is CANCELLED, because work vanishing because somebody else tidied their calendar is not
-a thing this app does.
+**WITH NO CALENDAR LIST HANDED IN, NOTHING IS HELD.** That is the behaviour
+before this rule and the safe direction when the answer is unknown: a task that
+arrives and later swaps its id is a smaller harm than a task that never arrives.
 
-**AN IMPORTED TASK IS A TASK.** It counts towards the day's load and appears in every list, his
-answer. Nothing in `cards.js`, `clash.js` or the lists needed a line for it, which is the test of
-whether the import produced a real Task or a lookalike.
+**THE UID SOURCES ARE COUNTED PER SOURCE** — `uid2445 8, syncid 3, rowid 1` —
+because `syncid, rowid` says both happened and nothing about the split, and the
+split is the entire question. One `rowid` among twelve is a local event; twelve of
+twelve is a phone where Google's adapter writes neither id. Ordered most
+trustworthy first, so the line reads as a ladder with the one untrustworthy
+source last.
 
-**TWO NEW FIELDS, AND A MIGRATION THAT MUST BE RUN FIRST.** `calendar_uid` and `calendar_detached`
-default to `''` and `false`, so every row already in Supabase reads as a task that did not come from
-a calendar. `migrate_a22.sql` must be run BEFORE the new build is installed: `create table if not
-exists` does nothing to a table that exists.
-
-**THE SEAM, AGAIN.** `calendar.import.js` imports nothing but `fromEvent` and holds every rule; the
-bridge decides nothing. `check_calendar.mjs` grew a second suite covering the loop gate, the derived
-id, one-task-per-series, the imported task's shape, following versus detached, state ownership, both
-delete behaviours and the window.
-
-**THE APK MUST BE REBUILT.** Calendar shell build 2: `readable()`, `events()` and `uidOf()` are new
-Kotlin. Nothing here compiles Kotlin; both were hand-checked for braces, parens and companion count,
-and that is not a compiler.
+**NO KOTLIN CHANGE AND NO MIGRATION.** `events()` has returned `uidFrom` and
+`readable()` has returned `google` since session 148, so this is three web-half
+files and the APK built for build 64 carries everything it needs. Calendar shell
+stays at build 2.
 
 All nine checks green.
 
@@ -1034,3 +1027,12 @@ have landed. That is the price of the single table and it is accepted.
 - 8 Oct 2026 — `calendar.import.js` imports NOTHING but the engine's `fromEvent` and holds every rule above; the bridge decides nothing and does what the plan says — `check_calendar.mjs` grew a second suite covering the loop gate, the derived id, one-task-per-series, the imported task's shape, following versus detached, state ownership, both delete behaviours and the window, and all of it reads only the pure half.
 - 8 Oct 2026 — The import runs ONCE per open rather than on the store's change event — the push is debounced on every write because a task changing is what makes an event wrong, while nothing this app does changes somebody else's calendar, so a listener there would be a provider query per keystroke for an answer that cannot have moved.
 - 8 Oct 2026 — Calendar shell build 2, and the APK MUST BE REBUILT: `readable()`, `events()` and `uidOf()` are new Kotlin and the account screen states the build it found, which is how the shell and the APK are allowed to drift by design — nothing here compiles Kotlin, both new methods were hand-checked for braces, parens and companion count, and that is not a compiler.
+- 8 Oct 2026 — AN EVENT ON A SYNCING CALENDAR WITH NO PERMANENT ID IS HELD, NOT IMPORTED, from his first import on the phone: `read 12 events` and `event ids from: syncid, rowid` — `syncid` is Google's own event id and is the same on every device, so it needs nothing, but `rowid` means the event carried NEITHER an iCalendar UID nor a Google id and the last resort was the provider's local row number.
+- 8 Oct 2026 — WHY A ROW NUMBER IS SOMETIMES A GOOD IDENTITY AND SOMETIMES NOT, which is the whole of the rule: an event on a calendar that does not sync — Birthdays, a local calendar — exists on this phone and nowhere else, so its row number is exactly as stable as the event is; an event on a GOOGLE calendar with no sync id is an event created on the phone that Google has not carried up yet, and it will be given a real id within minutes — same symptom, opposite answers, so the rule reads the CALENDAR rather than the event alone.
+- 8 Oct 2026 — WHAT IMPORTING ONE ANYWAY WOULD HAVE COST, stated because it is the reason the rule exists: the task id is a function of the uid, so when the real id arrives the same meeting computes a different task id — the `row:` task stops appearing in the calendar's answer, the missing-from-calendar branch deletes it, and a fresh copy is added; while the task is still following that is a row that silently dies and comes back, and if he had EDITED it the task was detached, so the branch CANCELS it instead and his correction ends up on the Done tab under a task that no longer exists.
+- 8 Oct 2026 — A HELD EVENT IS COUNTED AND SAID OUT LOUD — `3 events not ready yet: Google has not given them a permanent id` — because an event that simply never appears cannot be told from one the window missed, which is the same reasoning that put a verbatim report behind `Sync now` in session 147.
+- 8 Oct 2026 — A TASK WHOSE EVENT IS HELD IS LEFT EXACTLY AS IT IS and is never read as gone: build 64 already wrote some `row:` tasks, and deleting one the moment this rule starts holding its event would be the identical harm arriving by the other door — `planImport` carries the held uids so the missing branch skips them, and when Google answers the proper task is added and the `row:` one becomes genuinely missing in the SAME pass, so nothing is ever both deleted and absent.
+- 8 Oct 2026 — With no calendar list handed in, nothing is held and every row id is accepted, which is both the behaviour before this rule and the safe direction when the answer is unknown: a task that arrives and later swaps its id is a smaller harm than a task that never arrives at all. `readable()` has stated `google` per calendar since session 148 and the bridge is the only thing that reads it.
+- 8 Oct 2026 — The ours and declined gates run BEFORE this one, so an event this app wrote that also lacks an id is skipped as ours and is not counted as waiting — a number that double-counts is a number he would have to reconcile by hand.
+- 8 Oct 2026 — THE UID SOURCES ARE COUNTED PER SOURCE RATHER THAN LISTED — `uid2445 8, syncid 3, rowid 1` — because his report said `syncid, rowid`, which states that both happened and nothing about the split, and the split is the entire question: one `rowid` among twelve is a local event, twelve of twelve is a phone where Google's adapter writes neither id. Ordered most trustworthy first rather than by count, so the line reads as a ladder with the one untrustworthy source last.
+- 8 Oct 2026 — No Kotlin change and no migration: `events()` has returned `uidFrom` and `readable()` has returned `google` since session 148, so the fix is three web-half files and the APK built for build 64 still carries everything it needs. Calendar shell stays at build 2.

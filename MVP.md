@@ -513,5 +513,18 @@ The UID is `UID_2445` first, then `_SYNC_ID`, then `row:<id>` last — and the a
 
 **`calendar_uid` and `calendar_detached` are new Task fields.** `migrate_a22.sql` must be run in Supabase before the build is installed.
 
+**An event with no permanent id is held, not imported** (session 149). `uidFrom` says which of three the phone could give: `uid2445` (the iCalendar UID) and `syncid` (Google's event id) are the same on every device; `rowid` means neither existed and the last resort was the provider's local row number.
+
+| The event sits on | Its row number is | Because |
+|---|---|---|
+| a calendar that does not sync (Birthdays, local) | fine | the event exists on this phone and nowhere else |
+| a **Google** calendar | temporary | Google has not carried it up yet and will give it a real id within minutes |
+
+Importing a temporary one would mean the same meeting computing a different task id once the real one arrives: the `row:` task gets deleted and a fresh copy added, or **cancelled** if he had edited it, which puts his correction on the Done tab under a task that no longer exists.
+
+So it is held, and **counted** out loud, because an event that never appears cannot be told from one the window missed. A task whose event is held is left exactly as it is rather than read as gone, and when Google answers the swap happens in one pass. With no calendar list handed in, nothing is held, which is both the old behaviour and the safe direction when the answer is unknown.
+
+The report counts per source, `uid2445 8, syncid 3, rowid 1`, ordered most trustworthy first.
+
 
 **Arrived since this page was written**, and now on it: recurrence, sync, the duration control, notes, firmness. **Decided and deliberately still absent:** Cancel and Archive as row actions. A row carries Done, Pin, Delete and its push targets, and a Done row carries Undone. Cancel and Archive stay members of `row_action` with no control on any screen, which is stated here so the gap reads as a decision rather than an oversight.

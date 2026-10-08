@@ -14,7 +14,7 @@
 
 import { partAConfig as config } from "./config.js";
 import { wantsEvent, eventFor, desiredEvents, sameEvent, dateOf } from "./calendar.js";
-import { importedId, isOurs, declined, nextPerSeries, planImport, windowFor } from "./calendar.import.js";
+import { importedId, isOurs, declined, nextPerSeries, notReady, planImport, windowFor } from "./calendar.import.js";
 
 let failed = 0;
 const say = (ok, what) => {
@@ -260,6 +260,58 @@ console.log("\nTHE WINDOW — his numbers.");
   const w = windowFor(NOW_MS, config);
   say(Math.round((NOW_MS - w.fromMs) / DAY) === 10, "10 days back");
   say(Math.round((w.toMs - NOW_MS) / DAY) === 60, "and 60 forward");
+}
+
+// ===========================================================================
+// AN EVENT WITH NO STABLE ID (session 149, his first import: `syncid, rowid`).
+//
+// The same row number is a good identity on a calendar that does not sync and a
+// temporary one on a calendar that does, so the rule reads the calendar rather
+// than the event alone.
+
+console.log("\nNOT READY — a row number on a syncing calendar is not an identity.");
+{
+  const google = new Set(["7"]);
+  const rowid = ev({ uid: "row:812", uidFrom: "rowid" });
+
+  say(notReady(rowid, google),
+      "an event with only a row id, on a GOOGLE calendar, is not ready");
+  say(!notReady(rowid, new Set(["9"])),
+      "the same event on a calendar that does not sync IS ready — a row id there is as stable as the event");
+  say(!notReady(ev({ uidFrom: "syncid" }), google),
+      "a Google event id is the same on every device, so it is ready");
+  say(!notReady(ev({ uidFrom: "uid2445" }), google), "and so is an iCalendar UID");
+  say(!notReady(rowid, undefined),
+      "with no calendar list handed in nothing is held — the behaviour before this rule, and the safe direction when the answer is unknown");
+
+  const held = planImport([rowid], [], { now: NOW, nowMs: NOW_MS, config, googleCalendars: google });
+  say(held.add.length === 0, "it is not imported");
+  say(held.notReady === 1, "and it is COUNTED, because an event that never appears cannot be told from one the window missed");
+
+  const taken = planImport([rowid], [], { now: NOW, nowMs: NOW_MS, config, googleCalendars: new Set(["9"]) });
+  say(taken.add.length === 1, "on a non-syncing calendar the same event becomes a task");
+  say(taken.notReady === 0, "and nothing is counted as waiting");
+
+  // A build-64 import already wrote some `row:` tasks. Deleting one the moment
+  // this rule starts holding its event would be the same harm by the other door.
+  const old = { ...task(), id: importedId("row:812", NOW_MS + DAY), calendar_uid: "row:812", due_at: ev().startMs ? "2026-10-09T12:00:00+05:30" : "" };
+  const kept = planImport([rowid], [old], { now: NOW, nowMs: NOW_MS, config, googleCalendars: google });
+  say(kept.remove.length === 0 && kept.cancel.length === 0,
+      "a task whose event is HELD is left alone, not read as gone");
+
+  // And once Google answers, the swap happens in ONE pass: the proper task is
+  // added and the `row:` one becomes genuinely missing at the same time.
+  const real = ev({ uid: "ical-99", uidFrom: "uid2445" });
+  const swap = planImport([real], [old], { now: NOW, nowMs: NOW_MS, config, googleCalendars: google });
+  say(swap.add.length === 1 && swap.remove.length === 1,
+      "when the real id arrives the proper task is added and the row: one goes, in the same pass");
+
+  // The declined and ours gates still come first, so a held event that is also
+  // ours is not counted twice over.
+  const mineRow = ev({ uid: "row:9", uidFrom: "rowid", description: "cascade:t4" });
+  const neither = planImport([mineRow], [], { now: NOW, nowMs: NOW_MS, config, googleCalendars: google });
+  say(neither.notReady === 0 && neither.add.length === 0,
+      "an event this app wrote is ours before it is anything else, and is not counted as waiting");
 }
 
 console.log(failed ? `\nCHECK CALENDAR: ${failed} FAILED\n` : "\nCHECK CALENDAR: PASS\n");

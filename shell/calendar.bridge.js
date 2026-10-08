@@ -188,6 +188,26 @@ export function setImportOn(on) {
   }
 }
 
+/**
+ * `uid2445 8, syncid 3, rowid 1`, in that order, from a list of labels.
+ *
+ * Ordered most trustworthy first rather than by count, so the line reads as a
+ * ladder: the sources before `rowid` are the same on every device and `rowid`
+ * is the only one that is not.
+ */
+function countBy(labels) {
+  const n = { uid2445: 0, syncid: 0, rowid: 0 };
+  let other = 0;
+  for (const l of labels ?? []) {
+    if (l in n) n[l] += 1;
+    else if (l) other += 1;
+  }
+  const parts = [];
+  for (const k of ["uid2445", "syncid", "rowid"]) if (n[k]) parts.push(`${k} ${n[k]}`);
+  if (other) parts.push(`unknown ${other}`);
+  return parts.join(", ") || "none";
+}
+
 /** Every calendar this phone can READ, for the tick list. */
 export async function allCalendars() {
   const Cal = plugin();
@@ -233,15 +253,35 @@ export async function importCalendar() {
     return { ok: false, why: "events() refused: " + (e?.message ?? e) };
   }
 
+  // WHICH OF THE TICKED CALENDARS SYNC, which is what decides whether a local
+  // row number is a usable identity or a temporary one. `readable()` states
+  // `google` per calendar and this is the only thing that reads it. If the
+  // call fails the set is empty, which accepts every row id — the behaviour
+  // before session 149, and the safe direction when the answer is unknown: a
+  // task that arrives and later swaps id beats a task that never arrives.
+  const google = new Set();
+  for (const c of await allCalendars()) {
+    if (c?.google && ids.includes(String(c.id))) google.add(String(c.id));
+  }
+
   const existing = await tasks.all();
-  const plan = planImport(events, existing, { now: nowIso(), nowMs, config: partAConfig });
+  const plan = planImport(events, existing, {
+    now: nowIso(), nowMs, config: partAConfig, googleCalendars: google,
+  });
   const report = {
     ok: true, read: events.length,
-    added: 0, updated: 0, removed: 0, cancelled: 0, errors: [],
-    // WHICH ID THE PHONE COULD GIVE, printed rather than assumed. `rowid` means
-    // the event carried neither an iCalendar UID nor a Google id, so the same
-    // meeting on another phone would import as a different task.
-    uidFrom: [...new Set(events.map((e) => e.uidFrom).filter(Boolean))].join(", ") || "none",
+    added: 0, updated: 0, removed: 0, cancelled: 0,
+    // HELD, NOT DROPPED. An event with no stable id on a syncing calendar is
+    // waiting for Google to give it one, and an event that simply never appears
+    // is indistinguishable from one the window missed.
+    notReady: plan.notReady ?? 0,
+    errors: [],
+    // WHICH ID THE PHONE COULD GIVE, COUNTED PER SOURCE rather than listed.
+    // His first import reported `syncid, rowid`, which says both happened and
+    // nothing about the split — and the split is the whole question: one rowid
+    // among twelve is a local event, twelve of twelve is a phone where Google's
+    // adapter writes neither id.
+    uidFrom: countBy(events.map((e) => e.uidFrom)),
   };
   const guard = async (what, fn) => {
     try { await fn(); } catch (e) { report.errors.push(`${what}: ${e?.message ?? e}`); }

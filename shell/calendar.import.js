@@ -19,6 +19,11 @@
 //   5. `task_state` IS ALWAYS CASCADE'S. A task he has closed is never reopened
 //      by an import, whatever the calendar still holds.
 //
+// AND ONE RULE HIS FIRST IMPORT ADDED, session 149: an event on a GOOGLE
+// calendar carrying neither an iCalendar UID nor a Google id is not yet an
+// identity, so it is held rather than imported. See `notReady` for what
+// importing one anyway costs.
+//
 // THE LOOP, AND THE TWO GATES THAT STOP IT. Without them the push and the
 // import feed each other for ever: a task writes an event, the event is read
 // back as a task, that task writes an event. The gates are one on each side —
@@ -58,6 +63,49 @@ export function isOurs(ev) {
  */
 export function declined(ev) {
   return Number(ev?.selfStatus ?? 0) === 2;
+}
+
+/**
+ * AN EVENT THAT DOES NOT YET HAVE A STABLE IDENTITY, and is left alone until it
+ * does (session 149, his first import: `event ids from: syncid, rowid`).
+ *
+ * `uidFrom` says which of three the phone could give. `uid2445` is the
+ * iCalendar UID and `syncid` is Google's own event id, and both are the same on
+ * every device that syncs that account. `rowid` means NEITHER EXISTED and the
+ * last resort was the provider's local row number.
+ *
+ * WHY A ROW NUMBER IS SOMETIMES FINE AND SOMETIMES NOT, which is the whole of
+ * this rule. An event on a calendar that does not sync — Birthdays, a local
+ * calendar — exists on this phone and nowhere else, so its row number is as
+ * stable as the event is and is a perfectly good identity. An event on a GOOGLE
+ * calendar with no sync id is a different thing entirely: it is an event
+ * created on the phone that Google has not carried up yet, and it WILL be given
+ * a real id within minutes.
+ *
+ * WHAT IMPORTING IT ANYWAY COSTS. The task's id is a function of the uid, so
+ * when the real id arrives the same meeting computes a different task id: the
+ * `row:` task stops appearing in the calendar's answer, and the missing-from-
+ * calendar branch below deletes it while a fresh copy is added. A task that
+ * silently dies and comes back as a new row is bad enough while it is still
+ * following; if he had edited it, it was DETACHED, so the branch cancels it
+ * instead and his correction ends up on the Done tab under a task that no
+ * longer exists.
+ *
+ * So: skipped, and COUNTED rather than dropped quietly, because an event that
+ * never appears is indistinguishable from one the window missed.
+ *
+ * `googleCalendars` is a set of calendar ids. It comes from `readable()`, which
+ * states `google` per calendar, and the bridge hands over the ticked ones. With
+ * nothing handed in, nothing is treated as syncing and every row id is accepted
+ * — which is the old behaviour, and is what every check written before this
+ * rule asserts.
+ */
+export function notReady(ev, googleCalendars) {
+  if (String(ev?.uidFrom ?? "") !== "rowid") return false;
+  const g = googleCalendars;
+  if (!g) return false;
+  const id = String(ev?.calendarId ?? "");
+  return typeof g.has === "function" ? g.has(id) : Boolean(g[id]);
 }
 
 /**
@@ -144,17 +192,29 @@ export function nextPerSeries(events, existing) {
  * `existing` is every task in the store, closed ones included — a closed task
  * is exactly what stops a series handing back an occurrence he has finished.
  *
- * @returns {{add: object[], update: object[], remove: string[], cancel: object[]}}
+ * @returns {{add: object[], update: object[], remove: string[], cancel: object[], notReady: number}}
  */
 export function planImport(events, existing, opts) {
   const now = opts.now;
   const config = opts.config;
-  const live = (events ?? []).filter((ev) => !isOurs(ev) && !declined(ev));
+  const google = opts.googleCalendars;
+  const all = events ?? [];
+  // COUNTED BEFORE ANYTHING ELSE FILTERS THEM OUT. Counted on the raw list and
+  // not on what survives, so the number answers "how many did the phone hand
+  // over that I would not touch" rather than "how many got this far".
+  const skipped = all.filter((ev) => notReady(ev, google) && !isOurs(ev) && !declined(ev));
+  const waiting = skipped.length;
+  // THE UIDS BEING WAITED ON, so the missing-from-calendar branch does not read
+  // "skipped" as "gone". A build-64 import already wrote some `row:` tasks, and
+  // deleting one the moment this rule starts skipping its event would be the
+  // exact harm the rule exists to prevent, arriving by the other door.
+  const held = new Set(skipped.map((ev) => String(ev.uid ?? "")));
+  const live = all.filter((ev) => !isOurs(ev) && !declined(ev) && !notReady(ev, google));
   const want = nextPerSeries(live, existing);
   const byId = new Map((existing ?? []).map((t) => [t.id, t]));
   const seen = new Set();
 
-  const plan = { add: [], update: [], remove: [], cancel: [] };
+  const plan = { add: [], update: [], remove: [], cancel: [], notReady: waiting };
 
   for (const ev of want) {
     seen.add(ev.id);
@@ -198,6 +258,11 @@ export function planImport(events, existing, opts) {
     if (!t.calendar_uid) continue;
     if (closed(t)) continue;
     if (seen.has(t.id)) continue;
+    // Its event was HELD rather than read. Left exactly as it is: when Google
+    // gives the event a real id, the proper task is added and this one becomes
+    // genuinely missing in the same pass, so the swap happens once and nothing
+    // is ever both deleted and absent.
+    if (held.has(String(t.calendar_uid))) continue;
     const at = Date.parse(String(t.due_at).slice(0, 19) + "Z");
     if (!(at >= fromMs && at <= toMs)) continue;
     // HIS ANSWER 4, narrowed. A task still following is Google's and goes with

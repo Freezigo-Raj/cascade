@@ -1,10 +1,14 @@
-CASCADE — sessions 137 to 148. READ THIS BEFORE COMMITTING.
+CASCADE — sessions 137 to 149. READ THIS BEFORE COMMITTING.
 
 Three things must happen by hand. Do them in this order: the migration, the
 deletions, then the APK.
 
 
 == 1. RUN THE SUPABASE MIGRATION FIRST, BEFORE INSTALLING ==
+
+ALREADY RUN IT? SKIP THIS. Session 149 adds no columns. This section is here
+because the zip is cumulative from session 136, so it still matters if you have
+not yet run it.
 
 Session 148 added two columns to cascade_task. Run migrate_a22.sql in the
 Supabase SQL editor BEFORE you install this build.
@@ -52,6 +56,10 @@ shell\version.js, which holds nothing else. That file IS in this zip.
 
 == 3. THE APK MUST BE REBUILT ==
 
+NOTHING NEW IN SESSION 149. If you already built and installed the build-64 APK,
+SKIP THIS WHOLE SECTION. Session 149 is three web-half files and the APK you
+have carries everything they need. Calendar shell is still build 2.
+
 Calendar shell build 2. Session 145 added the calendar plugin and session 148
 added three read methods to it, so an APK built from the session-147 zip will
 report calendar build 1 and the import will not run.
@@ -92,7 +100,7 @@ AFTER DELETING THE SIX FILES, run this and it must say GATE 2: PASS —
 
   python3 gate2.py
 
-Header should read build 64.
+Header should read build 65.
 
 
 == THEN ON THE PHONE, ACCOUNT SCREEN ==
@@ -118,3 +126,31 @@ like working sync right up to the day you install the app somewhere else.
 
 "events", "holidays" and "birthdays" are each their own CALENDAR in Google, not
 a type of event, which is why the choice is a tick list rather than a switch.
+
+
+== WHAT CHANGED IN SESSION 149 ==
+
+Three web-half files, and one new rule.
+
+An event on a GOOGLE calendar carrying no permanent id is HELD rather than
+imported. "rowid" in your first report meant the event had neither an iCalendar
+UID nor a Google event id, so I fell back to the phone's local row number. On a
+calendar that does not sync that is fine, because the event exists on that phone
+and nowhere else. On a Google calendar it is temporary: Google gives the event a
+real id within minutes, and because the task id is derived from the event id, the
+same meeting would then compute a DIFFERENT task id. The old task gets deleted
+and a new copy added, or CANCELLED if you had edited it, which puts your
+correction on the Done tab under a task that no longer exists.
+
+The report now says so rather than hiding it:
+
+  3 events not ready yet: Google has not given them a permanent id.
+  Event ids from: uid2445 8, syncid 3, rowid 1.
+
+TELL ME THOSE TWO NUMBERS after your next Import now. If "rowid" stays high over
+several hours, Google's adapter on your phone is not writing an id at all and the
+answer is a different one.
+
+Any "row:" tasks build 64 already imported are left alone, not deleted. When
+Google gives the event a real id, the proper task is added and the row: one goes
+in the same pass, so you will not see a duplicate.
