@@ -362,27 +362,44 @@ export function mountAccount(root, { onBack, onSignedOut } = {}) {
             return;
           }
 
-          // WHICH CALENDAR. His answer was his main one rather than a separate
-          // `Cascade` calendar, so the default is the primary Google one and
-          // this is here for the phone that has more than one account on it.
+          // WHICH CALENDAR, ALWAYS DRAWN AND ALWAYS DECIDED (session 147).
+          //
+          // It used to appear only when the phone had more than one writable
+          // calendar, and otherwise the choice was left empty for the Kotlin to
+          // make. So on a phone where nothing arrived there was no way to tell
+          // WHICH calendar the app had been writing to — and "the one it picked"
+          // is not an answer anybody can check. It is drawn whatever the count,
+          // and the first draw WRITES the answer down, so the two halves cannot
+          // hold different ideas of where the events are going.
           const list = await bridge.writableCalendars();
-          if (list.length > 1) {
-            const pickRow = el("div", "stat");
-            pickRow.dataset.cal = "pick";
-            pickRow.appendChild(el("span", "stat-label", "Writes to"));
-            const sel = el("select", "cal-pick");
-            for (const c of list) {
-              const o = el("option", "", `${c.name}${c.account && c.account !== c.name ? " · " + c.account : ""}`);
-              o.value = c.id;
-              if (c.id === bridge.chosenCalendar()) o.selected = true;
-              sel.appendChild(o);
-            }
-            sel.addEventListener("change", () => {
-              bridge.setCalendarOn(bridge.calendarOn(), sel.value);
-            });
-            pickRow.appendChild(sel);
+          const pickRow = el("div", "stat");
+          pickRow.dataset.cal = "pick";
+          pickRow.appendChild(el("span", "stat-label", "Writes to"));
+          if (!list.length) {
+            pickRow.appendChild(el("span", "stat-value", "no writable calendar"));
             cal.appendChild(pickRow);
+            const none = el("div", "said",
+              "This phone has no calendar the app is allowed to write to. A Google account has to be added in Android Settings, and its calendar has to be switched on in the Google Calendar app.");
+            none.dataset.cal = "none";
+            cal.appendChild(none);
+            return;
           }
+          const sel = el("select", "cal-pick");
+          for (const c of list) {
+            const o = el("option", "", `${c.name}${c.account && c.account !== c.name ? " · " + c.account : ""}`);
+            o.value = c.id;
+            sel.appendChild(o);
+          }
+          const already = bridge.chosenCalendar();
+          const fallback = (list.find((c) => c.primary && c.google) || list.find((c) => c.google) || list[0]).id;
+          sel.value = list.some((c) => c.id === already) ? already : fallback;
+          if (sel.value !== already) bridge.rememberCalendar(sel.value);
+          sel.addEventListener("change", () => {
+            bridge.rememberCalendar(sel.value);
+            if (bridge.calendarOn()) bridge.setCalendarOn(true, sel.value);
+          });
+          pickRow.appendChild(sel);
+          cal.appendChild(pickRow);
 
           const sw = button("act" + (on ? " on" : ""), on ? "Turn off" : "Turn on", async () => {
             await bridge.setCalendarOn(!on, bridge.chosenCalendar());
@@ -390,6 +407,41 @@ export function mountAccount(root, { onBack, onSignedOut } = {}) {
           });
           sw.dataset.cal = "switch";
           cal.appendChild(sw);
+
+          // SYNC NOW, AND SAY WHAT HAPPENED (session 147, his report that
+          // nothing reaches the calendar). The background pass swallows every
+          // failure into `console.warn`, and a phone has no console, so the
+          // plugin rejecting, no writable calendar, a refused insert and simply
+          // having no dated task all look identical: nothing happens.
+          const now = el("button", "act", "Sync now");
+          now.type = "button";
+          now.dataset.cal = "now";
+          const out = el("div", "said");
+          out.dataset.cal = "now";
+          now.addEventListener("click", async () => {
+            now.textContent = "Syncing…";
+            out.textContent = "";
+            let r;
+            try {
+              r = await bridge.syncCalendarNow();
+            } catch (e) {
+              r = { ok: false, why: "The sync threw: " + (e?.message ?? e) };
+            }
+            now.textContent = "Sync now";
+            const lines = [];
+            if (r.tasks !== undefined) {
+              lines.push(`${r.tasks} tasks, ${r.wanted} of them dated.`);
+              lines.push(`The calendar already held ${r.had} from this app; wrote ${r.written}, removed ${r.removed}.`);
+              if (r.nowThere !== null && r.nowThere !== undefined) lines.push(`It now holds ${r.nowThere}.`);
+              lines.push(`Calendar: ${r.calendarId}.`);
+            }
+            if (r.why) lines.push(r.why);
+            for (const e of r.errors ?? []) lines.push(e);
+            if (r.ok && !lines.length) lines.push("Done.");
+            out.textContent = lines.join(" ");
+          });
+          cal.appendChild(now);
+          cal.appendChild(out);
 
           const says = el("div", "said",
             on

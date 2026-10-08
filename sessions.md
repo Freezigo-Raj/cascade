@@ -3542,3 +3542,34 @@ It is a group of its own now, `The Android app`, drawn above Alarms and drawn al
 The `raw.githubusercontent.com` host is unchanged, and the reason stands: a Capacitor WebView hands a link to the system browser only when its host is not the app's own, so the `github.io` address does nothing at all from inside the app.
 
 **Shell 62.** `mvp.account.js` only. No Kotlin change and no APK rebuild needed for this one. All nine checks green.
+
+---
+
+## Session 147 — 8 October 2026
+
+**His report:** calendar shell present, permission granted, calendar selected, and tasks do not reach the calendar.
+
+**Nothing here can see his phone, and the app could not tell him anything either.** `syncCalendar()` swallows every failure into `console.warn`, and a phone has no console. So four different faults all look the same — nothing happens:
+
+| Cause | How it looked |
+|---|---|
+| the plugin rejected the write | nothing happens |
+| no calendar the app may write to | nothing happens |
+| the provider refused the insert silently | nothing happens |
+| no task has a date | nothing happens |
+
+A fault with four causes and one appearance cannot be narrowed from here. So this build does not guess at a fix; it makes the failure readable.
+
+### `Sync now`
+
+On the account screen, under Google Calendar. It runs the same pass with the debounce removed and reports: how many tasks there are, how many are dated, how many the calendar already held, how many were written, how many removed, which calendar, and **the first error message verbatim**. A message rewritten in friendlier words is a message that cannot be looked up.
+
+**It writes and then looks again.** An insert the provider quietly refused resolves exactly like one it accepted, so the only honest check is to ask the calendar a second time and compare the count. If every write was accepted and the calendar is still empty, it says so in those words.
+
+### The picker is always drawn, and the choice is always written down
+
+It used to appear only when the phone had more than one writable calendar. Otherwise the choice was left empty and the Kotlin picked the primary Google one. That is fine until nothing arrives, at which point there is no way to say WHICH calendar was being written to, and "the one it picked" is not an answer anybody can check.
+
+Drawn whatever the count now, and the first draw writes the answer to `localStorage`, so the two halves cannot hold different ideas of where the events are going. A phone with no writable calendar is told so in words rather than being offered a switch that can only fail.
+
+**Shell 63.** `calendar.bridge.js` and `mvp.account.js`. No Kotlin change, no APK rebuild. All nine checks green.

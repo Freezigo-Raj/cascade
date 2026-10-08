@@ -85,6 +85,21 @@ export function chosenCalendar() {
  * already there with nothing in the app able to reach it again. A switch that
  * cannot undo what it did is not a switch.
  */
+/**
+ * Which calendar to write to, written down without turning anything on.
+ *
+ * The account screen decides this on its first draw now, so that "the one the
+ * plugin picked" stops being the answer to where the events went.
+ */
+export function rememberCalendar(calendarId) {
+  try {
+    if (calendarId) window.localStorage.setItem(CAL_KEY, String(calendarId));
+    else window.localStorage.removeItem(CAL_KEY);
+  } catch {
+    // A browser refusing storage is not a reason to throw out of a choice.
+  }
+}
+
 export async function setCalendarOn(on, calendarId) {
   try {
     if (on) window.localStorage.setItem(ON_KEY, "1");
@@ -141,6 +156,92 @@ export async function requestCalendarPermission() {
   } catch (e) {
     console.warn("calendar: permission —", e?.message ?? e);
   }
+}
+
+/**
+ * THE SYNC, RUN NOW, WITH AN ANSWER (session 147, his report: "calendar shell
+ * present, permission granted, write-to selected, but tasks don't reach the
+ * calendar").
+ *
+ * `syncCalendar()` below swallows everything into `console.warn`. On a phone
+ * there is no console, so every way this can fail — the plugin rejecting, no
+ * writable calendar, an insert the provider refused, or simply no task that
+ * qualifies — looks exactly the same: nothing happens.
+ *
+ * This is the same work with the debounce removed and a report returned, so
+ * the account screen can say which of those it was. It writes nothing that
+ * `syncCalendar` would not have written.
+ */
+export async function syncCalendarNow() {
+  const Cal = plugin();
+  if (!Cal) return { ok: false, why: "This build has no calendar plugin in it." };
+  if (!calendarOn()) return { ok: false, why: "The calendar switch is off." };
+
+  const all = await tasks.all();
+  const want = desiredEvents(all, partAConfig);
+  const report = {
+    ok: true, tasks: all.length, wanted: want.length,
+    had: 0, written: 0, removed: 0, errors: [],
+    calendarId: chosenCalendar() || "(none chosen — the plugin picks the primary one)",
+  };
+  if (!want.length) {
+    report.ok = false;
+    report.why = all.length
+      ? "No task has a date. Only tasks with a date go to the calendar; Ideas do not."
+      : "There are no tasks.";
+    return report;
+  }
+
+  let have = [];
+  try {
+    const r = await Cal.list();
+    have = r.events ?? [];
+  } catch (e) {
+    report.ok = false;
+    report.why = "list() refused: " + (e?.message ?? e);
+    return report;
+  }
+  report.had = have.length;
+
+  const byId = new Map(have.map((e) => [e.id, e]));
+  const wanted = new Set(want.map((e) => e.id));
+  const calendarId = chosenCalendar();
+
+  for (const e of want) {
+    if (sameEvent(byId.get(e.id), e)) continue;
+    try {
+      await Cal.set(calendarId ? { ...e, calendarId } : e);
+      report.written += 1;
+    } catch (err) {
+      // THE FIRST ONE, VERBATIM. A message rewritten in friendlier words is a
+      // message that cannot be looked up.
+      report.errors.push(`${e.title}: ${err?.message ?? err}`);
+    }
+  }
+  for (const c of have) {
+    if (wanted.has(c.id)) continue;
+    try {
+      await Cal.remove({ id: c.id });
+      report.removed += 1;
+    } catch (err) {
+      report.errors.push(`remove ${c.id}: ${err?.message ?? err}`);
+    }
+  }
+
+  // WROTE, AND THEN LOOKED. An insert the provider quietly refused resolves
+  // like a successful one, so the only honest check is to ask again.
+  try {
+    const r = await Cal.list();
+    report.nowThere = (r.events ?? []).length;
+  } catch {
+    report.nowThere = null;
+  }
+  if (report.errors.length) report.ok = false;
+  else if (report.nowThere === 0 && report.written > 0) {
+    report.ok = false;
+    report.why = "Every write was accepted and the calendar is still empty. The provider refused the insert without saying so, which usually means the chosen calendar cannot be written to.";
+  }
+  return report;
 }
 
 let timer = null;
