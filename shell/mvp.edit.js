@@ -38,6 +38,12 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
   let dropDate = false;     // the tick was tapped on a task whose words hold no date
   let repeat = null;        // { every, unit } | null
   let alarmType = "none";
+  // Whether the TOGGLE has been pressed on this line. The word `alarm` in the
+  // line turns the alarm on (session 144), and the toggle has to be able to
+  // turn it off again without the next keystroke switching it straight back on.
+  // So: the line decides until the person presses the toggle, and the press
+  // decides after that, until the line is cleared or another task is loaded.
+  let alarmTouched = false;
   let leadMin = null;
   let durTap = null;        // minutes the person chose, or null for the verb's default
   let firmTap = null;       // "hard" | "normal" | "soft" | null for what the words said
@@ -231,6 +237,9 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
     sigTap = task.significance;
     repeat = task.recurrence ?? null;
     alarmType = task.alarm_type ?? "none";
+    // A loaded task carries its own answer, and the line it loads is a title
+    // with no date words and no alarm word in it.
+    alarmTouched = true;
     leadMin = task.alarm_lead_min ?? null;
     // The same reason the type and the significance are loaded back: a title
     // carries no evidence of either, so re-deriving would reset both on save.
@@ -256,6 +265,7 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
     sigTap = null;
     repeat = null;
     alarmType = "none";
+    alarmTouched = false;
     leadMin = null;
     durTap = null;
     firmTap = null;
@@ -282,11 +292,36 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
     alarm_lead_min: alarmType === "none" ? null : leadMin,
   });
 
+  /**
+   * What the line asked for, unless the toggle has been pressed since.
+   *
+   * `resolve()` returns `alarm_type: "on"` when the line carries an
+   * `alarm_words` member AND an exact time. The screen used to patch its own
+   * `alarmType` over the top of whatever the engine said, so the word would
+   * have been read and then thrown away one line later.
+   */
+  function followLine(out) {
+    if (alarmTouched || !out) return;
+    const wants = out.task.alarm_type !== "none";
+    if (wants && alarmType === "none") {
+      alarmType = "on";
+      if (leadMin === null) leadMin = partAConfig.alarm_defaults.lead_min;
+    } else if (!wants && alarmType !== "none" && !advanced) {
+      // The word was deleted again. The advanced panel being open means the
+      // person set it there, and that is a tap, not the line.
+      alarmType = "none";
+    }
+  }
+
   // ----------------------------------------------------------------- the press
 
   async function commit() {
     const out = read();
     if (!out) return;
+    // The same reading the row drew from. A line typed and committed in one
+    // motion never repainted, so without this the word would be read, shown to
+    // nobody, and thrown away by `advancedFields()` one line later.
+    followLine(out);
 
     if (boundId) {
       const old = all.find((t) => t.id === boundId);
@@ -487,6 +522,7 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
         on ? "Alarm on" : "Alarm off",
         () => {
           alarmType = on ? "none" : "on";
+          alarmTouched = true;
           // Turning it on gives it the default lead, which the panel's
           // `setAlarm` used to do before the group left it.
           if (!on && leadMin === null) leadMin = partAConfig.alarm_defaults.lead_min;
@@ -590,6 +626,9 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
 
   function paint() {
     const out = read();
+    // Before anything is drawn: the alarm row reads `alarmType`, so the line's
+    // answer has to be in it by the time that row is built.
+    followLine(out);
     drawHead(out);
     // The engine's reading first; failing that, a pick still waiting for words
     // in the box; failing that, the stored date of the task being edited.

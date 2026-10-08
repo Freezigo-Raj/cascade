@@ -406,6 +406,8 @@ export interface Config {
   date_aliases: Record<string, string>;
   marker_words: { strong: string[]; weak: string[]; start: string[]; point: string[] };
   hedge_words: string[];
+  /** Words that turn the alarm on from the line. Only while `has_time`. */
+  alarm_words: string[];
 
   // Behaviour
   verb_to_type: Record<string, string>;

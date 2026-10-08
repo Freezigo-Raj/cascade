@@ -6,7 +6,7 @@
 // Vocabulary members are never removed or repurposed, only deactivated.
 const active = (id) => ({ id, active: true });
 export const partAConfig = {
-    version: "a.19",
+    version: "a.20",
     // --- Vocabulary: records hold these members ---
     // Drawn only from what the example exercises. Thin on purpose:
     // a missing member falls to `other`, which is free. An extra member is permanent.
@@ -80,6 +80,18 @@ export const partAConfig = {
         point: ["at"],
     },
     // Only what spec/example.md evidences. A word not here demotes nothing.
+    // A WORD THAT TURNS THE ALARM ON (session 144, his rule: "the word `alarm`
+    // should turn on the alarm). Config and not code, like every other word
+    // this engine reads: the app expects Hindi and Gujarati input, and the
+    // Gujarati for it goes in this list and nowhere else.
+    //
+    // It only takes effect while the line carries an EXACT TIME, because the
+    // contract says `alarm_type` is set only while `has_time` — a lead off a
+    // date with no time would ring at a quarter to midnight. With no time the
+    // word stays in the title and nothing happens, which is the honest answer:
+    // a word silently swallowed for no effect is worse than a word left where
+    // it was typed.
+    alarm_words: ["alarm"],
     hedge_words: ["maybe"],
     // --- Behaviour ---
     verb_to_type: {

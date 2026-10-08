@@ -626,17 +626,33 @@ function readSpan(line, config, chipSpans) {
     }
   }
 
-  // Clock time. `5pm`, `5:30pm`, `5.30pm`, `17:00`, and `5 pm` where the meridiem
-  // was typed as its own word. A minute separator can be a colon, a dot or
-  // nothing; people write all three and only one of them was read.
-  const CLOCK = /^(\d{1,2})(?:[:.]?(\d{2}))?(am|pm)?$/;
+  // Clock time. `5pm`, `5:30pm`, `5.30pm`, `17:00`, `5 pm` where the meridiem
+  // was typed as its own word, and `5 p.m.` where it was typed with its stops.
+  // A minute separator can be a colon, a dot or nothing; people write all three
+  // and only one of them was read.
+  //
+  // `p.m.` IS `pm` (session 144, his report). `word()` strips the trailing stop
+  // but keeps the one in the middle, so `p.m.` arrived here as `p.m` and
+  // matched neither the suffix group nor the two-word test. It is the fourth
+  // spacing or spelling of a clock time this rule has had to learn — `5.30pm`,
+  // `5 pm`, `in 5mins`, and now this — and the pattern each time is that the
+  // READING is right and the SHAPE was written too narrowly.
+  const MERIDIEM = /^([ap])\.?m$/;
+  const meridiemOf = (w) => {
+    const m = MERIDIEM.exec(w ?? "");
+    return m ? `${m[1]}m` : null;
+  };
+  const CLOCK = /^(\d{1,2})(?:[:.]?(\d{2}))?([ap]\.?m)?$/;
   for (let i = 0; i < words.length; i++) {
     const m = CLOCK.exec(lows[i]);
     if (!m) continue;
-    let meridiem = m[3];
+    let meridiem = meridiemOf(m[3]);
     let took = [i];
-    // `5 pm`: the hour and the meridiem as two words.
-    if (!meridiem && /^(am|pm)$/.test(lows[i + 1] ?? "")) { meridiem = lows[i + 1]; took.push(i + 1); }
+    // `5 pm` and `5 p.m.`: the hour and the meridiem as two words.
+    if (!meridiem) {
+      const next = meridiemOf(lows[i + 1]);
+      if (next) { meridiem = next; took.push(i + 1); }
+    }
     // A bare number with no meridiem and no separator is not a time: `form 8`
     // and `pump 4` are numbers in a name, and `17:00` carries its colon.
     if (!meridiem && !/[:.]/.test(lows[i])) continue;
@@ -720,8 +736,15 @@ function readSpan(line, config, chipSpans) {
     const bandOnly = span.day && span.day.kind === "band" ? span.day : null;
     for (let i = 0; i < lows.length - 1; i++) {
       const a = lows[i], b = lows[i + 1];
-      const dm = /^\d{1,2}$/.test(a) && MONTHS.indexOf(b.slice(0, 3)) >= 0 ? [Number(a), MONTHS.indexOf(b.slice(0, 3))]
-               : /^\d{1,2}$/.test(b) && MONTHS.indexOf(a.slice(0, 3)) >= 0 ? [Number(b), MONTHS.indexOf(a.slice(0, 3))]
+      // `15th aug` is `15 aug`. The ordinal ending is spelling, read by code,
+      // the same way the verb's endings are (session 144).
+      const dayNum = (w) => {
+        const m = /^(\d{1,2})(?:st|nd|rd|th)?$/.exec(w);
+        return m ? Number(m[1]) : null;
+      };
+      const da = dayNum(a), db = dayNum(b);
+      const dm = da !== null && MONTHS.indexOf(b.slice(0, 3)) >= 0 ? [da, MONTHS.indexOf(b.slice(0, 3))]
+               : db !== null && MONTHS.indexOf(a.slice(0, 3)) >= 0 ? [db, MONTHS.indexOf(a.slice(0, 3))]
                : null;
       if (!dm) continue;
       // Only when the band is touching it. A band somewhere else in the line
@@ -746,6 +769,49 @@ function readSpan(line, config, chipSpans) {
       break;
     }
   }
+  // A DAY OF THE MONTH ON ITS OWN: `15th`, `1st`, `22nd`, and `15th this month`
+  // or `15th next month` (session 144, his report: "15th or 15th this month
+  // means a date which is not understood").
+  //
+  // THE ORDINAL ENDING IS WHAT MAKES IT A DATE, and a bare `15` is still not
+  // one. That is the same rule a bare number already has for clock times —
+  // `form 8` and `pump 4` are numbers in a name — and it is the reason this can
+  // be read at all without a month beside it.
+  //
+  // NO MONTH NAMED MEANS THIS MONTH, AND THE NEXT ONE IF THE DAY HAS GONE. A
+  // bare `15th` on the 20th is the 15th of next month, for the same reason a
+  // bare `5pm` at six means tomorrow: the expression is incomplete and the
+  // nearest completion ahead is what was meant. Saying `this month` out loud
+  // turns the roll OFF — the person named the month, and a named date in the
+  // past stays in the past, which is the rule the whole file already follows.
+  const ORDINAL = /^(\d{1,2})(?:st|nd|rd|th)$/;
+  if (!span.day || span.day.kind === "band" ||
+      (span.day.kind === "month" && ORDINAL.test(lows[span.day.at - 1] ?? ""))) {
+    for (let i = 0; i < lows.length; i++) {
+      const m = ORDINAL.exec(lows[i]);
+      if (!m) continue;
+      const date = Number(m[1]);
+      if (date < 1 || date > 31) continue;
+      // A month name beside it was the branch above's to read, and it already
+      // took the words with it.
+      if (span.day && span.day.kind === "date") break;
+      const bandOnly = span.day && span.day.kind === "band" ? span.day : null;
+      if (bandOnly && bandOnly.at !== i + 1) break;
+      const take = [i];
+      // `this month` and `next month` qualify it. `next month` is a lexicon
+      // phrase in its own right and won on position when it followed the
+      // ordinal; here it is read as what it is, the month the day belongs to.
+      let step = 0, roll = true;
+      const two = `${lows[i + 1] ?? ""} ${lows[i + 2] ?? ""}`;
+      if (two === "this month") { step = 0; roll = false; take.push(i + 1, i + 2); }
+      else if (two === "next month") { step = 1; roll = false; take.push(i + 1, i + 2); }
+      span.day = { kind: "date", date, at: i, monthStep: step, roll };
+      span.words.push(...take);
+      if (bandOnly) span.day.band = bandOnly.phrase;
+      break;
+    }
+  }
+
   // A band and a clock time contradict each other: 14:00 is not the morning. The
   // time wins, as it does over a day, and the band supplies no date. Both words
   // stay in the expression so both leave `title` together.
@@ -778,7 +844,13 @@ function readSpan(line, config, chipSpans) {
     .map((i) => {
       const w = words[i];
       const m = /^(.*?)([^\p{L}\p{N}]*)$/u.exec(w);
-      if (m[2]) span.keep[i] = m[2];
+      // WHAT IS KEPT IS A SEPARATOR, NOT ANY PUNCTUATION (session 144). The
+      // rule exists so that `pay a tomorrow, b` does not lose the comma that
+      // was dividing two items when `tomorrow` leaves. It kept every trailing
+      // non-letter, so the stop in `5 p.m.` — which is part of the word and
+      // separates nothing — came back as a title of `call kushan .`
+      const sep = (m[2].match(/[,;]/g) ?? []).join("");
+      if (sep) span.keep[i] = sep;
       return m[1];
     })
     .join(" ");
@@ -842,6 +914,19 @@ function windowFor(span, now, config) {
     // A stated year is taken as stated, past or future: someone who spells out
     // 2027 means 2027, and someone who spells out last year means last year.
     const t = new Date(today);
+    // A DAY OF THE MONTH WITH NO MONTH NAMED (session 144). `monthStep` is 0
+    // for this month and 1 for `next month`; `roll` moves a bare one forward
+    // when the day has already gone, which `this month` and `next month` both
+    // turn off because they named the month themselves.
+    if (d.month === undefined) {
+      let at = Date.UTC(t.getUTCFullYear(), t.getUTCMonth() + (d.monthStep ?? 0), d.date);
+      // `31st` in a thirty-day month lands on the 1st of the next one, which is
+      // the same rollover `step()` in `repeat.js` already relies on. Stated
+      // rather than guarded: there is no 31st to mean, and refusing the line
+      // would lose the commitment to be right about the calendar.
+      if (d.roll && at < today) at = Date.UTC(t.getUTCFullYear(), t.getUTCMonth() + 1, d.date);
+      return dayWindow(at);
+    }
     return dayWindow(Date.UTC(d.year ?? t.getUTCFullYear(), d.month, d.date));
   }
   // A relative day or a weekday.
@@ -919,7 +1004,8 @@ function readDates(input) {
   const now = readInstant(input.now);
   const empty = { title: line, resolved_window: null, clipped_window: null, from_phrase: "",
                   date_phrase: "", date_spans: [], date_hedge: "", date_marker: "", date_precision: "none",
-                  date_firmness: "normal", date_anchor: "none", earliest_start: "", due_at: "", has_time: false };
+                  date_firmness: "normal", date_anchor: "none", earliest_start: "", due_at: "", has_time: false,
+                  alarm_asked: false };
 
   const lowWords = line.split(/\s+/).filter(Boolean).map(word);
   const hedgeAt = [];
@@ -931,8 +1017,27 @@ function readDates(input) {
   });
   const span = readSpan(line, config, input.chip_spans);
   const marker = readMarker(line, config, span);
+
+  // THE WORD THAT ASKS FOR AN ALARM (session 144, his rule). It is read here
+  // rather than in the screen because what a person can set while capturing is
+  // an INPUT to resolve, never patched on afterwards — the contract rule the
+  // taps were moved under in session 102.
+  //
+  // It leaves the title ONLY WHEN IT TOOK EFFECT. An alarm needs an exact time,
+  // so on a line with no time the word stays where it was typed: a word
+  // swallowed for no effect is worse than a word left alone, and it is the only
+  // thing on screen that could tell him why nothing happened.
+  const askedAt = [];
+  let asked = false;
+  lowWords.forEach((w, i) => {
+    if (asked || !(config.alarm_words ?? []).includes(w)) return;
+    asked = true;
+    askedAt.push(i);
+  });
+  const timed = Boolean(span && (span.time || span.rel));
   const out = { ...empty, date_hedge: hedge, date_marker: marker ? marker.word : "" };
-  out.title = readTitle(line, span, marker, hedgeAt);
+  out.alarm_asked = asked && timed;
+  out.title = readTitle(line, span, marker, out.alarm_asked ? [...hedgeAt, ...askedAt] : hedgeAt);
   if (hedge) out.date_firmness = "soft";
   // A strong marker is firmness and nothing else, and hard outranks a hedge.
   if (marker && marker.group === "strong") out.date_firmness = "hard";
@@ -1102,9 +1207,17 @@ export function resolve(input) {
         ? "selected"
         : (summed ? summed.duration_source : "default"),
       recurrence: null,
-      // Part A records what alarm was asked for and fires nothing. A capture
-      // asks for none; the advanced panel is what changes it.
-      alarm_type: "none",
+      // Part A records what alarm was asked for and fires nothing. The LINE can
+      // ask for one now (session 144, his rule: "the word `alarm` should turn
+      // on the alarm"), and the capture row's toggle is a tap that overrides
+      // what the line said rather than the only way in.
+      //
+      // Only while the line carries an exact time, because the contract says
+      // `alarm_type` is set only while `has_time`: a lead off a date with no
+      // time rings at a quarter to midnight. Without a time the word stays in
+      // the title and nothing happens, which is the honest answer — a word
+      // swallowed for no effect is worse than a word left where it was typed.
+      alarm_type: dates.alarm_asked && dates.has_time ? "on" : "none",
       alarm_lead_min: null,
       alarm_snoozed_until: null,
       alarm_unanswered_at: null,

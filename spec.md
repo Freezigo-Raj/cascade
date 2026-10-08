@@ -13,7 +13,7 @@ Current stage: 5
 The six hand-signed gates were RETIRED in session 135. `gate2.py` and `gate4.mjs` keep their names because they are checks that run. Nothing in this file is waiting on a hand.
 Stage 4 is closed and signed. Stage 5 is open: the rules go in one at a time and the same command is read the other way round, so a case that still fails names a rule not yet written. `gate4.mjs` reads the stage out of the line above and inverts its own verdict on it. Every case in the key agrees with the engine. Section I taps a type, a significance and a bound task, which no case did before, and section B and H state what the card says. `gate4.mjs` reads Stage 5 and passes: 142 run, 142 green, 0 on invariants alone, 0 errored. Nine rules are written and every obligation the contract records is now met except the ranking, which is Stage 6's. Gate 5 is the hand that says Stage 5 is finished.
 
-Status: the contract is written in the protocol's three groups, with Name, Type, Required, Unit, Range, Example and From per item. 13 inputs, 13 working values, the 44-field `Task`, 39 rendered outputs, 13 cross-field invariants, and config at 37 objects populated. `tsc --strict` compiles clean and `gate2.py` passes. `resolve()` returns three keys, `task`, `list` and `capture`, and the contract names that shape. The answer key holds 144 key cases. `UndoEntry` left the contract in session 137 with the rest of undo, and the Stage 3 shell was deleted in the same session.
+Status: the contract is written in the protocol's three groups, with Name, Type, Required, Unit, Range, Example and From per item. 13 inputs, 13 working values, the 44-field `Task`, 39 rendered outputs, 13 cross-field invariants, and config at 38 objects populated. `tsc --strict` compiles clean and `gate2.py` passes. `resolve()` returns three keys, `task`, `list` and `capture`, and the contract names that shape. The answer key holds 144 key cases. `UndoEntry` left the contract in session 137 with the rest of undo, and the Stage 3 shell was deleted in the same session.
 
 D-1: **Typing the thought is the whole of the work.**
 
@@ -36,11 +36,11 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 
 ## VERSIONS
 
-  example      43
-  contract     55
-  config       a.19
+  example      44
+  contract     56
+  config       a.20
   answer_key   29
-  shell        59
+  shell        60
   gate1        signed on example 35
   gate2        signed on contract 32
   gate3        signed on shell 1
@@ -61,7 +61,7 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 **Built, and only as verified as the gate above it:**
 - `spec/example.md` — Stage 1 finished example. Gate 1 signed on the current file.
 - `schema/contract.md`, `schema/types.ts` — Stage 2. Gate 2 signed on the current file; `tsc --strict` compiles clean.
-- `config.ts` — the 37 config objects. Every vocabulary member is reachable from the lexicon.
+- `config.ts` — the 38 config objects. Every vocabulary member is reachable from the lexicon.
 - `shell/lemma.js` — wink-nlp and its English web model, MIT, bundled once and committed. 3.6 MB. No build step at run time: the shell serves it as a static file and the gate imports the same one. Read last in the verb chain.
 - The record also carries its four handed-in values, `raw_text`, `id`, `created_at` and `config_version`, which is what makes a case able to be green at all.
 - `tests/answer_key.md` — the hand-written key, Gate 4 signed on the current file. Every case a table row and every case carrying a derivation. 142 run and every one states a value; the two that do not run each name the gate that answers them.
@@ -76,62 +76,40 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 
 ## THIS SESSION'S JOB
 
-Session 137: the checks stop measuring a screen nobody opens, and the key stops re-typing config.
+Session 144: three things the line should say and could not.
 
-**THERE WERE TWO APPS IN THE REPOSITORY AND THE CHECKS TESTED THE DEAD ONE.** `shell/app.js` and
-`shell/render.js` drew an ASCII panel in box characters. Nothing has opened it since session 98.
-`check_render.mjs` proved that panel matched a picture in `example.md`, so it reported green about a
-screen that does not exist, and `gate2.py` spent four separate checks measuring the picture: every
-drawn fragment against a template, every badge against the task table, every box corner against the
-corner it opened at, every panel's right edge. The panels were also wrong: they drew a verb and a
-duration on every row, which rows have not shown since the quiet-field rule in session 88. Six files
-deleted, four gate checks deleted, five selftest fixtures deleted. What each panel RENDERED is stated
-in a table instead, so the ten contract Example values that lived only inside a box survive and the
-Example-value check still holds them. `SHELL_VERSION` moved to `shell/version.js`, which is nothing
-else, and gate2 fails if any of the six files comes back.
+**`p.m.` IS `pm`.** `word()` strips a trailing stop and keeps a middle one, so `p.m.` reached the
+clock rule as `p.m` and matched neither the suffix group nor the two-word test. This is the FOURTH
+spelling or spacing of a clock time this one rule has had to learn, after `5.30pm`, `5 pm` and
+`in 5mins`, and every time the reading was right and the shape was written too narrowly. A second
+defect came out with it: the title came back as `call kushan .`, because a dropped word keeps its
+trailing punctuation — a rule that exists so `pay a tomorrow, b` keeps the comma dividing two items,
+and the stop in `p.m.` is part of the word and separates nothing. Only `,` and `;` are kept now.
 
-**UNDO WAS DELETED FROM THE APP IN 132 AND THE DOCUMENTS DESCRIBED IT FOR FIVE MORE SESSIONS.**
-`UndoEntry`, `undo_toast`, the `undo` member of `row_action` and invariant 14 are out of
-`contract.md` and `types.ts`, and gate2 fails if any of the names comes back as a declaration or a
-table row while passing prose that explains the removal. `cascade_undo` stays standing in
-`schema.sql`, unwritten, at his call: dropping a table cannot be taken back and the workflow work may
-want the shape.
+**A DAY OF THE MONTH ON ITS OWN IS A DATE, AND THE ORDINAL ENDING IS WHAT MAKES IT ONE.** `15th`,
+`1st`, `22nd`; a bare `15` still is not one, which is the same rule a bare number already has against
+clock times — `form 8` and `pump 4` are numbers in a name — and it is what lets this be read at all
+with no month beside it. No month named means this month, and the next month when the day has gone,
+for the same reason a bare `5pm` at six means tomorrow: the expression is incomplete and the nearest
+completion ahead is what was meant. `this month` and `next month` qualify it and turn the roll OFF,
+because the person named the month and a named date in the past stays in the past. `15th aug` reads
+as `15 aug`: the ending is spelling, read by code, the way a verb's endings are.
 
-**A THIRD OF THE ANSWER KEY WAS `config.ts` TYPED TWICE.** Section A stated `commitment_type`,
-`context` and `est_duration_min` for all 33 verbs. Each is one line in `resolve()` reading one config
-table, so those 99 assertions tested that two copies of one table agreed, and every one of them went
-red whenever a number in `config.ts` changed with no defect present. That is the answer to what made
-the key feel impossible to keep green. The columns are gone from section A and kept where a rule
-rather than a lookup produces them. What they were worth is now a gate2 check: every `verb_to_type`
-and `verb_to_context` mapping must land inside its own vocabulary and name no verb that is not a
-member.
+**THE WORD `alarm` TURNS THE ALARM ON**, his rule. It is CONFIG and not code, like every other word
+this engine reads, because the app expects Hindi and Gujarati input and the Gujarati for it belongs
+in that list and nowhere else. It takes effect only while the line carries an exact time, because the
+contract says `alarm_type` is set only while `has_time`; with no time the word STAYS IN THE TITLE,
+since a word swallowed for no effect is the only thing on screen that could have said why nothing
+happened. `alarm_type` therefore leaves the list of fields the screen patches on after `resolve()` —
+the contract rule since session 102 is that whatever a person can set while capturing is an INPUT,
+and a word in the line is exactly that — and the capture row keeps an `alarmTouched` flag so the
+toggle can turn off what the line asked for without the next keystroke switching it back on.
 
-**FACTS AND CHOICES USED TO FAIL IDENTICALLY.** `friday` being 7 August is a fact the world can
-contradict. A `call` taking 15 minutes is a number this project picked. Every compared field is now
-declared one or the other in a FIELD KINDS table the key states and `gate4.mjs` reads at run time,
-scoped per section where a section differs — `commitment_type` is a choice everywhere and a fact in
-section I, where a tap has to override the verb. A fact that differs fails. A choice that differs is
-reported, counted and green. Proved both ways: `duration_defaults.call` 15 → 20 reports four CHOICE
-cases and stays PASS; `verb_lexicon.call` pointed at `check` fails seven cases on `action_verb`. A
-field compared with no row in the table fails the run, and the lookup happens when a field is
-COMPARED rather than when it differs, because written the other way an unclassified field is
-invisible for exactly as long as it agrees.
+New assertions added to `check_alarm.mjs`, including the two that must NOT change: `pay a
+tomorrow, b` still keeps its comma and `form 8` still has no date. The ANSWER KEY IS UNTOUCHED:
+adding cases needs his word first, and these rules want section B cases.
 
-**THE KEY'S OPENING CLAIM HAD FOUR HOLES IN IT AND NOTHING COUNTED THEM.** It says every value was
-written by hand from the contract before any logic existed. A2, A26, A21, G5 and the comma rule were
-reconciled to the engine after the engine ran, each admitting it in a Note cell. They are now listed
-in a RECONCILED ROWS block with what happened and why each was kept, the claim names its own
-exceptions, and gate2 fails any row whose note reads as reconciled without its id in the block. It
-caught C1 undeclared on the first run.
-
-**HIS CALL, RECORDED: no check will ever import a screen.** `shell/mvp*.js` is 3,400 lines with
-nothing over it. He reads the actual screens on the phone. A headless harness would be a second
-description of the same screen, which is exactly how the Stage 3 shell came to exist and stay for
-forty sessions. The cost is in FOUND, NOT FIXED: `eslint no-undef` is the only thing that catches a
-name that does not exist in a screen file, and it must be installed to run.
-
-All eight checks green: gate2 PASS, selftest 28 caught 0 missed, gate4 142/142 with 0 choice-moved,
-check_loud 6/6, check_alarm PASS, check_search PASS, check_writes PASS. Decision log sealed at 545.
+Versions are in VERSIONS. All eight checks green.
 
 ## NEXT THREE JOBS
 
@@ -986,3 +964,11 @@ have landed. That is the price of the single table and it is accepted.
 - 26 Aug 2026 — An outcome only lands on an open occurrence: nothing an alarm can send is right on a closed row — a Done on something already closed changes nothing, a Snooze or a Push moves a task that has finished, and the ring it came from is long over — `DISMISS` falls through because it writes nothing at all.
 - 26 Aug 2026 — `catchup.js`'s comment said a derived id existed so that TWO DEVICES opening at once would collapse into one row: the reasoning was right and its scope was too small, because the race is between anything that can close the same occurrence and by session 128 there were four of those — the derivation moved to `repeat.js` unchanged, so rows the catch-up has already created keep their ids.
 - 26 Aug 2026 — `applyOutcome`'s `newId` parameter is kept and ignored — it existed because `crypto.randomUUID()` inside made the one interesting branch unassertable, and a derived id is assertable BECAUSE it is derived, so the reason for the parameter has gone while the callers that pass it have not.
+- 8 Oct 2026 — A clock time's meridiem may be written `pm`, `p.m.`, `PM` or `P.M.`, joined to the hour or beside it, his report that `p.m.` is not understood: `word()` strips a trailing stop and keeps a middle one, so `p.m.` reached the clock rule as `p.m` and matched neither the suffix group nor the two-word test — the fourth spelling or spacing this one rule has had to learn after `5.30pm`, `5 pm` and `in 5mins`, and every time the READING was right and the SHAPE was written too narrowly.
+- 8 Oct 2026 — What a dropped word leaves behind is a SEPARATOR and not any punctuation: the rule exists so `pay a tomorrow, b` keeps the comma dividing two items, and it kept every trailing non-letter, so the stop in `5 p.m.` — part of the word, separating nothing — came back as a title of `call kushan .` Only `,` and `;` are kept.
+- 8 Oct 2026 — A DAY OF THE MONTH ON ITS OWN IS A DATE and the ordinal ending is what makes it one, his report that `15th` and `15th this month` are not understood: `15th`, `1st`, `22nd` read as a date while a bare `15` still does not, which is the same rule a bare number already has against clock times — `form 8` and `pump 4` are numbers in a name — and it is what lets this be read at all with no month beside it.
+- 8 Oct 2026 — With no month named, a day of the month means this month, and the next month when the day has already gone — a bare `15th` on the 20th is next month's, for the same reason a bare `5pm` at six means tomorrow: the expression is incomplete and the nearest completion ahead is what was meant — `this month` and `next month` qualify it and turn the roll OFF, because the person named the month and a named date in the past stays in the past; `31st` in a thirty-day month lands on the 1st of the next, the same rollover `step()` already relies on, stated rather than guarded because there is no 31st to mean.
+- 8 Oct 2026 — `15th aug` reads as `15 aug`: the ordinal ending is spelling and read by code, the same way a verb's endings are.
+- 8 Oct 2026 — AN `alarm_words` MEMBER IN THE LINE TURNS THE ALARM ON, his rule, while the line carries an exact time: `alarm_type` is derived from the line like every other field and the capture row's toggle becomes a tap that overrides it — the word is CONFIG and not code, like every other word this engine reads, because the app expects Hindi and Gujarati input and the Gujarati for it belongs in that list and nowhere else. Config a.20.
+- 8 Oct 2026 — The alarm word leaves the title ONLY WHEN IT TOOK EFFECT: with no exact time it stays where it was typed, because an alarm needs a time and a word swallowed for no effect is the only thing on screen that could have said why nothing happened. Cost stated: a line about an alarm clock that also carries a time will turn one on, and the word is the whole of the instruction.
+- 8 Oct 2026 — `alarm_type` leaves the list of fields the screen patches on after `resolve()` — the contract rule since session 102 is that whatever a person can set while capturing is an INPUT, and a word in the line is exactly that; the capture row keeps a `alarmTouched` flag so the toggle can turn off what the line asked for without the next keystroke switching it back on.

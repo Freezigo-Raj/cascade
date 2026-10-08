@@ -1,6 +1,6 @@
 # Cascade Part A — Contract
 
-Stage 2 deliverable, version 55. Companion to `spec/example.md`; see VERSIONS in spec.md.
+Stage 2 deliverable, version 56. Companion to `spec/example.md`; see VERSIONS in spec.md.
 
 This file says what every piece of information **is**. `spec/example.md` says what one session **was**. Where they disagree, one of them is wrong and the disagreement is a defect.
 
@@ -75,7 +75,7 @@ Handed in by the user, the clock, the client or config. Nothing here is computed
 
 **`bound_task_id` is handed in, not held by the engine.** The three bound-state signals are each a function of it, so they cannot disagree. Holding the binding inside the engine would mean a golden case could not set up an edit without first replaying the tap, and would give the engine memory that persists between calls.
 
-**Whatever a person can set while capturing is an input.** `duration_tap`, `firmness_tap` and `notes_text` join the two taps for that reason, and the record comes back complete rather than patched afterwards by the screen. What the screen patches on save is the other kind: the fields that exist only because the task already existed — `id`, `created_at`, `pinned`, `task_state`, `closed_at`, `archived`, `push_count`, `first_due_at`, `spawned_from` — plus `recurrence` and the three alarm fields, which no typed line asks for and the engine writes empty on every capture.
+**Whatever a person can set while capturing is an input.** `duration_tap`, `firmness_tap` and `notes_text` join the two taps for that reason, and the record comes back complete rather than patched afterwards by the screen. What the screen patches on save is the other kind: the fields that exist only because the task already existed — `id`, `created_at`, `pinned`, `task_state`, `closed_at`, `archived`, `push_count`, `first_due_at`, `spawned_from` — plus `recurrence`, `alarm_lead_min`, `alarm_snoozed_until`, `alarm_unanswered_at` and `reminder_fatigue`, which no typed line asks for and the engine writes empty on every capture. **`alarm_type` left that list in session 144**: an `alarm_words` member in the line turns it on, so it is derived from the line like every other field, and the capture row's toggle is a tap that overrides it rather than the only way in.
 
 **`now` is an input, not a clock the engine reads.** It is handed in on every call. That is what makes the resolver testable: Stage 4's golden cases pin `now` and the output is then a pure function of the inputs.
 
@@ -170,7 +170,7 @@ Typed now so the record shape is fixed, as Part 3 Stage 2 requires. Part A write
 | Name | Type | Required | Unit | Range | Part A writes | Part |
 |---|---|---|---|---|---|---|
 | `recurrence` | object | optional | — | `{every, unit}` with `unit` one of `day` `week` `month` `year` (`year` added session 123). Empty when the task does not repeat. | *(none)* | the advanced panel |
-| `alarm_type` | one-of-a-fixed-set | yes | — | an `alarm_types` member. `none` on capture. Set only while `has_time`. | `none` | the advanced panel |
+| `alarm_type` | one-of-a-fixed-set | yes | — | an `alarm_types` member. `none` on capture unless the line asks. Set only while `has_time`. | `none` | the line, or the capture row |
 | `alarm_lead_min` | whole number | optional | minutes | Before `due_at`, up to `alarm_defaults.max_lead_min`. Empty when `alarm_type` is `none`. | *(none)* | the advanced panel |
 | `alarm_snoozed_until` | instant | optional | — | When it rings instead of `alarm_at`. Empty until a snooze. May sit past `due_at`. | *(none)* | the alarm shell |
 | `alarm_unanswered_at` | instant | optional | — | When an alarm rang its whole chain out with nothing pressed. Cleared by a push, a Done, or an edit that moves the date. | *(none)* | the alarm shell |
@@ -331,6 +331,14 @@ Every rendered string, with its template. Part 4 applies here too: these spellin
 **The screen toggles between the two lists, and both come back on every call.** Deciding which one to draw with an input would have made the engine answer a question about the screen. Before the toggle the screen drew Default alone, so a dateless task was created and then made invisible: ten of the twelve real-backlog lines in the answer key carry no date.
 
 **Ideas is sorted, not ranked.** Every ranking factor above `est_duration_min` reads a date, so on a list where no task has one the first six tie on every row and the order falls out of the tie-break. Duration is the only term that says anything there, shortest first, with creation order breaking a tie. That is why the header offers Duration as a choice rather than a rank.
+
+**A clock time's meridiem may be written `pm`, `p.m.`, `PM` or `P.M.`, joined to the hour or beside it.** `word()` strips a trailing stop and keeps a middle one, so `p.m.` arrived at the clock rule as `p.m` and matched nothing. This is the fourth spelling or spacing of a clock time the rule has had to learn, after `5.30pm`, `5 pm` and `in 5mins`, and each time the reading was right and the shape was written too narrowly.
+
+**What a dropped word leaves behind is a SEPARATOR, not any punctuation.** The rule exists so `pay a tomorrow, b` keeps the comma dividing two items when `tomorrow` goes. It kept every trailing non-letter, so the stop in `5 p.m.` — part of the word, separating nothing — came back as a title of `call kushan .` Only `,` and `;` are kept.
+
+**A day of the month on its own is a date, and the ordinal ending is what makes it one.** `15th`, `1st`, `22nd`. A bare `15` is still not a date, which is the same rule a bare number already has against clock times: `form 8` and `pump 4` are numbers in a name. With no month named it means this month, and the next month when the day has already gone — a bare `15th` on the 20th is next month's, for the same reason a bare `5pm` at six means tomorrow. **`this month` and `next month` qualify it and turn the roll off**, because the person has named the month and a named date in the past stays in the past. `31st` in a thirty-day month lands on the 1st of the next one, by the rollover `step()` already relies on. `15th aug` reads as `15 aug`: the ending is spelling, read by code, the way a verb's endings are.
+
+**An `alarm_words` member in the line turns the alarm on, while the line carries an exact time.** `alarm_type` is derived from the line like every other field, and the capture row's toggle is a tap that overrides it. With no exact time the word takes no effect and STAYS IN THE TITLE: an alarm needs a time, and a word swallowed for nothing is the only thing on screen that could have said why nothing happened. A line about an alarm clock that also carries a time will turn one on; the cost is stated rather than guarded, because the word is the whole of the instruction.
 
 **A stated year is taken as stated, past or future.** `20 Aug 2027` is 2027 and `20 Aug 2025` is 2025. A four-digit number directly after a calendar date belongs to the expression and leaves `title` with it; without that rule the year was stranded in the title and the date resolved to the current one. `Pick date` writes a year exactly when the date it picked is not in the current year, which is the shape this rule exists to read.
 
@@ -585,6 +593,7 @@ Thirty-six objects. Each holds one thing that grows, so a change touches one obj
 | `date_lexicon` | surface form → `date_precision` |
 | `marker_words` | `strong` `weak` `start` `point` |
 | `hedge_words` | hedges that demote firmness |
+| `alarm_words` | words that turn the alarm on from the line, while `has_time` |
 
 **Behaviour** is everything else. No record depends on it, because stored data is never rewritten.
 

@@ -318,6 +318,55 @@ console.log("\na length of time, spaced either way");
   say(labels(exact("23:30"))[0] === "Tomorrow", "and a 23:30 task keeps none of them");
 
   // ------------------------------------------------------------------------
+  // THE LINE CAN ASK FOR AN ALARM (session 144, his rule: "the word `alarm`
+  // should turn on the alarm").
+  const line = (typed_line) => resolve({
+    typed_line, chip_spans: [], row_action: null, bound_task_id: null,
+    type_chip_tap: null, significance_tap: null, duration_tap: null,
+    firmness_tap: null, notes_text: "", now: "2026-10-08T12:00:00+05:30",
+    new_id: "11111111-1111-4111-8111-111111111111", config, existing_tasks: [],
+  }).task;
+
+  say(line("call kushan 5pm alarm").alarm_type === "on",
+      "the word turns the alarm on when the line carries an exact time");
+  say(line("call kushan 5pm alarm").title === "call kushan",
+      "and leaves the title, because it took effect");
+  say(line("call kushan alarm 5 p.m.").alarm_type === "on",
+      "wherever in the line it sits");
+  say(line("pay rent 15th alarm").alarm_type === "none",
+      "an alarm needs an exact time, so a day-precision line asks for nothing");
+  say(line("pay rent 15th alarm").title === "pay rent alarm",
+      "and the word STAYS, because a word swallowed for no effect explains nothing");
+  say(line("call kushan 5pm").alarm_type === "none", "a line that does not ask gets none");
+
+  // ------------------------------------------------------------------------
+  // `p.m.` IS `pm` (session 144, his report).
+  say(line("call kushan 5 p.m.").due_at === "2026-10-08T17:00:00+05:30",
+      "`5 p.m.` is five in the afternoon");
+  say(line("call kushan 5p.m.").due_at === "2026-10-08T17:00:00+05:30", "joined, too");
+  say(line("call kushan 5:30 P.M.").due_at === "2026-10-08T17:30:00+05:30",
+      "with minutes and in capitals");
+  say(line("call kushan 5 p.m.").title === "call kushan",
+      "and the stop goes with the word rather than staying as a title of its own");
+  say(line("pay a tomorrow, b").title === "pay a, b",
+      "while a comma beside a dropped word still stays — that is what the rule is for");
+
+  // ------------------------------------------------------------------------
+  // A DAY OF THE MONTH ON ITS OWN (session 144, his report: "15th or 15th this
+  // month means a date which is not understood"). Today is 8 October 2026.
+  say(line("pay rent 15th").due_at.startsWith("2026-10-15"), "`15th` is this month's 15th");
+  say(line("pay rent 1st").due_at.startsWith("2026-11-01"),
+      "`1st` on the 8th is NEXT month's, the way a bare `5pm` at six means tomorrow");
+  say(line("pay rent 15th this month").due_at.startsWith("2026-10-15"),
+      "`this month` names the month, so it does not roll");
+  say(line("pay rent 15th next month").due_at.startsWith("2026-11-15"), "and `next month` steps one");
+  say(line("pay rent 15th next month").title === "pay rent",
+      "the qualifier leaves the title with the day it qualifies");
+  say(line("submit form 15th aug").due_at.startsWith("2026-08-15"),
+      "a month beside it still wins, ordinal ending and all");
+  say(line("pay form 8").due_at === "", "and a bare number is still not a date");
+
+  // ------------------------------------------------------------------------
   // A DAY RUNG IS COUNTED FROM TODAY (session 140, his rule: "Today and
   // Tomorrow should not be relative to the current task date. It should be
   // absolute.").

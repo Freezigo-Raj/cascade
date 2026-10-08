@@ -3418,3 +3418,50 @@ Also asserted: DONE and CANCEL on one occurrence name the same successor, and th
 Rows created before this build carry random ids and will not collapse. Any duplicate pair already showing has to be deleted by hand, once.
 
 **Shell 59.** `repeat.js`, `catchup.js`, `alarm.apply.js`, `mvp.list.js`, `check_writes.mjs`. No contract, key, config or Kotlin change. All eight checks green, log sealed 573.
+
+---
+
+## Session 144 — 8 October 2026
+
+**Three reports from the phone.** `p.m.` not understood as `pm`. `15th` and `15th this month` not understood as a date. The word `alarm` should turn the alarm on.
+
+### `p.m.` is `pm`
+
+`word()` strips a trailing stop and keeps a middle one, so `p.m.` reached the clock rule as `p.m` and matched neither the suffix group nor the two-word test. Both now accept `[ap]\.?m` and normalise.
+
+**This is the fourth spelling or spacing of a clock time this one rule has had to learn** — `5.30pm`, `5 pm`, `in 5mins`, now this. Every time the READING was right and the SHAPE was written too narrowly.
+
+**A second defect came out with it.** The title came back as `call kushan .` A dropped word keeps its trailing punctuation, a rule that exists so `pay a tomorrow, b` keeps the comma dividing two items. It kept every trailing non-letter, and the stop in `p.m.` is part of the word and separates nothing. Only `,` and `;` are kept now.
+
+### A day of the month on its own
+
+`15th`, `1st`, `22nd`. **The ordinal ending is what makes it a date** — a bare `15` still is not one, which is the same rule a bare number already has against clock times, and it is what lets this be read at all with no month beside it.
+
+| Typed, on 8 October | Reads |
+|---|---|
+| `15th` | 15 Oct |
+| `1st` | 1 Nov — the day has gone, so the nearest one ahead |
+| `15th this month` | 15 Oct |
+| `15th next month` | 15 Nov |
+| `15th aug` | 15 Aug |
+| `form 8` | no date |
+
+No month named means this month, and the next month when the day has gone, for the same reason a bare `5pm` at six means tomorrow: the expression is incomplete and the nearest completion ahead is what was meant. **`this month` and `next month` turn the roll off**, because the person named the month and a named date in the past stays in the past. `31st` in a thirty-day month lands on the 1st of the next, the rollover `step()` already relies on — stated rather than guarded, because there is no 31st to mean.
+
+### The word `alarm`
+
+`alarm_words: ["alarm"]` in config, not in code, like every other word this engine reads: the app expects Hindi and Gujarati input and the Gujarati for it belongs in that list and nowhere else. Config a.20.
+
+**It only takes effect while the line carries an exact time**, because the contract says `alarm_type` is set only while `has_time` — a lead off a date with no time rings at a quarter to midnight. With no time the word **stays in the title**: a word swallowed for no effect is the only thing on screen that could have said why nothing happened.
+
+**`alarm_type` leaves the list of fields the screen patches on after `resolve()`.** The contract rule since session 102 is that whatever a person can set while capturing is an INPUT, and a word in the line is exactly that. The capture row keeps an `alarmTouched` flag so the toggle can turn off what the line asked for without the next keystroke switching it back on; loading a task sets the flag, since a loaded title carries no date words and no alarm word.
+
+Cost stated rather than guarded: a line about an alarm clock that also carries a time will turn one on. The word is the whole of the instruction.
+
+### Checks
+
+Nineteen assertions added to `check_alarm.mjs` covering all three, including the two that must NOT change: `pay a tomorrow, b` still keeps its comma, and `form 8` still has no date. Key untouched — adding cases needs his word first, and these rules want section B cases.
+
+**Shell 60, config a.20, contract 56, example 44.** `resolve.js`, `config.js`, `config.ts`, `types.ts`, `mvp.edit.js`, `check_alarm.mjs`. No Kotlin change. `ensureConfig` upserts the new version, so no migration.
+
+**OPEN, his to answer:** whether section B of the answer key should gain cases for the meridiem spellings and the ordinal dates.
