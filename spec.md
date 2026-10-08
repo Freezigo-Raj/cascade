@@ -13,7 +13,7 @@ Current stage: 5
 The six hand-signed gates were RETIRED in session 135. `gate2.py` and `gate4.mjs` keep their names because they are checks that run. Nothing in this file is waiting on a hand.
 Stage 4 is closed and signed. Stage 5 is open: the rules go in one at a time and the same command is read the other way round, so a case that still fails names a rule not yet written. `gate4.mjs` reads the stage out of the line above and inverts its own verdict on it. Every case in the key agrees with the engine. Section I taps a type, a significance and a bound task, which no case did before, and section B and H state what the card says. `gate4.mjs` reads Stage 5 and passes: 142 run, 142 green, 0 on invariants alone, 0 errored. Nine rules are written and every obligation the contract records is now met except the ranking, which is Stage 6's. Gate 5 is the hand that says Stage 5 is finished.
 
-Status: the contract is written in the protocol's three groups, with Name, Type, Required, Unit, Range, Example and From per item. 13 inputs, 13 working values, the 44-field `Task`, 39 rendered outputs, 13 cross-field invariants, and config at 38 objects populated. `tsc --strict` compiles clean and `gate2.py` passes. `resolve()` returns three keys, `task`, `list` and `capture`, and the contract names that shape. The answer key holds 144 key cases. `UndoEntry` left the contract in session 137 with the rest of undo, and the Stage 3 shell was deleted in the same session.
+Status: the contract is written in the protocol's three groups, with Name, Type, Required, Unit, Range, Example and From per item. 13 inputs, 13 working values, the 44-field `Task`, 39 rendered outputs, 13 cross-field invariants, and config at 39 objects populated. `tsc --strict` compiles clean and `gate2.py` passes. `resolve()` returns three keys, `task`, `list` and `capture`, and the contract names that shape. The answer key holds 144 key cases. `UndoEntry` left the contract in session 137 with the rest of undo, and the Stage 3 shell was deleted in the same session.
 
 D-1: **Typing the thought is the whole of the work.**
 
@@ -31,16 +31,16 @@ Last contract change: Session 20, 1 August 2026. Ranking tiers, `card_reason` co
 Run app:   py -m http.server 8000, then http://localhost:8000/  (the app, and the only
            address there is; the same one the phone installs. No build step,
            and shell/config.js is checked against config.ts by gate2.py)
-Run tests (install the two tools first: npm i -g typescript eslint): python3 gate2.py && python3 selftest.py && node gate4.mjs && node shell/check_loud.mjs && node shell/check_alarm.mjs && node shell/check_search.mjs && node shell/check_writes.mjs
+Run tests (install the two tools first: npm i -g typescript eslint): python3 gate2.py && python3 selftest.py && node gate4.mjs && node shell/check_loud.mjs && node shell/check_alarm.mjs && node shell/check_search.mjs && node shell/check_writes.mjs && node shell/check_calendar.mjs
 Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section B for one section)
 
 ## VERSIONS
 
-  example      44
-  contract     56
-  config       a.20
+  example      45
+  contract     57
+  config       a.21
   answer_key   29
-  shell        60
+  shell        61
   gate1        signed on example 35
   gate2        signed on contract 32
   gate3        signed on shell 1
@@ -54,14 +54,14 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 **Working and verified:**
 - `gate2.py` — the gate, run as a script. Reads every count rather than trusting prose.
 - `selftest.py` — 28 deliberately broken copies, each breaking one file in one way. The gate catches every one of them, and a gate that dies on a traceback is counted as a miss rather than a catch. One fixture is read by `gate4.mjs` rather than `gate2.py`, because a weekday that contradicts its date is a defect only the key runner can see.
-- `shell/` — the app. `check_loud.mjs` proves six deliberate breaks in `resolve()`'s return shape are loud; `check_alarm.mjs` covers the alarm records and the three tier-1 overrides, which is the first check ever to reach `rank_key`; `check_search.mjs` covers the four search tiers; `check_writes.mjs` asserts the shape of every call the write paths make. The Stage 3 harness that lived beside all this is deleted.
+- `shell/` — the app. `check_loud.mjs` proves six deliberate breaks in `resolve()`'s return shape are loud; `check_alarm.mjs` covers the alarm records and the three tier-1 overrides, which is the first check ever to reach `rank_key`; `check_search.mjs` covers the four search tiers; `check_writes.mjs` asserts the shape of every call the write paths make; `check_calendar.mjs` covers which tasks become calendar events and what each one says. The Stage 3 harness that lived beside all this is deleted.
 - `android/` — the alarm shell: six Kotlin files and the manifest additions. `shell/alarm.bridge.js` is the only thing that talks to it, and every timing number travels in the payload so nothing in Kotlin states a policy.
 - `gate4.mjs` — the runner. Reads every expected value out of the answer key at run time and holds none of its own, FIELD KINDS included. A case that fails on a contract invariant and on nothing the key states fails the gate rather than being counted. A case that differs only on a `choice` field is reported and counted and does not fail: a number this project picked has changed, and nothing is broken. A field compared with no row in FIELD KINDS fails the run.
 
 **Built, and only as verified as the gate above it:**
 - `spec/example.md` — Stage 1 finished example. Gate 1 signed on the current file.
 - `schema/contract.md`, `schema/types.ts` — Stage 2. Gate 2 signed on the current file; `tsc --strict` compiles clean.
-- `config.ts` — the 38 config objects. Every vocabulary member is reachable from the lexicon.
+- `config.ts` — the 39 config objects. Every vocabulary member is reachable from the lexicon.
 - `shell/lemma.js` — wink-nlp and its English web model, MIT, bundled once and committed. 3.6 MB. No build step at run time: the shell serves it as a static file and the gate imports the same one. Read last in the verb chain.
 - The record also carries its four handed-in values, `raw_text`, `id`, `created_at` and `config_version`, which is what makes a case able to be green at all.
 - `tests/answer_key.md` — the hand-written key, Gate 4 signed on the current file. Every case a table row and every case carrying a derivation. 142 run and every one states a value; the two that do not run each name the gate that answers them.
@@ -76,40 +76,48 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 
 ## THIS SESSION'S JOB
 
-Session 144: three things the line should say and could not.
+Session 145: tasks go into his Google Calendar, and no Google API is called to do it.
 
-**`p.m.` IS `pm`.** `word()` strips a trailing stop and keeps a middle one, so `p.m.` reached the
-clock rule as `p.m` and matched neither the suffix group nor the two-word test. This is the FOURTH
-spelling or spacing of a clock time this one rule has had to learn, after `5.30pm`, `5 pm` and
-`in 5mins`, and every time the reading was right and the shape was written too narrowly. A second
-defect came out with it: the title came back as `call kushan .`, because a dropped word keeps its
-trailing punctuation — a rule that exists so `pay a tomorrow, b` keeps the comma dividing two items,
-and the stop in `p.m.` is part of the word and separates nothing. Only `,` and `;` are kept now.
+**HIS FIVE ANSWERS.** One way, tasks in and nothing back. Every task with a date; Ideas get nothing.
+His main calendar, not a separate `Cascade` one. Android only. Cascade is the truth, and a delete
+travels.
 
-**A DAY OF THE MONTH ON ITS OWN IS A DATE, AND THE ORDINAL ENDING IS WHAT MAKES IT ONE.** `15th`,
-`1st`, `22nd`; a bare `15` still is not one, which is the same rule a bare number already has against
-clock times — `form 8` and `pump 4` are numbers in a name — and it is what lets this be read at all
-with no month beside it. No month named means this month, and the next month when the day has gone,
-for the same reason a bare `5pm` at six means tomorrow: the expression is incomplete and the nearest
-completion ahead is what was meant. `this month` and `next month` qualify it and turn the roll OFF,
-because the person named the month and a named date in the past stays in the past. `15th aug` reads
-as `15 aug`: the ending is spelling, read by code, the way a verb's endings are.
+**WHY THE PROVIDER AND NOT THE API.** The event is written into the phone's own calendar provider,
+on a calendar owned by a Google account, and Google's own sync adapter carries it up. No Cloud
+project, no consent screen, no verification, no refresh token to go stale, and it works with no
+signal. The browser route was ruled out on a fact: Google issues a JavaScript client an access token
+and NO refresh token, so the sync would run only while the app was open and the token under an hour
+old — the exact failure sessions 141 and 142 removed. The server route needs a verified consent
+screen, and an unverified project in Testing is issued a refresh token expiring in seven days.
 
-**THE WORD `alarm` TURNS THE ALARM ON**, his rule. It is CONFIG and not code, like every other word
-this engine reads, because the app expects Hindi and Gujarati input and the Gujarati for it belongs
-in that list and nowhere else. It takes effect only while the line carries an exact time, because the
-contract says `alarm_type` is set only while `has_time`; with no time the word STAYS IN THE TITLE,
-since a word swallowed for no effect is the only thing on screen that could have said why nothing
-happened. `alarm_type` therefore leaves the list of fields the screen patches on after `resolve()` —
-the contract rule since session 102 is that whatever a person can set while capturing is an INPUT,
-and a word in the line is exactly that — and the capture row keeps an `alarmTouched` flag so the
-toggle can turn off what the line asked for without the next keystroke switching it back on.
+**A BLOCK OR A BANNER, AND THE TASK ALREADY SAYS WHICH.** `has_time` is true exactly when the line
+carried a clock time, so `call kushan 5pm` is a block and `pay rent 15th` is an all-day banner. The
+block is `config.calendar.block_min` and NOT `est_duration_min`: the duration is a quiet field, and
+an event whose length is the engine's guess would show it on the clearest screen he owns, next to
+real meetings, where a wrong forty minutes reads as a commitment somebody made. Using the duration
+is a second amendment to the quiet-field rule and it is his to make.
 
-New assertions added to `check_alarm.mjs`, including the two that must NOT change: `pay a
-tomorrow, b` still keeps its comma and `form 8` still has no date. The ANSWER KEY IS UNTOUCHED:
-adding cases needs his word first, and these rules want section B cases.
+**OFF UNTIL HE TURNS IT ON.** Writing to a person's main calendar is not a thing to start doing
+because an update landed. The switch, the calendar it writes to and the two permissions live on the
+account screen, because all four are facts about THIS PHONE and none is a fact about the account.
+Turning it off removes every event the app wrote: a switch that stops adding and leaves what it
+already added is a one-way door.
 
-Versions are in VERSIONS. All eight checks green.
+**THE DUPLICATE SHAPE, GUARDED BEFORE IT COST ANYTHING.** The task id to row id map lives on the
+phone, and a map can be lost. Every row carries `cascade:<task id>` in its description and the
+plugin looks for that before inserting, so a lost map cannot become a second copy of every event.
+That is session 143's lesson applied in advance.
+
+**THE SEAM, AGAIN.** `calendar.js` imports nothing and holds every rule; `calendar.bridge.js` holds
+the write path and imports the store. `check_calendar.mjs` is the NINTH CHECK and reads only the
+pure half. What it cannot see is in its own header: whether the Kotlin inserts the row, whether an
+all-day banner lands on the right day at +05:30, and whether Google's adapter carries it up are
+phone answers. Nothing here compiles Kotlin either, and both new Kotlin files were checked by hand.
+
+**THE APK MUST BE REBUILT.** A second app-local plugin, two new runtime permissions, and one line in
+`MainActivity`. Leaving that line out is what made the alarm invisible for a build.
+
+All nine checks green.
 
 ## NEXT THREE JOBS
 
@@ -972,3 +980,13 @@ have landed. That is the price of the single table and it is accepted.
 - 8 Oct 2026 — AN `alarm_words` MEMBER IN THE LINE TURNS THE ALARM ON, his rule, while the line carries an exact time: `alarm_type` is derived from the line like every other field and the capture row's toggle becomes a tap that overrides it — the word is CONFIG and not code, like every other word this engine reads, because the app expects Hindi and Gujarati input and the Gujarati for it belongs in that list and nowhere else. Config a.20.
 - 8 Oct 2026 — The alarm word leaves the title ONLY WHEN IT TOOK EFFECT: with no exact time it stays where it was typed, because an alarm needs a time and a word swallowed for no effect is the only thing on screen that could have said why nothing happened. Cost stated: a line about an alarm clock that also carries a time will turn one on, and the word is the whole of the instruction.
 - 8 Oct 2026 — `alarm_type` leaves the list of fields the screen patches on after `resolve()` — the contract rule since session 102 is that whatever a person can set while capturing is an INPUT, and a word in the line is exactly that; the capture row keeps a `alarmTouched` flag so the toggle can turn off what the line asked for without the next keystroke switching it back on.
+- 8 Oct 2026 — TASKS GO INTO THE PHONE'S CALENDAR THROUGH THE ANDROID PROVIDER, not through a Google API, his answer 4: the event is written into the local calendar provider on a calendar owned by a Google account and Google's own sync adapter carries it up — no Cloud project, no consent screen, no verification, no refresh token to go stale, and it works with no signal, which no OAuth route does; the browser route was ruled out because Google issues a JavaScript client an access token and NO refresh token, so the sync would run only while the app was open and the token under an hour old, which is the exact failure sessions 141 and 142 removed, and the server route needs a verified consent screen while an unverified project in Testing is issued a refresh token expiring in seven days.
+- 8 Oct 2026 — EVERY TASK WITH A DATE GETS AN EVENT and an Idea gets none, his answer 2 — a dateless task has no day to be drawn on, which is the same test the Default list already uses; a start with no due date counts, because `after friday` is a task with a day attached and a person who typed one is not filing an idea.
+- 8 Oct 2026 — A task with a time is a block of `config.calendar.block_min` and a task without one is an all-day banner: `has_time` already says which and the engine has carried that distinction since Stage 2 — the block is a STATED NUMBER AND NOT `est_duration_min`, because the duration is a quiet field and an event whose length is the engine's guess would show it on the clearest screen he owns, next to real meetings, where a wrong forty minutes reads as a commitment somebody made; using the duration instead is a second amendment to the quiet-field rule, after the slot totals, and it is his to make. Config a.21.
+- 8 Oct 2026 — A CLOSED TASK LOSES ITS EVENT, his answer 5 that a delete travels: done, cancelled, archived or deleted for good — cost stated rather than discovered, the calendar keeps no record of having done it at five, and the alternative is a calendar filling with finished things nobody can clear from the app that put them there; between a lost record and an unclearable one the lost record is the smaller harm, and it is one line in `calendar.js` to reverse.
+- 8 Oct 2026 — An event moved or deleted by hand in Google Calendar is put back on the next sync, which is what ONE WAY means — said in words on the account screen rather than left to be noticed.
+- 8 Oct 2026 — The calendar is OFF until he turns it on, and the switch, the calendar it writes to and the two permissions all live on the account screen — writing to a person's main calendar is not a thing to start doing because an update landed, and all four are facts about THIS PHONE rather than about the account, so the switch and the choice live in `localStorage` and are not synced: a laptop deciding what a phone writes to would be the wrong shape entirely.
+- 8 Oct 2026 — Turning it off REMOVES every event the app wrote: a switch that stops adding and leaves what it already added is a one-way door and not a switch.
+- 8 Oct 2026 — `READ_CALENDAR` is asked for alongside `WRITE_CALENDAR` and is not optional — writing alone would let the app insert rows and never see them again, so every sync would be an insert and the calendar would fill with copies; the diff is the whole design and the diff needs the read.
+- 8 Oct 2026 — The task id to provider row id map lives on the PHONE, in `CalendarStore`, because a row id is about one calendar on one device and would be meaningless on the next one or in Supabase — and because the map can be lost, every row this app writes carries `cascade:<task id>` in its description and `set()` looks for that before inserting, so a lost map cannot become a second copy of every event: the duplicate shape that cost session 143, guarded before it could cost anything here.
+- 8 Oct 2026 — `calendar.js` imports NOTHING and holds every rule; `calendar.bridge.js` holds the write path and imports the store — the same seam session 127 cut for the alarm, and `check_calendar.mjs` is the ninth check and reads only the pure half; what it cannot see is stated in its own header: whether the Kotlin inserts the row, whether an all-day banner lands on the right day at +05:30, and whether Google's adapter carries any of it up are phone answers.

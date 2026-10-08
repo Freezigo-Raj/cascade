@@ -393,6 +393,16 @@ async function start() {
     // An alarm that cannot arm is not a reason for a blank screen.
     console.warn("alarm: not started —", e?.message ?? e);
   }
+  // The calendar, after it. Off the Android shell, and off while the switch on
+  // the account screen is off, every call in here is a no-op. It runs last
+  // because it writes to nothing in this app and reads everything: it is the
+  // only thing here whose failure can cost nothing at all.
+  try {
+    const { initCalendar } = await import(`./calendar.bridge.js${v}`);
+    await initCalendar();
+  } catch (e) {
+    console.warn("calendar: not started —", e?.message ?? e);
+  }
 }
 
 let whoEmail = "";

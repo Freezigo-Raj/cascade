@@ -442,4 +442,32 @@ Two rules now, and either alone would have been enough:
 The catch-up already derived its id so two devices opening at once would write one row. That reasoning was right and its scope was too small: the race is between anything that can close the same occurrence, not between devices.
 
 
+
+## Google Calendar
+
+His five answers, session 145, and each is a rule:
+
+| | Answer |
+|---|---|
+| Direction | one way. Tasks go in. Nothing comes back |
+| Which tasks | every task with a date. Ideas get nothing |
+| Which calendar | his main one, not a separate `Cascade` one |
+| Where | Android only |
+| Edits | Cascade is the truth, and a delete travels |
+
+**No Google sign-in, no Cloud project, no consent screen, no verification.** The event is written into the phone's own calendar provider, on a calendar owned by a Google account, and **Google's own sync adapter carries it up**. The browser OAuth route cannot do this: Google issues a JavaScript client an access token and no refresh token, so the sync would only run while the app was open and the token under an hour old, which is the exact failure sessions 141 and 142 removed. The server route needs a verified consent screen, and an unverified project in Testing is issued a refresh token expiring in 7 days.
+
+**It is OFF until he turns it on**, on the account screen. Writing to a person's main calendar is not a thing to start doing because an update landed. The switch, the calendar it writes to, and the two permissions all live there, because all four are facts about THIS PHONE and none is a fact about the account.
+
+**A task with a time is a 30 minute block. A task without one is an all-day banner.** `has_time` already says which, and the engine has carried that distinction since Stage 2.
+
+**The block is `config.calendar.block_min`, NOT `est_duration_min`.** The duration is a quiet field: collected so suggestions are better, never shown. An event whose length is the engine's guess would show it, on the clearest screen he owns, next to real meetings, where a wrong forty minutes reads as a commitment somebody made. Using the duration instead is a second amendment to the quiet-field rule, after the slot totals, and it is his to make.
+
+**A closed task loses its event.** Done, cancelled, archived or deleted for good. The cost is stated: the calendar keeps no record of having done it at five. The alternative is a calendar that fills with finished things nobody can clear from the app that put them there, and between a lost record and an unclearable one the lost record is the smaller harm.
+
+**An event moved or deleted by hand in Google Calendar comes back.** That is what one way means. It is said in words on the account screen rather than left to be noticed.
+
+**Turning it off removes every event the app wrote.** A switch that stops adding and leaves what it already added is a one-way door, not a switch.
+
+
 **Arrived since this page was written**, and now on it: recurrence, sync, the duration control, notes, firmness. **Decided and deliberately still absent:** Cancel and Archive as row actions. A row carries Done, Pin, Delete and its push targets, and a Done row carries Undone. Cancel and Archive stay members of `row_action` with no control on any screen, which is stated here so the gap reads as a decision rather than an oversight.

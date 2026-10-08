@@ -3465,3 +3465,64 @@ Nineteen assertions added to `check_alarm.mjs` covering all three, including the
 **Shell 60, config a.20, contract 56, example 44.** `resolve.js`, `config.js`, `config.ts`, `types.ts`, `mvp.edit.js`, `check_alarm.mjs`. No Kotlin change. `ensureConfig` upserts the new version, so no migration.
 
 **OPEN, his to answer:** whether section B of the answer key should gain cases for the meridiem spellings and the ordinal dates.
+
+---
+
+## Session 145 — 8 October 2026
+
+**His ask:** tasks into Google Calendar. His five answers: one way, every task with a date, his main calendar, Android only, Cascade is the truth and a delete travels.
+
+### No Google API is called
+
+The event is written into the phone's own calendar provider, on a calendar owned by a Google account, and **Google's own sync adapter carries it up**. No Cloud project, no consent screen, no verification, no refresh token to go stale, and it works with no signal.
+
+The two routes that were ruled out, on facts rather than taste:
+
+| Route | Why not |
+|---|---|
+| Browser OAuth in the page | Google issues a JavaScript client an access token and NO refresh token. The sync would run only while the app was open and the token under an hour old — the exact failure sessions 141 and 142 removed |
+| Server, with a stored refresh token | Needs a verified consent screen. An unverified project in Testing is issued a refresh token expiring in 7 days |
+
+### What goes across
+
+Every open task with a date, which is `due_at` or `earliest_start` — the same test the Default list already uses to decide a task has a date at all. An Idea has no day to be drawn on and gets nothing.
+
+A task with a time is a block. A task without one is an all-day banner. `has_time` already says which; the engine has carried that distinction since Stage 2.
+
+**The block is `config.calendar.block_min` and NOT `est_duration_min`.** The duration is a quiet field: collected so suggestions are better, never shown. An event whose length is the engine's guess would show it, on the clearest screen he owns, next to real meetings, where a wrong forty minutes reads as a commitment somebody made. One stated number claims nothing about the task. Using the duration instead is a second amendment to the quiet-field rule, after the slot totals, and it is his.
+
+### A delete travels
+
+Done, cancelled, archived, deleted for good: none is open, so none is wanted, and the sync's second loop takes the event away.
+
+**Cost stated rather than discovered:** the calendar keeps no record of having done it at five. The alternative is a calendar that fills with finished things nobody can clear from the app that put them there, and between a lost record and an unclearable one the lost record is smaller. It is one line in `calendar.js` to reverse.
+
+An event he moves or deletes by hand in Google Calendar comes back on the next sync. That is what one way means, and the account screen says it in words.
+
+### Off until he turns it on
+
+Writing to a person's main calendar is not a thing to start doing because an update landed. The switch, the calendar it writes to and the two permissions live on the account screen. All four are facts about THIS PHONE, so they live in `localStorage` and are not synced: a laptop deciding what a phone writes to would be the wrong shape entirely.
+
+**Turning it off removes every event the app wrote.** A switch that stops adding and leaves what it already added is a one-way door.
+
+**`READ_CALENDAR` is asked for alongside `WRITE_CALENDAR` and is not optional.** Writing alone would let the app insert rows and never see them again, so every sync would be an insert and the calendar would fill with copies. The diff is the whole design and the diff needs the read.
+
+### The duplicate shape, guarded before it cost anything
+
+The task id to provider row id map lives on the phone, in `CalendarStore`, because a row id is about one calendar on one device and would be meaningless on the next or in Supabase. A map can be lost — storage cleared, app reinstalled — and a sync would then write a second copy of every event.
+
+So every row carries `cascade:<task id>` in its description, and `set()` looks for that before inserting. Session 143's lesson applied in advance rather than after.
+
+### The seam, again
+
+`calendar.js` imports nothing and holds every rule. `calendar.bridge.js` holds the write path and imports the store. `check_calendar.mjs` is the **ninth check** and reads only the pure half, 30 assertions.
+
+What it cannot see is in its own header: whether the Kotlin inserts the row, whether an all-day banner lands on the right day at +05:30, and whether Google's adapter carries it up are phone answers.
+
+### The APK must be rebuilt
+
+Two new Kotlin files under `com.cascade.calendar`, two new runtime permissions, and **one line in `MainActivity`**. Leaving that line out is what made the alarm invisible for a whole build. Nothing here compiles Kotlin; both files were checked by hand for braces, parens and companion counts, which is a statement about care and not a compiler.
+
+**Shell 61, config a.21, contract 57, example 45. Alarm shell still 5, calendar shell 1.** All nine checks green.
+
+**OPEN, his to answer:** whether a timed event should use `est_duration_min` instead of the fixed block.

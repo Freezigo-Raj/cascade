@@ -1,6 +1,6 @@
 # Cascade Part A — Contract
 
-Stage 2 deliverable, version 56. Companion to `spec/example.md`; see VERSIONS in spec.md.
+Stage 2 deliverable, version 57. Companion to `spec/example.md`; see VERSIONS in spec.md.
 
 This file says what every piece of information **is**. `spec/example.md` says what one session **was**. Where they disagree, one of them is wrong and the disagreement is a defect.
 
@@ -594,6 +594,7 @@ Thirty-six objects. Each holds one thing that grows, so a change touches one obj
 | `marker_words` | `strong` `weak` `start` `point` |
 | `hedge_words` | hedges that demote firmness |
 | `alarm_words` | words that turn the alarm on from the line, while `has_time` |
+| `calendar` | `block_min`: how long a timed task is drawn for on the phone's calendar |
 
 **Behaviour** is everything else. No record depends on it, because stored data is never rewritten.
 

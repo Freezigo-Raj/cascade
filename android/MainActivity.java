@@ -26,12 +26,18 @@ package com.freezigo.cascade;
 import android.os.Bundle;
 import com.getcapacitor.BridgeActivity;
 import com.cascade.alarm.CascadeAlarmPlugin;
+import com.cascade.calendar.CascadeCalendarPlugin;
 
 public class MainActivity extends BridgeActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(CascadeAlarmPlugin.class);
+        // THE SAME LINE, FOR THE SAME REASON (session 145). The calendar plugin
+        // is app-local too, so without this the APK builds, runs, looks correct,
+        // and the account screen reads "not present" for the calendar with
+        // nothing to explain why. That is exactly what the alarm cost once.
+        registerPlugin(CascadeCalendarPlugin.class);
         super.onCreate(savedInstanceState);
     }
 

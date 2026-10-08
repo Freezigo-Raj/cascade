@@ -1,4 +1,4 @@
-CASCADE — sessions 137 to 144. READ THIS BEFORE COMMITTING.
+CASCADE — sessions 137 to 145. READ THIS BEFORE COMMITTING.
 
 A zip can add and overwrite files. It cannot delete one. Six files were DELETED
 and they must be removed from the repository BY HAND, or gate2.py will fail
@@ -31,7 +31,24 @@ AFTER DELETING, run this and it must say GATE 2: PASS —
 
   python3 gate2.py
 
-Header should read build 60.
+Header should read build 61.
 
-NO SUPABASE MIGRATION. The config version moved to a.20 and ensureConfig
+NO SUPABASE MIGRATION. The config version moved to a.21 and ensureConfig
 upserts it on first run.
+
+THE APK MUST BE REBUILT THIS TIME. Session 145 added a second Kotlin plugin
+for the calendar. Three things, and the third is the one that gets forgotten:
+
+  1. Copy the two new files into the Capacitor project, keeping the folders:
+       android\app\src\main\java\com\cascade\calendar\CascadeCalendarPlugin.kt
+       android\app\src\main\java\com\cascade\calendar\CalendarStore.kt
+  2. Add the two permissions from AndroidManifest-additions.xml:
+       READ_CALENDAR and WRITE_CALENDAR
+  3. Copy the new MainActivity.java over. It carries ONE EXTRA LINE:
+       registerPlugin(CascadeCalendarPlugin.class);
+     Without it the APK builds, runs, looks correct, and the account screen
+     says the calendar is "not present" with nothing to explain why. That is
+     exactly what the alarm cost once.
+
+Then on the account screen: Google Calendar -> Allow calendar access -> Turn on.
+It is OFF until you turn it on. Nothing is written until then.

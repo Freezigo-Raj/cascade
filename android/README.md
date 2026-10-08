@@ -61,3 +61,42 @@ not against this build. The ninth has never been run anywhere.
 9. **Unattended, it snoozes itself five times and then writes
    `alarm_unanswered_at`, and the task rises to the top of the list with
    "Its alarm rang unanswered" on the row.**
+
+---
+
+## The calendar plugin (session 145)
+
+A second app-local plugin, `com.cascade.calendar`. Two files:
+
+```
+android/app/src/main/java/com/cascade/calendar/CascadeCalendarPlugin.kt
+android/app/src/main/java/com/cascade/calendar/CalendarStore.kt
+```
+
+**It must be registered in `MainActivity`, exactly like the alarm one.** Without
+the line the APK builds, runs, looks correct, and the account screen reads
+"not present" for the calendar with nothing to explain why. That cost a build
+once already:
+
+```java
+import com.cascade.calendar.CascadeCalendarPlugin;
+...
+registerPlugin(CascadeCalendarPlugin.class);
+```
+
+**Two new permissions** in `AndroidManifest-additions.xml`: `READ_CALENDAR` and
+`WRITE_CALENDAR`. Both are runtime permissions and both are asked for together
+on the account screen, on a press. Reading is not optional — writing alone would
+let the app insert rows and never see them again, so every sync would be an
+insert and the calendar would fill with copies.
+
+**No Google API is called.** The event goes into the phone's own calendar
+provider, on a calendar owned by a Google account, and Google's sync adapter
+carries it up. No Cloud project, no consent screen, no verification, no token
+to refresh, and it works with no signal.
+
+**Nothing here compiles Kotlin.** `gate2.py` runs `tsc --strict` over the web
+half and these eight files are read by no tool. Both new files were checked by
+hand for braces, parens and companion counts, which is a statement about care
+and not a compiler. If the build fails, send the error.
+

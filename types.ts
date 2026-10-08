@@ -408,6 +408,8 @@ export interface Config {
   hedge_words: string[];
   /** Words that turn the alarm on from the line. Only while `has_time`. */
   alarm_words: string[];
+  /** How long a timed task is drawn for on the phone's calendar, in minutes. */
+  calendar: { block_min: number };
 
   // Behaviour
   verb_to_type: Record<string, string>;

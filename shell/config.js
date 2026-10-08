@@ -6,7 +6,7 @@
 // Vocabulary members are never removed or repurposed, only deactivated.
 const active = (id) => ({ id, active: true });
 export const partAConfig = {
-    version: "a.20",
+    version: "a.21",
     // --- Vocabulary: records hold these members ---
     // Drawn only from what the example exercises. Thin on purpose:
     // a missing member falls to `other`, which is free. An extra member is permanent.
@@ -92,6 +92,17 @@ export const partAConfig = {
     // a word silently swallowed for no effect is worse than a word left where
     // it was typed.
     alarm_words: ["alarm"],
+    // THE CALENDAR (session 145, his five answers). `block_min` is how long a
+    // timed task is drawn for on the phone's calendar.
+    //
+    // A FIXED NUMBER AND NOT `est_duration_min`. The duration is a QUIET FIELD
+    // (session 89, his principle): collected so suggestions are better, never
+    // shown. An event whose length is the engine's guess would show it, on the
+    // clearest screen he owns, next to real meetings, where a wrong forty
+    // minutes reads as a commitment somebody made. One stated number claims
+    // nothing about the task. Using the duration instead is a second amendment
+    // to the quiet-field rule, after the slot totals, and it is his to make.
+    calendar: { block_min: 30 },
     hedge_words: ["maybe"],
     // --- Behaviour ---
     verb_to_type: {

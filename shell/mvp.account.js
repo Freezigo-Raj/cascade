@@ -303,6 +303,104 @@ export function mountAccount(root, { onBack, onSignedOut } = {}) {
       }
     })();
 
+    // THE CALENDAR (session 145, his five answers). It is OFF until he turns it
+    // on here: writing to a person's main calendar is not a thing to start
+    // doing because an update landed. The switch, the calendar it writes to and
+    // the two permissions all live on this screen, because all four are facts
+    // about THIS PHONE and none of them is a fact about the account.
+    const cal = el("div", "group");
+    cal.appendChild(el("div", "label", "Google Calendar"));
+    const calRow = el("div", "stat");
+    calRow.appendChild(el("span", "stat-label", "Calendar shell"));
+    const calVal = el("span", "stat-value", "checking");
+    calRow.appendChild(calVal);
+    cal.appendChild(calRow);
+    const calSaid = el("div", "said", "");
+    cal.appendChild(calSaid);
+    root.appendChild(cal);
+
+    (async () => {
+      try {
+        const bridge = await import(`./calendar.bridge.js${v}`);
+        if (!bridge.isCalendarShell()) {
+          calVal.textContent = "not present";
+          calSaid.textContent =
+            "This copy cannot write to a calendar. The Android build writes tasks straight into the phone's own calendar, and Google's sync carries them up — no Google sign-in, no permissions to approve online, and it works with no signal. If this IS the Android build, the APK is older than this plugin and needs rebuilding.";
+          return;
+        }
+        calVal.textContent = "present";
+
+        const drawCal = async () => {
+          for (const dead of [...cal.querySelectorAll("[data-cal]")]) dead.remove();
+          const perm = await bridge.calendarPermission();
+          const on = bridge.calendarOn();
+
+          const permRow = el("div", "stat");
+          permRow.dataset.cal = "perm";
+          permRow.appendChild(el("span", "stat-label", "Permission"));
+          permRow.appendChild(el("span", "stat-value", perm.read && perm.write ? "granted" : "not granted"));
+          cal.appendChild(permRow);
+
+          if (!perm.read || !perm.write) {
+            // BOTH, AND READING IS NOT OPTIONAL. Writing alone would let the app
+            // insert rows and never see them again, so every sync would be an
+            // insert and the calendar would fill with copies.
+            const ask = button("act", "Allow calendar access", async () => {
+              await bridge.requestCalendarPermission();
+              setTimeout(drawCal, 800);
+            });
+            ask.dataset.cal = "ask";
+            cal.appendChild(ask);
+            const why = el("div", "said",
+              "Android asks once. Read and write together: the app has to see what it already put there, or every sync would add another copy.");
+            why.dataset.cal = "why";
+            cal.appendChild(why);
+            return;
+          }
+
+          // WHICH CALENDAR. His answer was his main one rather than a separate
+          // `Cascade` calendar, so the default is the primary Google one and
+          // this is here for the phone that has more than one account on it.
+          const list = await bridge.writableCalendars();
+          if (list.length > 1) {
+            const pickRow = el("div", "stat");
+            pickRow.dataset.cal = "pick";
+            pickRow.appendChild(el("span", "stat-label", "Writes to"));
+            const sel = el("select", "cal-pick");
+            for (const c of list) {
+              const o = el("option", "", `${c.name}${c.account && c.account !== c.name ? " · " + c.account : ""}`);
+              o.value = c.id;
+              if (c.id === bridge.chosenCalendar()) o.selected = true;
+              sel.appendChild(o);
+            }
+            sel.addEventListener("change", () => {
+              bridge.setCalendarOn(bridge.calendarOn(), sel.value);
+            });
+            pickRow.appendChild(sel);
+            cal.appendChild(pickRow);
+          }
+
+          const sw = button("act" + (on ? " on" : ""), on ? "Turn off" : "Turn on", async () => {
+            await bridge.setCalendarOn(!on, bridge.chosenCalendar());
+            setTimeout(drawCal, 400);
+          });
+          sw.dataset.cal = "switch";
+          cal.appendChild(sw);
+
+          const says = el("div", "said",
+            on
+              ? "Every task with a date is on the calendar. A task with a time is a 30 minute block; a task without one is an all-day banner. ONE WAY: marking a task done, cancelling it or deleting it removes the event, and an event you move or delete in Google Calendar is put back on the next sync. Turning this off removes every event the app wrote."
+              : "Off. Nothing is written to your calendar. Turning it on puts every task that has a date onto it, and dateless tasks — Ideas — are left alone.");
+          says.dataset.cal = "says";
+          cal.appendChild(says);
+        };
+        await drawCal();
+      } catch (e) {
+        calVal.textContent = "unknown";
+        calSaid.textContent = "The calendar module did not load: " + (e?.message ?? e);
+      }
+    })();
+
     const later = el("div", "group");
     later.appendChild(el("div", "label", "Not built yet"));
     later.appendChild(el("div", "said",
