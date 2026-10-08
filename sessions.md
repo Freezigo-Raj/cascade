@@ -3573,3 +3573,100 @@ It used to appear only when the phone had more than one writable calendar. Other
 Drawn whatever the count now, and the first draw writes the answer to `localStorage`, so the two halves cannot hold different ideas of where the events are going. A phone with no writable calendar is told so in words rather than being offered a switch that can only fail.
 
 **Shell 63.** `calendar.bridge.js` and `mvp.account.js`. No Kotlin change, no APK rebuild. All nine checks green.
+
+---
+
+## Session 148 — 8 October 2026
+
+**His job:** get data from Google Calendar back into Cascade. His answers: all events in a window from the calendars he ticks, 10 days back and 60 forward; follow Google on change; delete when Google deletes; editable in Cascade without writing back; counts towards the day's load; behaves like a normal task in every list. Then: detach once touched in Cascade, cancel rather than delete if detached, one task per repeating series showing only the next event, `task_state` never owned by Google, multiple accounts with per-calendar ticks, and the title never parsed for dates.
+
+### The same route, the other way
+
+`CalendarContract.Instances`, read through the phone's own provider. Still no Google API, no Cloud project and no OAuth, for the same reasons as session 145 — and one new one: **that table expands recurrence for us.** A weekly standup arrives as one row per occurrence rather than as an RRULE this app would have to interpret. Writing an RRULE reader would have been the fourth time this project built a parser for something the platform already answers.
+
+### "What is `events` in Google Calendar?"
+
+Your question, and the answer changes the design: `events`, `holidays` and `birthdays` are each **their own calendar**, not a type of event inside one. Google publishes them as separate calendars under the same account. So the option you asked for IS the tick list and nothing else is needed.
+
+The account screen now draws every readable calendar the phone knows, grouped under its account name, and you tick the ones you want. Two Google accounts on one phone are two groups. **Nothing is ticked by default** — reading a person's calendar is not a thing to start doing because an update landed, the same call as the write switch.
+
+### The loop, and the two gates that stop it
+
+Without these the push and the import feed each other for ever: a task writes an event, the event is read back as a task, that task writes an event.
+
+| Gate | Where | Rule |
+|---|---|---|
+| ours, never imported | `calendar.import.js` | the description carries `cascade:` |
+| theirs, never pushed | `calendar.js` | the task carries a `calendar_uid` |
+
+One line each, each useless without the other. The `cascade:` marker was written in session 145 as a guard against a lost id map; it earns its keep a second time as the thing that recognises this app's own reflection.
+
+### The id of an imported task
+
+Derived from the event's UID and the occurrence's start, never invented — `importedId()`, the same mechanism as `successorId()` from session 143, and for the same three reasons:
+
+- importing twice gives one task rather than two
+- two phones compute the same id, so the newest-wins trigger collapses them instead of keeping both
+- clearing this app's storage and importing again hands the ids back rather than a second copy of everything
+
+**Seeded on the start**, because one UID has many occurrences and each is its own task in its own turn — and because a closed occurrence stays closed exactly when its id is a function of a start time that cannot move.
+
+The UID itself is whatever the phone can give, in a stated order: `UID_2445` (Google's own event id, the same on every device), then `_SYNC_ID`, then `row:<id>` last. **The account screen prints which one answered**, because `row:<id>` is a local row number and an import on a second phone would compute different ids from it. A silent fallback there would look like working sync right up to the day you install the app somewhere else.
+
+### One task per series, showing the next occurrence only
+
+Your rule. Sixty weekly standups in a seventy-day window would bury every real task in Upcoming, and Cascade's own repeats have said since session 91 that there is never more than one open occurrence. This is the same answer for somebody else's repeat.
+
+**Which one is "next" is not simply the soonest.** It is the earliest occurrence in the window you have not already closed. So a standup missed on Monday stays Monday's standup, overdue, until you mark it done — and only then does Tuesday's appear. That is exactly what a Cascade repeat does, and it falls out of the id being a function of the start. A series with every occurrence closed produces nothing: a repeat you have finished with for now is not a task.
+
+### Following, and detaching
+
+| State | Who owns the title and date | What an import does |
+|---|---|---|
+| following | Google | updates title and date, keeps everything else |
+| detached | you | nothing, ever again |
+
+While a task follows, Google owns its title and date **and nothing else**. The alarm you set, the pin, the notes, the firmness and the type were always yours and are carried across every update.
+
+The first edit to the title or the date detaches it. That answers your ask for edit ability in Cascade without writing back: detaching on the **edit** rather than on a switch means the thing you do when the calendar has a date wrong is the thing that makes it stick.
+
+**`task_state` is always Cascade's.** A task you have closed is never reopened by an import, whatever the calendar still holds. That line sits above every other rule in `planImport`, so nothing below it can reach past.
+
+### When Google deletes the event
+
+| The task was | What happens | Why |
+|---|---|---|
+| following | deleted | it was Google's, and it goes with its event |
+| detached | cancelled | it was yours; it shows on Done with `Revive` |
+
+Work vanishing from this app because somebody else tidied their calendar is not a thing this app does.
+
+A task is only counted as missing if its occurrence sat **inside the window that was actually read**. A task in March is not missing because today's window ended in December — without that test, the first import after a date change would delete most of the list.
+
+### The title is never parsed for dates
+
+Your rule, and it matters more than it sounds. A meeting called `Budget review for March` would otherwise be moved to March by this app, overriding a date Google was certain about with one guessed from a name. The title is a name somebody else wrote, not a line you typed at a capture box.
+
+A declined event is skipped — `SELF_ATTENDEE_STATUS` of 2. A meeting you said no to is not a commitment.
+
+### An imported task is a task
+
+It counts towards the day's load and appears in every list, your answer 7. Nothing in `cards.js`, `clash.js` or the lists needed a line for this, which is the test of whether the import produced a real Task or a lookalike.
+
+### Two new fields, and a migration that must be run first
+
+`calendar_uid` (text, `''`) and `calendar_detached` (boolean, `false`). Every row already in Supabase reads as a task that did not come from a calendar.
+
+**Run `migrate_a22.sql` in Supabase before installing this build.** `create table if not exists` does nothing to a table that already exists, so every new column needs its own migration.
+
+### The seam, again
+
+`calendar.import.js` imports nothing but the engine's `fromEvent` and holds every rule above. The bridge decides nothing and does what the plan says. `check_calendar.mjs` grew a second suite: the loop gate, skipped events, the derived id, one-task-per-series, the imported task's shape, following versus detached, state ownership, both delete behaviours, and the window.
+
+The import runs **once per open** rather than on the store's change event. The push is debounced on every write because a task changing is what makes an event wrong; nothing this app does changes somebody else's calendar, so a listener there would be a provider query per keystroke for an answer that cannot have moved.
+
+### What this cannot see
+
+Whether the Kotlin's `Instances` query returns what it should on his phone, whether `UID_2445` is populated by Google's adapter there, and whether an all-day event lands on the right day at +05:30 are all phone answers. `Import now` on the account screen prints the full report — read, added, updated, removed, cancelled, the first error verbatim, and which UID source answered — for exactly that reason.
+
+**Shell 64. Calendar shell build 2 — the APK must be rebuilt.** `readable()`, `events()` and `uidOf()` are new Kotlin, hand-checked for braces, parens and companion count. Nothing here compiles Kotlin, and that is not a compiler. All nine checks green.

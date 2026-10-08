@@ -70,6 +70,12 @@ export function dateOf(task) {
  * is no day to draw it on. That is his answer 2 and it needs no more than this.
  */
 export function wantsEvent(task) {
+  // THE OTHER HALF OF THE LOOP GATE (session 148). A task carrying a
+  // `calendar_uid` came FROM an event, and writing an event for it would mean
+  // the push and the import feeding each other for ever: event becomes task,
+  // task becomes event, that event becomes a task. One line here, one line in
+  // `calendar.import.js`, and each is useless without the other.
+  if (task?.calendar_uid) return false;
   return isOpen(task) && Boolean(dateOf(task));
 }
 

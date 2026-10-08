@@ -25,6 +25,11 @@ import java.util.TimeZone
  *                         startMs, endMs, calendarId })
  *   CascadeCalendar.remove({ id })
  *   CascadeCalendar.clear()        — every event this app wrote, gone
+ *   CascadeCalendar.readable()     -> { calendars: [...] }, everything readable
+ *   CascadeCalendar.events({ fromMs, toMs, calendarIds })
+ *                                  -> { events: [{ uid, title, description,
+ *                                                  startMs, endMs, allDay,
+ *                                                  selfStatus, calendarId }] }
  *
  * `id` IS ALWAYS THE TASK ID. The provider's own row id never crosses into
  * JavaScript: it is one calendar on one device, and `CalendarStore` is where it
@@ -52,7 +57,7 @@ class CascadeCalendarPlugin : Plugin() {
          * open; this half only changes when the APK is rebuilt, so the two
          * drift by design and the app has to be able to see how far.
          */
-        const val CALENDAR_BUILD = 1
+        const val CALENDAR_BUILD = 2
 
         private const val PERM_REQUEST = 9101
 
@@ -141,6 +146,160 @@ class CascadeCalendarPlugin : Plugin() {
             }
         }
         call.resolve(JSObject().put("calendars", out))
+    }
+
+    /**
+     * EVERY CALENDAR THIS PHONE CAN READ, for the tick list (session 148).
+     *
+     * `calendars()` above returns only the writable ones, because that list
+     * answers a different question: where do tasks GO. This one answers where
+     * events COME FROM, and that includes calendars nothing may write to —
+     * Holidays, Birthdays, a colleague's shared calendar.
+     *
+     * HIS QUESTION ANSWERED HERE RATHER THAN IN A FIELD. There is no "type" on
+     * a calendar row saying event or holiday or birthday: each of those IS its
+     * own calendar, with its own name and its own account. So the tick list is
+     * the answer, and `name` and `account` are what he ticks by.
+     */
+    @PluginMethod
+    fun readable(call: PluginCall) {
+        if (!canRead()) return call.reject("calendar permission not granted")
+        val out = JSArray()
+        val cols = arrayOf(
+            CalendarContract.Calendars._ID,
+            CalendarContract.Calendars.CALENDAR_DISPLAY_NAME,
+            CalendarContract.Calendars.ACCOUNT_NAME,
+            CalendarContract.Calendars.ACCOUNT_TYPE,
+            CalendarContract.Calendars.CALENDAR_ACCESS_LEVEL,
+            CalendarContract.Calendars.IS_PRIMARY,
+            CalendarContract.Calendars.VISIBLE
+        )
+        runCatching {
+            context.contentResolver.query(
+                CalendarContract.Calendars.CONTENT_URI, cols, null, null, null
+            )?.use { c ->
+                while (c.moveToNext()) {
+                    out.put(
+                        JSObject()
+                            .put("id", c.getLong(0).toString())
+                            .put("name", c.getString(1) ?: "")
+                            .put("account", c.getString(2) ?: "")
+                            .put("google", (c.getString(3) ?: "") == "com.google")
+                            .put("writable", c.getInt(4) >= CAN_WRITE)
+                            .put("primary", c.getInt(5) == 1)
+                            .put("visible", c.getInt(6) == 1)
+                    )
+                }
+            }
+        }
+        call.resolve(JSObject().put("calendars", out))
+    }
+
+    /**
+     * EVERY OCCURRENCE IN A WINDOW, from the calendars he ticked.
+     *
+     * THE `Instances` TABLE AND NOT `Events`, and the difference is the whole
+     * of how a repeating event works. `Events` holds one row for a weekly
+     * standup with a recurrence rule on it; `Instances` is the provider
+     * expanding that rule into one row per occurrence, with the exceptions and
+     * the cancelled ones already applied. Reading `Events` would mean this app
+     * re-implementing somebody else's recurrence rules, which is a thing nobody
+     * gets right twice.
+     *
+     * WHICH occurrence becomes a task is decided in `calendar.import.js`, not
+     * here: his rule is the next one he has not closed, and only the store
+     * knows what he has closed. Kotlin hands over everything in the window and
+     * states no policy, the same way the alarm plugin holds no timing number.
+     *
+     * `uid` is the stable identity, taken from the first of three that exists.
+     * `UID_2445` is the iCalendar UID and is what Google's own sync adapter
+     * writes; `_SYNC_ID` is the Google event id; the last resort is built from
+     * the row and is correct on this phone only. `uidFrom` says which was used,
+     * so a phone where the first two are empty says so rather than quietly
+     * behaving differently.
+     */
+    @PluginMethod
+    fun events(call: PluginCall) {
+        if (!canRead()) return call.reject("calendar permission not granted")
+        val fromMs = call.getLong("fromMs") ?: return call.reject("fromMs required")
+        val toMs = call.getLong("toMs") ?: return call.reject("toMs required")
+        val wanted = HashSet<String>()
+        call.getArray("calendarIds")?.let { arr ->
+            for (i in 0 until arr.length()) runCatching { wanted.add(arr.getString(i)) }
+        }
+        if (wanted.isEmpty()) return call.resolve(JSObject().put("events", JSArray()))
+
+        val uri = CalendarContract.Instances.CONTENT_URI.buildUpon()
+        ContentUris.appendId(uri, fromMs)
+        ContentUris.appendId(uri, toMs)
+        val cols = arrayOf(
+            CalendarContract.Instances.BEGIN,
+            CalendarContract.Instances.END,
+            CalendarContract.Instances.TITLE,
+            CalendarContract.Instances.ALL_DAY,
+            CalendarContract.Instances.CALENDAR_ID,
+            CalendarContract.Instances.DESCRIPTION,
+            CalendarContract.Instances.SELF_ATTENDEE_STATUS,
+            CalendarContract.Instances.STATUS,
+            CalendarContract.Instances.EVENT_ID
+        )
+        val out = JSArray()
+        runCatching {
+            context.contentResolver.query(uri.build(), cols, null, null, null)?.use { c ->
+                while (c.moveToNext()) {
+                    val calId = c.getLong(4).toString()
+                    if (!wanted.contains(calId)) continue
+                    // A cancelled instance is a meeting that was called off. It
+                    // is still in the table so that other devices learn it went.
+                    if (c.getInt(7) == CalendarContract.Events.STATUS_CANCELED) continue
+                    val eventId = c.getLong(8)
+                    val uid = uidOf(eventId)
+                    out.put(
+                        JSObject()
+                            .put("uid", uid.first)
+                            .put("uidFrom", uid.second)
+                            .put("startMs", c.getLong(0))
+                            .put("endMs", c.getLong(1))
+                            .put("title", c.getString(2) ?: "")
+                            .put("allDay", c.getInt(3) == 1)
+                            .put("calendarId", calId)
+                            .put("description", c.getString(5) ?: "")
+                            .put("selfStatus", c.getInt(6))
+                    )
+                }
+            }
+        }.onFailure { return call.reject("calendar read failed: ${it.message}") }
+        call.resolve(JSObject().put("events", out))
+    }
+
+    /** The stable id of an event, and which of the three it came from. */
+    private fun uidOf(eventId: Long): Pair<String, String> {
+        val cols = arrayOf(
+            CalendarContract.Events.UID_2445,
+            CalendarContract.Events._SYNC_ID
+        )
+        var found: Pair<String, String>? = null
+        runCatching {
+            context.contentResolver.query(
+                ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI, eventId),
+                cols, null, null, null
+            )?.use { c ->
+                if (c.moveToFirst()) {
+                    val ical = c.getString(0) ?: ""
+                    val sync = c.getString(1) ?: ""
+                    found = when {
+                        ical.isNotEmpty() -> ical to "uid2445"
+                        sync.isNotEmpty() -> sync to "syncid"
+                        else -> null
+                    }
+                }
+            }
+        }
+        // THE LAST RESORT IS CORRECT ON THIS PHONE ONLY, and says so. A row id
+        // means nothing on the next device, so two phones would import the same
+        // meeting as two different tasks. Stated rather than hidden: the account
+        // screen prints which of the three was used.
+        return found ?: ("row:$eventId" to "rowid")
     }
 
     /**

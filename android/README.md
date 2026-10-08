@@ -64,7 +64,7 @@ not against this build. The ninth has never been run anywhere.
 
 ---
 
-## The calendar plugin (session 145)
+## The calendar plugin (sessions 145 and 148)
 
 A second app-local plugin, `com.cascade.calendar`. Two files:
 
@@ -95,8 +95,28 @@ provider, on a calendar owned by a Google account, and Google's sync adapter
 carries it up. No Cloud project, no consent screen, no verification, no token
 to refresh, and it works with no signal.
 
+### Calendar build 2 (session 148) — the APK must be rebuilt
+
+`CascadeCalendarPlugin.kt` states `CALENDAR_BUILD = 2` and the account screen
+prints what it found, so a web half expecting 2 against an APK carrying 1 is
+visible rather than silent. Three new methods, all read-only:
+
+| Method | What it does |
+|---|---|
+| `readable()` | every calendar the phone can read, with `writable`, `primary`, `visible` and `google`, plus its account name |
+| `events({fromMs, toMs, calendarIds})` | queries `CalendarContract.Instances`, which **expands recurrence** so one row comes back per occurrence |
+| `uidOf(eventId)` | `UID_2445`, then `_SYNC_ID`, then `row:<id>` — and it returns which one answered |
+
+No new permissions: `READ_CALENDAR` was already asked for in session 145, for
+the diff, and the import needs nothing the push did not already have.
+
+**`row:<id>` is a local row number.** It is the last fallback and the account
+screen prints when it was used, because an import on a second phone would
+compute different task ids from it. A silent fallback there would look like
+working sync right up to the day a second phone appears.
+
 **Nothing here compiles Kotlin.** `gate2.py` runs `tsc --strict` over the web
-half and these eight files are read by no tool. Both new files were checked by
+half and these eight files are read by no tool. Every new method was checked by
 hand for braces, parens and companion counts, which is a statement about care
 and not a compiler. If the build fails, send the error.
 

@@ -126,6 +126,16 @@ create table if not exists cascade_task (
   first_due_at_offset text,
   spawned_from       uuid,
 
+  -- THE CALENDAR IMPORT (session 148). `calendar_uid` says which event this
+  -- task came from AND that it must never be pushed back; `calendar_detached`
+  -- is false while Google owns the title and the date, and true from the first
+  -- edit he makes to either.
+  --
+  -- NOT NULL WITH DEFAULTS, so every row written before they existed reads as a
+  -- typed, attached task without anything having to go and fill them in.
+  calendar_uid       text not null default '',
+  calendar_detached  boolean not null default false,
+
   created_at         timestamptz not null,
   created_at_offset  text not null,
   updated_at         timestamptz not null,

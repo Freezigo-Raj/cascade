@@ -22,14 +22,34 @@ const v = new URL(import.meta.url).search;
 const { partAConfig } = await import(`./config.js${v}`);
 const { tasks } = await import(`./store.select.js${v}`);
 const { desiredEvents, sameEvent } = await import(`./calendar.js${v}`);
+const { planImport, windowFor } = await import(`./calendar.import.js${v}`);
 
 const DEBOUNCE_MS = 2000;
 
+/**
+ * NOW, AS A STORED INSTANT WITH ITS OFFSET.
+ *
+ * `alarm.bridge.js` carries the same four lines and this file cannot import
+ * them: the two bridges are siblings and neither is above the other, so an
+ * import either way would make the module graph's only cycle. Named here rather
+ * than quietly duplicated, the same way `isOpen` is named in three places.
+ */
+const nowIso = () => {
+  const d = new Date();
+  const off = -d.getTimezoneOffset();
+  const sign = off < 0 ? "-" : "+";
+  const p = (n) => String(Math.abs(n)).padStart(2, "0");
+  const local = new Date(d.getTime() + off * 60000);
+  return local.toISOString().slice(0, 19) + sign + p(Math.trunc(off / 60)) + ":" + p(off % 60);
+};
+
 /** What `CascadeCalendarPlugin.kt` states as its own build. */
-export const CALENDAR_SHELL_EXPECTED = 1;
+export const CALENDAR_SHELL_EXPECTED = 2;
 
 const ON_KEY = "cascade:calendar-on";
 const CAL_KEY = "cascade:calendar-id";
+const READ_KEY = "cascade:calendar-read";
+const IMPORT_KEY = "cascade:calendar-import-on";
 
 function plugin() {
   const C = window.Capacitor;
@@ -122,6 +142,120 @@ export async function setCalendarOn(on, calendarId) {
     return;
   }
   syncCalendar(await tasks.all());
+}
+
+/**
+ * THE IMPORT SIDE'S OWN SETTINGS, and they are device settings like the rest.
+ *
+ * Which calendars to READ from is a different question from which one to WRITE
+ * to, so it is a different list: a phone writes to one calendar and may read
+ * from five, and `Holidays in India` is readable and writable by nobody.
+ *
+ * Stored on the device, not in the account, for the reason the write choice is:
+ * a laptop has no business deciding which of a phone's calendars it reads.
+ */
+export function importOn() {
+  try {
+    return window.localStorage.getItem(IMPORT_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+/** The calendar ids he ticked, as an array. Empty means import nothing. */
+export function readCalendars() {
+  try {
+    return JSON.parse(window.localStorage.getItem(READ_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+export function setReadCalendars(ids) {
+  try {
+    window.localStorage.setItem(READ_KEY, JSON.stringify(ids ?? []));
+  } catch {
+    // A browser refusing storage is not a reason to throw out of a tick.
+  }
+}
+
+export function setImportOn(on) {
+  try {
+    if (on) window.localStorage.setItem(IMPORT_KEY, "1");
+    else window.localStorage.removeItem(IMPORT_KEY);
+  } catch {
+    // Same.
+  }
+}
+
+/** Every calendar this phone can READ, for the tick list. */
+export async function allCalendars() {
+  const Cal = plugin();
+  if (!Cal || !Cal.readable) return [];
+  try {
+    const { calendars } = await Cal.readable();
+    return calendars ?? [];
+  } catch (e) {
+    console.warn("calendar: readable failed —", e?.message ?? e);
+    return [];
+  }
+}
+
+/**
+ * THE IMPORT, run once and reporting what it did.
+ *
+ * Every rule it follows is in `calendar.import.js`, which imports nothing and
+ * is what `check_calendar.mjs` reads. This file does the three things a check
+ * cannot: it asks the phone, it writes to the store, and it says so.
+ *
+ * NOT DEBOUNCED AND NOT ON A LISTENER. The push pass runs on every write
+ * because a task changing is the reason to change its event. The import has no
+ * such trigger: a calendar changes on somebody else's schedule, and running a
+ * provider query on every keystroke would be a query per keystroke. It runs at
+ * start, and on the button.
+ */
+export async function importCalendar() {
+  const Cal = plugin();
+  if (!Cal || !Cal.events) {
+    return { ok: false, why: "This APK is older than the calendar import. Rebuild and reinstall it." };
+  }
+  if (!importOn()) return { ok: false, why: "The import switch is off." };
+  const ids = readCalendars();
+  if (!ids.length) return { ok: false, why: "No calendar is ticked, so there is nothing to read." };
+
+  const nowMs = Date.now();
+  const { fromMs, toMs } = windowFor(nowMs, partAConfig);
+  let events = [];
+  try {
+    const r = await Cal.events({ fromMs, toMs, calendarIds: ids });
+    events = r.events ?? [];
+  } catch (e) {
+    return { ok: false, why: "events() refused: " + (e?.message ?? e) };
+  }
+
+  const existing = await tasks.all();
+  const plan = planImport(events, existing, { now: nowIso(), nowMs, config: partAConfig });
+  const report = {
+    ok: true, read: events.length,
+    added: 0, updated: 0, removed: 0, cancelled: 0, errors: [],
+    // WHICH ID THE PHONE COULD GIVE, printed rather than assumed. `rowid` means
+    // the event carried neither an iCalendar UID nor a Google id, so the same
+    // meeting on another phone would import as a different task.
+    uidFrom: [...new Set(events.map((e) => e.uidFrom).filter(Boolean))].join(", ") || "none",
+  };
+  const guard = async (what, fn) => {
+    try { await fn(); } catch (e) { report.errors.push(`${what}: ${e?.message ?? e}`); }
+  };
+  for (const t of plan.add) await guard(t.title, () => tasks.add(t));
+  for (const t of plan.update) await guard(t.title, () => tasks.update(t.id, t));
+  for (const t of plan.cancel) await guard(t.title, () => tasks.update(t.id, t));
+  for (const id of plan.remove) await guard(id, () => tasks.remove(id));
+  report.added = plan.add.length;
+  report.updated = plan.update.length;
+  report.cancelled = plan.cancel.length;
+  report.removed = plan.remove.length;
+  if (report.errors.length) report.ok = false;
+  return report;
 }
 
 /** Which calendars this phone can write to, for the account screen to offer. */
@@ -303,4 +437,14 @@ export async function initCalendar() {
     syncCalendar(await tasks.all());
   });
   syncCalendar(await tasks.all());
+  // THE IMPORT RUNS ONCE, HERE, AND NOT ON A LISTENER. A task changing is a
+  // reason to change its event; a calendar changing is not something this app
+  // is told about, so there is nothing to listen to. Running the provider query
+  // on every write would be a query per keystroke for an answer that changes
+  // when somebody else moves a meeting.
+  if (importOn()) {
+    importCalendar()
+      .then((r) => { if (!r.ok && r.why) console.warn("calendar import:", r.why); })
+      .catch((e) => console.warn("calendar import:", e?.message ?? e));
+  }
 }

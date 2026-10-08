@@ -1,4 +1,32 @@
-CASCADE — sessions 137 to 147. READ THIS BEFORE COMMITTING.
+CASCADE — sessions 137 to 148. READ THIS BEFORE COMMITTING.
+
+Three things must happen by hand. Do them in this order: the migration, the
+deletions, then the APK.
+
+
+== 1. RUN THE SUPABASE MIGRATION FIRST, BEFORE INSTALLING ==
+
+Session 148 added two columns to cascade_task. Run migrate_a22.sql in the
+Supabase SQL editor BEFORE you install this build.
+
+  migrate_a22.sql
+
+WHY IT CANNOT WAIT: schema.sql says "create table if not exists", which does
+nothing at all to a table that already exists. So a new column never arrives
+from schema.sql. Every new column needs its own migration, and this one adds:
+
+  calendar_uid        text     default ''     — which Google event a task came from
+  calendar_detached   boolean  default false  — whether he has edited it since
+  a partial index on (owner, calendar_uid) where calendar_uid <> ''
+
+Both have defaults, so every row already in the table reads as a task that did
+not come from a calendar. Nothing existing changes meaning.
+
+IF YOU SKIP IT: the app will try to write two columns that are not there. The
+sync fails on every push and the calendar import saves nothing.
+
+
+== 2. DELETE SIX FILES BY HAND ==
 
 A zip can add and overwrite files. It cannot delete one. Six files were DELETED
 and they must be removed from the repository BY HAND, or gate2.py will fail
@@ -21,34 +49,72 @@ exist reads as coverage and is not.
 WHAT MOVED: SHELL_VERSION lived inside render.js. It now lives in a new file,
 shell\version.js, which holds nothing else. That file IS in this zip.
 
-BEFORE YOU RUN gate2.py, install the two tools it uses:
 
-  npm i -g typescript eslint
+== 3. THE APK MUST BE REBUILT ==
 
-tsc missing is a FAILURE. eslint missing is a warning.
+Calendar shell build 2. Session 145 added the calendar plugin and session 148
+added three read methods to it, so an APK built from the session-147 zip will
+report calendar build 1 and the import will not run.
 
-AFTER DELETING, run this and it must say GATE 2: PASS —
+If this is your FIRST calendar build, all four steps. If you already built the
+session-145 or session-147 APK, only step 1 changed.
 
-  python3 gate2.py
-
-Header should read build 63.
-
-NO SUPABASE MIGRATION. The config version moved to a.21 and ensureConfig
-upserts it on first run.
-
-THE APK MUST BE REBUILT THIS TIME. Session 145 added a second Kotlin plugin
-for the calendar. Three things, and the third is the one that gets forgotten:
-
-  1. Copy the two new files into the Capacitor project, keeping the folders:
+  1. Copy the two calendar files over, keeping the folders:
        android\app\src\main\java\com\cascade\calendar\CascadeCalendarPlugin.kt
        android\app\src\main\java\com\cascade\calendar\CalendarStore.kt
+     CascadeCalendarPlugin.kt is the one that changed in 148. It now states
+     CALENDAR_BUILD = 2 and carries readable(), events() and uidOf().
   2. Add the two permissions from AndroidManifest-additions.xml:
        READ_CALENDAR and WRITE_CALENDAR
+     NO NEW PERMISSIONS IN 148. READ_CALENDAR was already there for the diff,
+     and the import needs nothing the push did not already have.
   3. Copy the new MainActivity.java over. It carries ONE EXTRA LINE:
        registerPlugin(CascadeCalendarPlugin.class);
      Without it the APK builds, runs, looks correct, and the account screen
      says the calendar is "not present" with nothing to explain why. That is
      exactly what the alarm cost once.
+  4. Rebuild and install.
 
-Then on the account screen: Google Calendar -> Allow calendar access -> Turn on.
-It is OFF until you turn it on. Nothing is written until then.
+Nothing in this project compiles Kotlin. The three new methods were checked by
+hand for braces, parens and companion counts. That is a statement about care
+and not a compiler. If the build fails, send me the error.
+
+
+== BEFORE YOU RUN gate2.py ==
+
+Install the two tools it uses:
+
+  npm i -g typescript eslint
+
+tsc missing is a FAILURE. eslint missing is a warning.
+
+AFTER DELETING THE SIX FILES, run this and it must say GATE 2: PASS —
+
+  python3 gate2.py
+
+Header should read build 64.
+
+
+== THEN ON THE PHONE, ACCOUNT SCREEN ==
+
+Writing to the calendar (session 145), if it is not on already:
+
+  Google Calendar -> Allow calendar access -> pick "Writes to" -> Turn on
+
+Reading FROM the calendar (session 148), which is new and is OFF:
+
+  Google Calendar -> tick the calendars you want under each account
+                  -> Start reading the calendar
+                  -> Import now
+
+NOTHING IS TICKED BY DEFAULT and nothing is read until you tick something and
+turn it on. "Import now" prints a full report: how many events were read, how
+many tasks added, updated, removed and cancelled, the first error verbatim, and
+WHICH UID SOURCE the phone could give — uid2445, syncid or rowid.
+
+READ THAT LAST ONE. If it says rowid, tell me. A rowid is a local row number
+and a second phone would compute different task ids from it, which would look
+like working sync right up to the day you install the app somewhere else.
+
+"events", "holidays" and "birthdays" are each their own CALENDAR in Google, not
+a type of event, which is why the choice is a tick list rather than a switch.

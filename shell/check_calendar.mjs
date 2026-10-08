@@ -14,6 +14,7 @@
 
 import { partAConfig as config } from "./config.js";
 import { wantsEvent, eventFor, desiredEvents, sameEvent, dateOf } from "./calendar.js";
+import { importedId, isOurs, declined, nextPerSeries, planImport, windowFor } from "./calendar.import.js";
 
 let failed = 0;
 const say = (ok, what) => {
@@ -113,6 +114,152 @@ console.log("\nTHE SET, AND THE DIFF.");
   // The description carries the id and the marker and neither ever changes, so
   // comparing it could only rewrite a row to change nothing.
   say(sameEvent({ ...e, description: "anything" }, e), "the description is not compared");
+}
+
+// ===========================================================================
+// THE IMPORT (session 148). Every rule below is one of his five answers.
+
+const NOW = "2026-10-08T12:00:00+05:30";
+const NOW_MS = Date.parse(NOW);
+const DAY = 86400000;
+const ev = (over = {}) => ({
+  uid: "e1", title: "standup with raj", description: "", allDay: false,
+  startMs: NOW_MS + DAY, endMs: NOW_MS + DAY + 1800000, selfStatus: 1, calendarId: "7",
+  ...over,
+});
+
+console.log("\nTHE LOOP GATE — two lines, each useless without the other.");
+{
+  say(isOurs(ev({ description: "From Cascade\ncascade:t1" })),
+      "an event this app wrote is recognised by the marker it already carried");
+  say(!isOurs(ev()), "and somebody else's event is not");
+  say(!wantsEvent({ ...task(), calendar_uid: "e1" }),
+      "a task that came FROM an event is never pushed back — the other half of the gate");
+  say(wantsEvent(task()), "while a typed task still is");
+}
+
+console.log("\nWHAT IS SKIPPED.");
+{
+  say(declined(ev({ selfStatus: 2 })), "a meeting he declined is not a commitment");
+  say(!declined(ev({ selfStatus: 1 })), "and one he accepted is");
+  const plan = planImport([ev({ selfStatus: 2 }), ev({ uid: "e2", description: "cascade:t9" })],
+                          [], { now: NOW, nowMs: NOW_MS, config });
+  say(plan.add.length === 0, "neither reaches the store");
+}
+
+console.log("\nTHE ID IS DERIVED, NEVER INVENTED.");
+{
+  say(importedId("e1", 100) === importedId("e1", 100), "the same event gives the same id twice");
+  say(importedId("e1", 100) !== importedId("e1", 200),
+      "and two occurrences of one series are two different tasks");
+  say(/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-8[0-9a-f]{3}-[0-9a-f]{12}$/.test(importedId("e1", 100)),
+      "shaped like the uuid the column accepts, with no minus sign inside it");
+}
+
+console.log("\nONE TASK PER SERIES, THE NEXT ONE — his rule.");
+{
+  const week = [0, 7, 14, 21].map((d) => ev({ startMs: NOW_MS + d * DAY }));
+  const first = nextPerSeries(week, []);
+  say(first.length === 1, "a weekly standup is ONE row, not four");
+  say(first[0].startMs === NOW_MS, "and it is the earliest one in the window");
+
+  // Mark that one done. The next occurrence becomes the live one, exactly as a
+  // Cascade repeat does when its occurrence closes.
+  const done = { id: importedId("e1", NOW_MS), task_state: "done", archived: false, calendar_uid: "e1" };
+  const second = nextPerSeries(week, [done]);
+  say(second.length === 1 && second[0].startMs === NOW_MS + 7 * DAY,
+      "closing this week's hands over next week's, and only then");
+
+  const allDone = week.map((e) => ({ id: importedId("e1", e.startMs), task_state: "done", archived: false }));
+  say(nextPerSeries(week, allDone).length === 0,
+      "a series he has finished with for now is not a task at all");
+
+  // An overdue occurrence is still this one's turn.
+  const late = [ev({ startMs: NOW_MS - 3 * DAY }), ev({ startMs: NOW_MS + 4 * DAY })];
+  say(nextPerSeries(late, [])[0].startMs === NOW_MS - 3 * DAY,
+      "a standup missed on Monday is still Monday's, overdue, until he closes it");
+}
+
+console.log("\nWHAT AN IMPORTED TASK LOOKS LIKE.");
+{
+  const plan = planImport([ev()], [], { now: NOW, nowMs: NOW_MS, config });
+  const t = plan.add[0];
+  say(t.calendar_uid === "e1", "it names the event it came from");
+  say(t.calendar_detached === false, "and starts out following it");
+  say(t.recurrence === null,
+      "NO Cascade repeat rule, even on a repeating event — the calendar hands over the next one itself");
+  say(t.task_state === "ready" && t.alarm_type === "none", "open, with no alarm until he asks for one");
+  say(t.has_time === true && t.date_precision === "time", "a timed event is an exact time");
+  const banner = planImport([ev({ allDay: true, uid: "e9", title: "diwali" })], [], { now: NOW, nowMs: NOW_MS, config }).add[0];
+  say(banner.has_time === false && banner.date_precision === "day", "an all-day event is a day");
+  say(planImport([ev({ title: "lunch with raj friday" })], [], { now: NOW, nowMs: NOW_MS, config })
+        .add[0].title === "lunch with raj friday",
+      "the title is NEVER parsed for dates — the event already carries the date");
+}
+
+console.log("\nFOLLOWING, AND DETACHED.");
+{
+  const mine = planImport([ev()], [], { now: NOW, nowMs: NOW_MS, config }).add[0];
+
+  // Google moved it. A following task follows.
+  const moved = ev({ startMs: NOW_MS + 2 * DAY, title: "standup with raj and divyal" });
+  const p1 = planImport([{ ...moved, uid: "e1" }], [{ ...mine, id: importedId("e1", NOW_MS + 2 * DAY) }],
+                        { now: NOW, nowMs: NOW_MS, config });
+  say(p1.update.length === 1, "a following task takes Google's new title and date");
+
+  // He corrected it himself. Google stops touching it.
+  const his = { ...mine, calendar_detached: true, title: "standup, moved" };
+  const p2 = planImport([ev()], [his], { now: NOW, nowMs: NOW_MS, config });
+  say(p2.update.length === 0, "a DETACHED task is his, and the import leaves it alone");
+
+  // Everything that is his on every task survives a follow.
+  const withAlarm = { ...mine, alarm_type: "on", pinned: true, notes: "ask about the pump" };
+  const p3 = planImport([ev({ title: "standup, now at ten" })], [withAlarm], { now: NOW, nowMs: NOW_MS, config });
+  const after = p3.update[0];
+  say(after.alarm_type === "on" && after.pinned === true && after.notes === "ask about the pump",
+      "and following only ever rewrites the title and the date — the alarm, the pin and the notes are his");
+}
+
+console.log("\nHIS STATE IS NEVER GOOGLE'S.");
+{
+  const mine = planImport([ev()], [], { now: NOW, nowMs: NOW_MS, config }).add[0];
+  const closed = { ...mine, task_state: "done", closed_at: NOW };
+  const p = planImport([ev()], [closed], { now: NOW, nowMs: NOW_MS, config });
+  say(p.update.length === 0 && p.add.length === 0,
+      "a task he closed is never reopened by an import, whatever the calendar still holds");
+}
+
+console.log("\nGOOGLE DELETES IT — his answer 4, narrowed.");
+{
+  const mine = planImport([ev()], [], { now: NOW, nowMs: NOW_MS, config }).add[0];
+  const following = { ...mine };
+  const p1 = planImport([], [following], { now: NOW, nowMs: NOW_MS, config });
+  say(p1.remove.length === 1, "a task still following goes with the event");
+
+  const edited = { ...following, calendar_detached: true };
+  const p2 = planImport([], [edited], { now: NOW, nowMs: NOW_MS, config });
+  say(p2.remove.length === 0 && p2.cancel.length === 1,
+      "a task he edited is CANCELLED rather than deleted — his work does not vanish because somebody tidied a calendar");
+  say(p2.cancel[0].task_state === "cancelled" && Boolean(p2.cancel[0].closed_at),
+      "so it shows on the Done tab with Revive");
+
+  // A typed task is not the import's business at all.
+  const typed = { ...task(), id: "typed", calendar_uid: "" };
+  const p3 = planImport([], [typed], { now: NOW, nowMs: NOW_MS, config });
+  say(p3.remove.length === 0 && p3.cancel.length === 0, "and a typed task is never touched by any of this");
+
+  // Outside the window that was read is not the same as missing.
+  const far = { ...following, id: "far", due_at: "2027-06-01T09:00:00+05:30" };
+  const p4 = planImport([], [far], { now: NOW, nowMs: NOW_MS, config });
+  say(p4.remove.length === 0,
+      "a task in June is not missing because today's window ended in December");
+}
+
+console.log("\nTHE WINDOW — his numbers.");
+{
+  const w = windowFor(NOW_MS, config);
+  say(Math.round((NOW_MS - w.fromMs) / DAY) === 10, "10 days back");
+  say(Math.round((w.toMs - NOW_MS) / DAY) === 60, "and 60 forward");
 }
 
 console.log(failed ? `\nCHECK CALENDAR: ${failed} FAILED\n` : "\nCHECK CALENDAR: PASS\n");

@@ -354,6 +354,22 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
       // start. Leaving it would let a push made last week keep anchoring a
       // repeat whose date has since been typed again.
       const moved = (out.task.due_at ?? null) !== (old.due_at ?? null) && !keepDate.due_at;
+      // THE TASK COMES OFF THE CALENDAR'S LEASH (session 148, his rule:
+      // "detach once someone touches it in Cascade").
+      //
+      // The whole of the clash his two answers created: the import follows
+      // Google, and he wants to correct dates Google got wrong. Both at once
+      // means his correction is overwritten within seconds, silently, which is
+      // the same class of fault as the doubled repeats.
+      //
+      // THE TITLE AND THE DATE ARE THE ONLY TWO THAT DETACH, because they are
+      // the only two Google owns. The alarm, the type, the firmness, the notes,
+      // the pin and done are his on every task, attached or not — so adding an
+      // alarm to a meeting needs no decision and changes nothing. A save that
+      // touched neither leaves the task following, which is why this compares
+      // rather than simply setting it on every save.
+      const detached = Boolean(old.calendar_detached)
+        || (Boolean(old.calendar_uid) && (moved || out.task.title !== old.title));
       await tasks.update(boundId, {
         ...out.task, ...keepDate, ...advancedFields(),
         ...(moved ? { alarm_snoozed_until: null, alarm_unanswered_at: null } : {}),
@@ -362,6 +378,8 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
         spawned_from: old.spawned_from ?? null,
         id: old.id, created_at: old.created_at, pinned: old.pinned,
         task_state: old.task_state, closed_at: old.closed_at, archived: old.archived,
+        calendar_uid: old.calendar_uid ?? "",
+        calendar_detached: detached,
         updated_at: nowLocal(),
       });
       const title = out.task.title;
@@ -382,7 +400,10 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
     if (!(await ask([out.capture.duplicate_dialog, out.capture.clash_dialog,
                      out.capture.deadline_dialog], "Add anyway"))) return;
 
-    const task = { ...out.task, ...advancedFields() };
+    // A typed task carries no calendar link. Said out loud rather than left to
+    // `resolve()`, because `resolve()` not setting a field is how a field comes
+    // to be undefined in storage.
+    const task = { ...out.task, ...advancedFields(), calendar_uid: "", calendar_detached: false };
     await tasks.add(task);
     const said = when(out);
     unbind();

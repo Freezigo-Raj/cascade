@@ -1136,6 +1136,125 @@ export function listOnly(existing, config, now) {
   };
 }
 
+/**
+ * A TASK BUILT FROM A CALENDAR EVENT, not from a typed line (session 148).
+ *
+ * THIS IS NOT A CAPTURE, AND THAT IS WHY IT IS A SEPARATE FUNCTION. The
+ * contract's rule since session 102 is that whatever a person can set while
+ * capturing is an INPUT to `resolve()`. An event's date is not something a
+ * person set while capturing: nobody captured. Widening `CaptureInput` with a
+ * date that arrives from outside the line would have put a field in there that
+ * no screen can ever fill, and the next person reading the contract would have
+ * had to work out why.
+ *
+ * THE TITLE IS NEVER PARSED FOR DATES, his rule. `Lunch with Raj Friday` keeps
+ * the word Friday, because the event already carries the date and taking the
+ * word out would leave a title that reads as if something were missing. The
+ * verb, the type and the duration are still read from the words exactly as they
+ * are for a typed line: those are about what the task IS, not when it is.
+ *
+ * `calendar_uid` is both halves of the link: it says which event this came from
+ * AND that this task must never be pushed back to the calendar. Without the
+ * second half the push would write an event for a task that came from an event,
+ * and the two would feed each other for ever.
+ *
+ * @param {object} ev    { uid, title, startMs, endMs, allDay, calendarId }
+ * @param {object} opts  { id, now, config }
+ */
+export function fromEvent(ev, opts) {
+  const config = opts.config;
+  const now = opts.now;
+  const offset = String(now).slice(-6);
+  const title = String(ev.title ?? "").trim() || "(untitled)";
+  const { verb_phrase, action_verb } = readVerb(title, config, lemmas(title));
+  const derived = fromVerb(action_verb, config);
+  const normalised = readNormalised(title);
+  const has_time = !ev.allDay;
+  const due_at = writeInstant(Number(ev.startMs), offset);
+  const nowAt = readInstant(now);
+
+  const dates = {
+    title,
+    date_phrase: "",
+    date_spans: [],
+    date_hedge: "",
+    date_marker: "",
+    // A timed event names an instant; an all-day one names a day. Those are the
+    // same two readings a typed line produces, so every rule downstream —
+    // ranking factor 4, the push ladder, the alarm gate — works unchanged.
+    date_precision: has_time ? "time" : "day",
+    date_firmness: "normal",
+    date_anchor: has_time ? "point" : "window",
+    earliest_start: "",
+    due_at,
+    has_time,
+  };
+  const deadline_band = readBand(due_at, nowAt);
+  const due_phrase = readDuePhrase(dates, deadline_band, nowAt) || readFromPhrase(dates, nowAt);
+
+  return {
+    id: opts.id,
+    // The event's own words, kept the way `raw_text` keeps a typed line.
+    raw_text: title,
+    chip_spans: [],
+    title,
+    normalised,
+    notes: "",
+    verb_phrase,
+    action_verb,
+    commitment_type: derived.commitment_type,
+    type_source: "verb",
+    context: derived.context,
+    significance: 30, // the untouched default, as a typed line gets
+    date_phrase: "",
+    date_spans: [],
+    date_hedge: "",
+    date_marker: "",
+    date_precision: dates.date_precision,
+    date_firmness: "normal",
+    date_anchor: dates.date_anchor,
+    earliest_start: "",
+    due_at,
+    has_time,
+    est_duration_min: derived.est_duration_min,
+    duration_source: "default",
+    // NO CASCADE RECURRENCE, even for a repeating event, and this is load
+    // bearing. A repeat spawns its next occurrence when this one closes; the
+    // calendar is already going to hand over the next occurrence by itself, so
+    // a rule here would mean two next occurrences for one meeting. His answer
+    // was one task per series, the next one only, and the import is what
+    // decides which that is.
+    recurrence: null,
+    alarm_type: "none",
+    alarm_lead_min: null,
+    alarm_snoozed_until: null,
+    alarm_unanswered_at: null,
+    reminder_fatigue: 0,
+    blocked: false,
+    blocker_reason: "none",
+    blocker_ref: null,
+    project_id: null,
+    task_state: "ready",
+    archived: false,
+    pinned: false,
+    config_version: config.version,
+    created_at: now,
+    updated_at: now,
+    closed_at: null,
+    push_count: 0,
+    first_due_at: null,
+    spawned_from: null,
+    calendar_uid: String(ev.uid),
+    // FOLLOWING, UNTIL HE TOUCHES IT. While this is false the title and the
+    // date belong to Google and the editor will not let them be changed; the
+    // first edit to either sets it true and Google never touches the task
+    // again. The alarm, the type, the firmness, the notes, the pin and done are
+    // his on every task and detach nothing.
+    calendar_detached: false,
+    due_phrase,
+  };
+}
+
 export function resolve(input) {
   refuse(input.typed_line, input.config);
 

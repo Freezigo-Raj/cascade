@@ -6,7 +6,7 @@
 // Vocabulary members are never removed or repurposed, only deactivated.
 const active = (id) => ({ id, active: true });
 export const partAConfig = {
-    version: "a.21",
+    version: "a.22",
     // --- Vocabulary: records hold these members ---
     // Drawn only from what the example exercises. Thin on purpose:
     // a missing member falls to `other`, which is free. An extra member is permanent.
@@ -102,7 +102,14 @@ export const partAConfig = {
     // minutes reads as a commitment somebody made. One stated number claims
     // nothing about the task. Using the duration instead is a second amendment
     // to the quiet-field rule, after the slot totals, and it is his to make.
-    calendar: { block_min: 30 },
+    calendar: {
+        block_min: 30,
+        // THE IMPORT WINDOW, his numbers. Reading a whole calendar on every
+        // sync is slow and reading a year of it is pointless: a commitment
+        // eleven months out is not something the Today list can help with.
+        import_days_back: 10,
+        import_days_ahead: 60,
+    },
     hedge_words: ["maybe"],
     // --- Behaviour ---
     verb_to_type: {

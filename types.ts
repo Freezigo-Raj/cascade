@@ -181,6 +181,20 @@ export interface Task {
   first_due_at: LocalTimestamp | null;
   /** The completion that produced this occurrence, so Undone can take back what Done made. */
   spawned_from: string | null;
+
+  /**
+   * The calendar event this task came from, empty for a task that was typed.
+   * It is both halves of the link: which event, AND that this task must never
+   * be pushed back to the calendar.
+   */
+  calendar_uid: string;
+  /**
+   * False while Google owns this task's title and date. The first edit to
+   * either in Cascade sets it true and Google never touches the task again.
+   * The alarm, type, firmness, notes, pin and done are his on every task and
+   * detach nothing.
+   */
+  calendar_detached: boolean;
 }
 
 // UNDO IS GONE (session 137). One entry restoring a whole record with a fresh
@@ -408,8 +422,15 @@ export interface Config {
   hedge_words: string[];
   /** Words that turn the alarm on from the line. Only while `has_time`. */
   alarm_words: string[];
-  /** How long a timed task is drawn for on the phone's calendar, in minutes. */
-  calendar: { block_min: number };
+  /** How a task and a calendar event become each other. */
+  calendar: {
+    /** How long a timed task is drawn for on the phone's calendar, in minutes. */
+    block_min: number;
+    /** How far back the import reads. */
+    import_days_back: number;
+    /** How far ahead the import reads. */
+    import_days_ahead: number;
+  };
 
   // Behaviour
   verb_to_type: Record<string, string>;

@@ -449,7 +449,7 @@ His five answers, session 145, and each is a rule:
 
 | | Answer |
 |---|---|
-| Direction | one way. Tasks go in. Nothing comes back |
+| Direction | tasks go in (session 145). Events come back (session 148) |
 | Which tasks | every task with a date. Ideas get nothing |
 | Which calendar | his main one, not a separate `Cascade` one |
 | Where | Android only |
@@ -468,6 +468,50 @@ His five answers, session 145, and each is a rule:
 **An event moved or deleted by hand in Google Calendar comes back.** That is what one way means. It is said in words on the account screen rather than left to be noticed.
 
 **Turning it off removes every event the app wrote.** A switch that stops adding and leaves what it already added is a one-way door, not a switch.
+
+
+### Events coming back (session 148)
+
+His answers, and each is a rule:
+
+| | Answer |
+|---|---|
+| Which events | every event in a window, from the calendars he ticks |
+| The window | 10 days back, 60 days forward |
+| Repeats | one task per series, showing the next occurrence only |
+| On change | the task follows Google, until he touches it |
+| Once touched | detached. Google never changes it again |
+| Google deletes it | deleted if following, **cancelled** if detached |
+| `task_state` | always Cascade's. An import never reopens a closed task |
+| Accounts | every account the phone knows, ticked per calendar |
+| The title | never parsed for dates |
+
+**`events`, `holidays` and `birthdays` are each their own calendar**, not a type of event inside one. Google publishes them separately under the same account, so the choice is the tick list and nothing else is needed. The account screen groups every readable calendar under its account name. Nothing is ticked by default.
+
+**`CalendarContract.Instances` expands recurrence for us**, so a weekly standup arrives as one row per occurrence rather than as an RRULE this app would have to interpret.
+
+**The loop, and the two gates that stop it.** Without them the push and the import feed each other for ever: a task writes an event, the event is read back as a task, that task writes an event.
+
+| Gate | Where | Rule |
+|---|---|---|
+| ours, never imported | `calendar.import.js` | the description carries `cascade:` |
+| theirs, never pushed | `calendar.js` | the task carries a `calendar_uid` |
+
+**An imported task's id is derived from the event's UID and the occurrence's start**, never invented — the same mechanism as `successorId()`. Importing twice gives one task rather than two; two phones compute the same id so newest-wins collapses them; clearing storage and importing again hands the ids back. Seeded on the start, because one UID has many occurrences and because a closed occurrence stays closed exactly when its id is a function of a start time that cannot move.
+
+The UID is `UID_2445` first, then `_SYNC_ID`, then `row:<id>` last — and the account screen prints which one answered, because `row:<id>` is a local row number and an import on a second phone would compute different ids from it.
+
+**"Next" is not the soonest.** It is the earliest occurrence in the window he has not already closed, so a standup missed on Monday stays Monday's standup, overdue, until he marks it done. A series with every occurrence closed produces nothing.
+
+**While a task follows, Google owns its title and date and nothing else.** The alarm, the pin, the notes, the firmness and the type were always his and are carried across every update. The first edit to the title or the date detaches it, which answers his ask for edit ability without writing back: the thing he does when the calendar has a date wrong is the thing that makes it stick.
+
+**A detached task is cancelled rather than deleted** when Google's event goes. Work vanishing because somebody else tidied their calendar is not a thing this app does. A task is only counted as missing if its occurrence sat inside the window that was actually read.
+
+**The title is never parsed for dates.** A meeting called `Budget review for March` would otherwise be moved to March, overriding a date Google was certain about with one guessed from a name. A declined event (`SELF_ATTENDEE_STATUS` of 2) is skipped.
+
+**An imported task counts towards the day's load and appears in every list.** Nothing in `cards.js`, `clash.js` or the lists needed a line for it, which is the test of whether the import produced a real Task or a lookalike.
+
+**`calendar_uid` and `calendar_detached` are new Task fields.** `migrate_a22.sql` must be run in Supabase before the build is installed.
 
 
 **Arrived since this page was written**, and now on it: recurrence, sync, the duration control, notes, firmness. **Decided and deliberately still absent:** Cancel and Archive as row actions. A row carries Done, Pin, Delete and its push targets, and a Done row carries Undone. Cancel and Archive stay members of `row_action` with no control on any screen, which is stated here so the gap reads as a decision rather than an oversight.

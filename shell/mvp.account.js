@@ -443,6 +443,107 @@ export function mountAccount(root, { onBack, onSignedOut } = {}) {
           cal.appendChild(now);
           cal.appendChild(out);
 
+          // ---------------------------------------------------------------
+          // READING FROM THE CALENDAR (session 148). A second list, because it
+          // answers a different question: `Writes to` is where tasks GO, this
+          // is where events COME FROM. A phone writes to one calendar and may
+          // read from five, and `Holidays in India` is readable by everybody
+          // and writable by nobody.
+          //
+          // HIS QUESTION ANSWERED BY THIS LIST RATHER THAN BY A SETTING. There
+          // is no field on a calendar row saying event, holiday or birthday:
+          // each of those IS its own calendar, with its own name and its own
+          // account. So ticking is the whole of the answer, and the list is
+          // grouped by account because a phone with three Google accounts shows
+          // three groups and he asked to choose between them.
+          const readable = (await bridge.allCalendars()).filter((c) => c.visible !== false);
+          if (readable.length && bridge.importOn !== undefined) {
+            const importing = bridge.importOn();
+            const head = el("div", "stat");
+            head.dataset.cal = "read";
+            head.appendChild(el("span", "stat-label", "Read from"));
+            head.appendChild(el("span", "stat-value", importing ? "on" : "off"));
+            cal.appendChild(head);
+
+            const ticked = new Set(bridge.readCalendars());
+            const byAccount = new Map();
+            for (const c of readable) {
+              const key = c.account || "this phone";
+              byAccount.set(key, [...(byAccount.get(key) ?? []), c]);
+            }
+            for (const [account, items] of byAccount) {
+              const group = el("div", "cal-account");
+              group.dataset.cal = "read";
+              group.appendChild(el("div", "said cal-account-name", account));
+              for (const c of items) {
+                const row = el("label", "cal-tick");
+                const box = el("input", "");
+                box.type = "checkbox";
+                box.checked = ticked.has(c.id);
+                box.addEventListener("change", () => {
+                  if (box.checked) ticked.add(c.id);
+                  else ticked.delete(c.id);
+                  bridge.setReadCalendars([...ticked]);
+                });
+                row.appendChild(box);
+                row.appendChild(el("span", "", c.name || "(unnamed)"));
+                group.appendChild(row);
+              }
+              cal.appendChild(group);
+            }
+
+            const sw2 = button("act" + (importing ? " on" : ""),
+              importing ? "Stop reading the calendar" : "Start reading the calendar",
+              async () => {
+                bridge.setImportOn(!importing);
+                setTimeout(drawCal, 300);
+              });
+            sw2.dataset.cal = "read";
+            cal.appendChild(sw2);
+
+            // IMPORT NOW, AND SAY WHAT HAPPENED. Same reasoning as `Sync now`
+            // in session 147: a pass that swallows its failures into a console
+            // nobody has is a pass with one appearance and five causes.
+            const pull = el("button", "act", "Import now");
+            pull.type = "button";
+            pull.dataset.cal = "read";
+            const pulled = el("div", "said");
+            pulled.dataset.cal = "read";
+            pull.addEventListener("click", async () => {
+              pull.textContent = "Reading…";
+              pulled.textContent = "";
+              let r;
+              try {
+                r = await bridge.importCalendar();
+              } catch (e) {
+                r = { ok: false, why: "The import threw: " + (e?.message ?? e) };
+              }
+              pull.textContent = "Import now";
+              const lines = [];
+              if (r.read !== undefined) {
+                lines.push(`Read ${r.read} events.`);
+                lines.push(`Added ${r.added}, updated ${r.updated}, removed ${r.removed}, cancelled ${r.cancelled}.`);
+                // WHICH ID THE PHONE COULD GIVE. `rowid` means the event
+                // carried neither an iCalendar UID nor a Google id, so the same
+                // meeting on another phone would import as a different task.
+                // Printed rather than assumed, because nothing here can know it.
+                lines.push(`Event ids from: ${r.uidFrom}.`);
+              }
+              if (r.why) lines.push(r.why);
+              for (const e of r.errors ?? []) lines.push(e);
+              pulled.textContent = lines.join(" ");
+            });
+            cal.appendChild(pull);
+            cal.appendChild(pulled);
+
+            const readSays = el("div", "said",
+              importing
+                ? "Events from the ticked calendars become tasks, 10 days back and 60 days forward. A repeating event is ONE task, the next one you have not finished. Edit a calendar task's title or date here and it stops following Google; everything else — alarm, type, notes, pin, done — is always yours. Delete the event in Google and the task goes, unless you had edited it, in which case it is cancelled so you can revive it."
+                : "Off. Nothing is read. Tick the calendar named after your email address; leave Holidays and Birthdays unticked unless you want them as tasks.");
+            readSays.dataset.cal = "read";
+            cal.appendChild(readSays);
+          }
+
           const says = el("div", "said",
             on
               ? "Every task with a date is on the calendar. A task with a time is a 30 minute block; a task without one is an all-day banner. ONE WAY: marking a task done, cancelling it or deleting it removes the event, and an event you move or delete in Google Calendar is put back on the next sync. Turning this off removes every event the app wrote."
