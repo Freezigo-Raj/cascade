@@ -38,6 +38,20 @@ const { fromEvent } = await import(`./resolve.js${v}`);
 
 const DAY = 24 * 60 * 60 * 1000;
 
+/**
+ * The offset a stored instant carries, as signed milliseconds.
+ *
+ * `calendar.js` holds the same four lines, and neither file can import the
+ * other's: both sit beside `resolve.js` rather than above it. Named here in
+ * place, the way `isOpen` is named in three files, rather than quietly copied.
+ */
+function tzMs(iso) {
+  const o = String(iso ?? "").slice(-6);
+  if (!/^[+-]\d\d:\d\d$/.test(o)) return 0;
+  const sign = o[0] === "-" ? -1 : 1;
+  return sign * (Number(o.slice(1, 3)) * 60 + Number(o.slice(4, 6))) * 60000;
+}
+
 /** The window the phone is asked for. His numbers. */
 export function windowFor(nowMs, config) {
   const back = config?.calendar?.import_days_back ?? 10;
@@ -192,7 +206,8 @@ export function nextPerSeries(events, existing) {
  * `existing` is every task in the store, closed ones included — a closed task
  * is exactly what stops a series handing back an occurrence he has finished.
  *
- * @returns {{add: object[], update: object[], remove: string[], cancel: object[], notReady: number}}
+ * @returns {{add: object[], update: object[], remove: string[], cancel: object[], unchanged: number,
+ *            notReady: number, ours: number, declined: number, considered: number}}
  */
 export function planImport(events, existing, opts) {
   const now = opts.now;
@@ -202,6 +217,17 @@ export function planImport(events, existing, opts) {
   // COUNTED BEFORE ANYTHING ELSE FILTERS THEM OUT. Counted on the raw list and
   // not on what survives, so the number answers "how many did the phone hand
   // over that I would not touch" rather than "how many got this far".
+  // WHY EACH EVENT WAS NOT IMPORTED, COUNTED (session 150, his ask). The report
+  // said `read 13` and `added 0` and nothing in between, so the two numbers did
+  // not reconcile without him doing the arithmetic in his head — and an import
+  // that reads thirteen and writes nothing looks identical whether that is
+  // thirteen of his own events going back out or a broken pass.
+  //
+  // COUNTED IN THE ORDER THE GATES RUN, so the four numbers sum to the read
+  // count and no event is counted twice: ours first, then declined, then not
+  // ready.
+  const ours = all.filter(isOurs).length;
+  const said_no = all.filter((ev) => !isOurs(ev) && declined(ev)).length;
   const skipped = all.filter((ev) => notReady(ev, google) && !isOurs(ev) && !declined(ev));
   const waiting = skipped.length;
   // THE UIDS BEING WAITED ON, so the missing-from-calendar branch does not read
@@ -214,7 +240,21 @@ export function planImport(events, existing, opts) {
   const byId = new Map((existing ?? []).map((t) => [t.id, t]));
   const seen = new Set();
 
-  const plan = { add: [], update: [], remove: [], cancel: [], notReady: waiting };
+  const plan = {
+    add: [], update: [], remove: [], cancel: [],
+    notReady: waiting, ours, declined: said_no,
+    // EVERY EVENT THAT GOT PAST ALL THREE GATES, and every one of those is then
+    // added, updated, left alone, or folded into the occurrence before it. The
+    // four account for `considered` exactly:
+    //
+    //   considered − add − update − unchanged = folded by one-task-per-series
+    //
+    // `unchanged` exists because without it a task that needed nothing done was
+    // being reported as an occurrence the series had folded away. The number was
+    // right and the word was wrong.
+    considered: live.length,
+    unchanged: 0,
+  };
 
   for (const ev of want) {
     seen.add(ev.id);
@@ -226,12 +266,21 @@ export function planImport(events, existing, opts) {
     }
     // HIS STATE, ALWAYS. A task he closed is never reopened by an import, and
     // nothing below this line can change that.
-    if (closed(have)) continue;
+    if (closed(have)) { plan.unchanged += 1; continue; }
     // DETACHED MEANS HIS. Google stopped owning the title and the date the
     // moment he corrected one of them; everything else about the task was
     // always his.
-    if (have.calendar_detached) continue;
-    if (have.title === task.title && have.due_at === task.due_at && have.has_time === task.has_time) continue;
+    if (have.calendar_detached) { plan.unchanged += 1; continue; }
+    if (have.title === task.title && have.due_at === task.due_at && have.has_time === task.has_time) {
+      // ALREADY RIGHT. Counted, because `considered` minus added minus updated
+      // was being reported as what one-task-per-series folded away, and a task
+      // that simply needed nothing done landed in that number under the wrong
+      // name (session 151, found reading his own report rather than from a
+      // failure — the arithmetic was right and the WORD was wrong, which is the
+      // harder kind to notice).
+      plan.unchanged += 1;
+      continue;
+    }
     // FOLLOWING: Google's title and date win, and everything he set stays. The
     // alarm, the type, the firmness, the notes and the pin are his on every
     // task, so they are carried across rather than rebuilt.
@@ -263,7 +312,14 @@ export function planImport(events, existing, opts) {
     // genuinely missing in the same pass, so the swap happens once and nothing
     // is ever both deleted and absent.
     if (held.has(String(t.calendar_uid))) continue;
-    const at = Date.parse(String(t.due_at).slice(0, 19) + "Z");
+    // A TRUE INSTANT ON BOTH SIDES. `fromMs` and `toMs` are real epoch
+    // milliseconds, and a stored `due_at` is local wall clock with its offset
+    // written on the end — so parsing it as if the wall clock were UTC and
+    // comparing the two was out by the offset (session 150, the same confusion
+    // that put a 7pm meeting at 1:30pm). Five and a half hours only matters
+    // within five and a half hours of either edge of the window, which is
+    // exactly the kind of fault that waits months and then deletes something.
+    const at = Date.parse(String(t.due_at).slice(0, 19) + "Z") - tzMs(t.due_at);
     if (!(at >= fromMs && at <= toMs)) continue;
     // HIS ANSWER 4, narrowed. A task still following is Google's and goes with
     // the event. A task he detached and edited is HIS, and is cancelled rather

@@ -528,8 +528,22 @@ export function mountAccount(root, { onBack, onSignedOut } = {}) {
                 // yet, so it is left until it has. Printed, because an event
                 // that simply never appears cannot be told from one the window
                 // missed — and because 0 here is the answer he is hoping for.
+                // WHY THE REST WERE NOT IMPORTED (session 150, his ask). The
+                // line used to stop at read and added, and those two do not
+                // reconcile on their own: an import that reads thirteen and
+                // writes nothing looks identical whether that is thirteen of
+                // his own events going back out or a pass that is broken. Every
+                // skip has its own number and they sum to the read count.
+                const skips = [];
+                if (r.ours) skips.push(`${r.ours} already ours`);
+                if (r.declined) skips.push(`${r.declined} declined`);
+                if (r.notReady) skips.push(`${r.notReady} not ready yet`);
+                if (r.unchanged) skips.push(`${r.unchanged} already right`);
+                const folded = (r.considered ?? 0) - r.added - r.updated - (r.unchanged ?? 0);
+                if (folded > 0) skips.push(`${folded} later in a repeat`);
+                if (skips.length) lines.push(`Skipped: ${skips.join(", ")}.`);
                 if (r.notReady) {
-                  lines.push(`${r.notReady} event${r.notReady === 1 ? "" : "s"} not ready yet: Google has not given ${r.notReady === 1 ? "it" : "them"} a permanent id. ${r.notReady === 1 ? "It" : "They"} will arrive on a later import.`);
+                  lines.push(`Not ready means Google has not given ${r.notReady === 1 ? "that event" : "those events"} a permanent id yet. ${r.notReady === 1 ? "It" : "They"} will arrive on a later import.`);
                 }
                 // WHICH ID THE PHONE COULD GIVE, COUNTED PER SOURCE. `uid2445`
                 // and `syncid` are the same on every device; `rowid` is a local
@@ -543,6 +557,48 @@ export function mountAccount(root, { onBack, onSignedOut } = {}) {
             });
             cal.appendChild(pull);
             cal.appendChild(pulled);
+
+            // LIST EVERY EVENT, from every calendar, ticked or not (session
+            // 151). A meeting fifteen days out on a ticked calendar never
+            // appeared among the three events a read reported, and a count of
+            // three says nothing about WHICH three. This asks the provider for
+            // everything and filters nothing, so the answer is either "it is
+            // here, on this calendar, and that calendar is not ticked" or "the
+            // phone does not have it", and those need different fixes.
+            //
+            // It writes nothing. Safe to press at any time.
+            const probe = el("button", "act", "List every event");
+            probe.type = "button";
+            probe.dataset.cal = "read";
+            const probed = el("pre", "said probe");
+            probed.dataset.cal = "read";
+            probe.addEventListener("click", async () => {
+              probe.textContent = "Reading…";
+              probed.textContent = "";
+              let r;
+              try {
+                r = await bridge.diagnoseCalendar();
+              } catch (e) {
+                r = { ok: false, why: "It threw: " + (e?.message ?? e) };
+              }
+              probe.textContent = "List every event";
+              if (!r.ok) { probed.textContent = r.why || "No answer."; return; }
+              const out = [`${r.from} to ${r.to}, every calendar, ticked or not.`, ""];
+              for (const c of r.calendars) {
+                out.push(`${c.ticked ? "[x]" : "[ ]"} ${c.name} — ${c.events} event${c.events === 1 ? "" : "s"}`);
+              }
+              out.push("", `${r.read} event${r.read === 1 ? "" : "s"}:`);
+              // Each event on two lines, because a phone is narrow and a title
+              // wrapped into the middle of its own calendar name is unreadable.
+              for (const e of r.rows) {
+                out.push(`${e.when}  ${e.title}`);
+                out.push(`   ${e.ticked ? "ticked" : "NOT TICKED"} · ${e.calendar} · ${e.uidFrom}${e.ours ? " · ours" : ""}`);
+              }
+              if (!r.rows.length) out.push("(none — the phone has no events in this window on any calendar)");
+              probed.textContent = out.join("\n");
+            });
+            cal.appendChild(probe);
+            cal.appendChild(probed);
 
             const readSays = el("div", "said",
               importing

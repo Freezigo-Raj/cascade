@@ -3744,3 +3744,144 @@ The ours and declined gates still run first, so an event this app wrote that als
 Whether your phone's events get a `uid2445` once synced, and how many of your 12 were `rowid`. The new report answers both the next time you press `Import now`.
 
 **Shell 65. No Kotlin change, no APK rebuild, no migration.** `events()` has returned `uidFrom` and `readable()` has returned `google` since session 148, so this is three web-half files and the build-64 APK carries everything it needs. Calendar shell stays at build 2. All nine checks green.
+
+---
+
+## Session 150 — 8 October 2026
+
+**Your report:** a 7pm meeting in Google Calendar reads 1:30pm in Cascade. And: add the skipped and declined counts.
+
+The gap is 5 hours 30 minutes. That is your own offset, which named the fault before I looked at anything.
+
+### A provider instant is not a wall clock
+
+Every instant inside this engine is **local wall clock** carried as a pseudo-epoch.
+
+| Function | What it does | Correct? |
+|---|---|---|
+| `readInstant` | builds `t` with `Date.UTC(...)` on the fields **as written**, keeps the offset beside it | yes |
+| `writeInstant` | reads UTC fields, stamps the offset on them | yes |
+
+That pairing is deliberate: it is what lets `midnight()` be one floor division instead of a timezone library.
+
+`ev.startMs` from the Android provider is a **true** epoch instant. `fromEvent` handed it straight to `writeInstant`, which labelled 13:30 UTC as `13:30+05:30`. One argument, one `+ offsetMs(offset)`.
+
+### An all-day event is not shifted
+
+Not symmetry for its own sake. The provider stores an all-day row as **UTC midnight of its date**, so its UTC fields already read as the right day. Adding the offset would put a phone at -08:00 on 16:00 of the **previous** day.
+
+That is the one way this could have been fixed and still been wrong, so the check asserts it at a negative offset as well as at yours.
+
+### The window test was out by the same offset
+
+Found while fixing the first. `fromMs` and `toMs` are real epoch milliseconds, a stored `due_at` is wall clock, and the missing-from-calendar branch parsed the wall clock as though it were UTC.
+
+Five and a half hours only matters within five and a half hours of either edge of the window. That is exactly the shape of fault that waits months and then deletes a task.
+
+### The one field no check was reading was the only one a person reads
+
+Session 148 asserted an imported task's shape in every detail: precision, anchor, firmness, significance, recurrence, the uid, the detach flag. Not the time on the row.
+
+The new cases state a **known wall clock** rather than round-tripping through `writeInstant` and `readInstant`, because a round trip agrees with itself whichever way round it is wrong.
+
+Reverting the fix fails three of them, including the exact reading you saw:
+
+```
+FAIL  a 7pm event reads 7pm and not 1:30pm — got 2026-10-09T13:30:00+05:30
+FAIL  the same rule holds west of UTC
+FAIL  a task two hours inside the far edge of the window is inside it
+```
+
+### Every skip has its own number
+
+Your ask, and the reason it matters: `read 13` and `added 0` do not reconcile on their own. An import that reads thirteen and writes nothing looks identical whether that is thirteen of your own events going back out or a pass that is broken.
+
+```
+Read 13 events.
+Added 0, updated 0, removed 0, cancelled 0.
+Skipped: 9 already ours, 1 declined, 1 not ready yet, 2 later in a repeat.
+Event ids from: syncid 13.
+```
+
+| Count | What it is |
+|---|---|
+| already ours | events this app pushed out, recognised by the `cascade:` marker |
+| declined | meetings you said no to |
+| not ready yet | no permanent id from Google yet (session 149) |
+| later in a repeat | occurrences one-task-per-series folded away |
+
+Counted **in the order the gates run**, so no event is counted twice and the four sum to the read count. The counting lives in `planImport`, not in the bridge, so `check_calendar.mjs` asserts the arithmetic rather than trusting it. A number on a screen that no check adds up is the same class of thing as the four silently lost alarm outcomes of session 123.
+
+### Your existing calendar tasks
+
+They correct themselves. A task still **following** has its date taken from Google on every import, so the next pass rewrites the wrong time. One you had already **detached** keeps your own correction, which is what detached means.
+
+**Shell 66. No Kotlin change, no APK rebuild, no migration.** All nine checks green.
+
+---
+
+## Session 151 — 9 October 2026
+
+**Your report:** a meeting on 24 October, on a calendar you had ticked, never arrived. `Import now` said `read 3 events`, and those three were already in the app.
+
+### The import cannot be at fault
+
+That is what decided this session. The import only ever sees what the provider hands over, and the provider handed over three. Everything between your calendar and that number is the `calendarIds` filter, and nothing on a phone can be used to look inside it.
+
+So this build does not guess. It asks for everything.
+
+### `List every event`
+
+A new button on the account screen, under Google Calendar. It queries **every readable calendar**, ticked or not, over the same 10-back / 60-forward window, and prints:
+
+```
+29 Sep to 8 Dec, every calendar, ticked or not.
+
+[x] exploredreams360@gmail.com — 3 events
+[ ] khushbu.dhami7@gmail.com — 0 events
+[ ] xplore360tkts@gmail.com — 11 events
+[ ] Holidays in India — 4 events
+
+18 events:
+24 Oct 10:00  💰 Collect ₹57,000 · Asha Achari · Laksh
+   NOT TICKED · xplore360tkts@gmail.com · uid2445
+```
+
+Every calendar is listed **including the empty ones**, because a calendar with no events in the window is the answer to why nothing arrives from it.
+
+The two answers it separates need opposite fixes:
+
+| What you see | What it means |
+|---|---|
+| the event is there, on an **unticked** calendar | the tick list is reading a different row from the one the event is on. Tick that one |
+| the event is **not in the list at all** | the phone does not have it. No part of this app can reach it, and the fix is in Android's account sync |
+
+**It is a read.** It writes nothing, to the store or to the calendar. Safe to press at any time.
+
+**No Kotlin change, deliberately.** `events()` has taken a list of calendar ids since session 148, so this hands it all of them rather than the ticked ones. A diagnostic that needed an APK rebuild would arrive a day after the question, which is the whole reason it exists.
+
+### The third time aggregate numbers have not been enough
+
+| Session | What was shipped | Why |
+|---|---|---|
+| 147 | `Sync now` with a verbatim report | four causes had one appearance |
+| 150 | the skip counts | `read 13` and `added 0` did not reconcile |
+| 151 | the rows themselves | a count of three says nothing about which three |
+
+Same lesson at a finer grain each time. The rule it leaves: **a number is a diagnostic only when the thing it counts can be named.**
+
+### A word that was wrong while every number was right
+
+Found reading your report, not from a failure. Session 150 derived the fold count as `considered − added − updated`. A task that already exists and needs nothing done is in `considered` and in neither of the others, so it was being reported as an occurrence one-task-per-series had folded away.
+
+The arithmetic was right. The word was wrong. That is the harder kind to notice, because nothing fails. `unchanged` is counted explicitly now and prints as `already right`.
+
+### The check corrected me
+
+Writing the case for the above, I asserted that a closed task would be counted as left alone. It failed. `nextPerSeries` drops a closed occurrence **before** the loop while it looks for the next live one, so with only that occurrence in the window the series offers nothing at all.
+
+That is session 148's rule working exactly as written. The check was corrected to state the behaviour, not the behaviour changed to suit the check.
+
+**Shell 67. No Kotlin change, no APK rebuild, no migration.** All nine checks green.
+
+Note: his phone was on build 65, so this build carries the session-150 clock fix with it.

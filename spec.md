@@ -40,7 +40,7 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
   contract     58
   config       a.22
   answer_key   29
-  shell        65
+  shell        67
   gate1        signed on example 35
   gate2        signed on contract 32
   gate3        signed on shell 1
@@ -76,59 +76,54 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 
 ## THIS SESSION'S JOB
 
-Session 149: an event with no permanent id is held rather than imported.
+Session 151: list every event, because a count of three says nothing about which three.
 
-**FROM HIS FIRST IMPORT ON THE PHONE.** `read 12 events`, tasks arrived, and
-`event ids from: syncid, rowid`. `syncid` is Google's own event id and is the same
-on every device, so it needs nothing. `rowid` means the event carried NEITHER an
-iCalendar UID nor a Google id, and the last resort was the provider's local row
-number.
+**HIS REPORT.** A meeting on 24 October, fifteen days out, on a calendar he had
+ticked, never arrived. `Import now` said `read 3 events`, and the three that came
+back were already in the app.
 
-**A ROW NUMBER IS SOMETIMES A GOOD IDENTITY AND SOMETIMES NOT**, which is the
-whole of the rule. An event on a calendar that does not sync, Birthdays or a
-local calendar, exists on this phone and nowhere else: its row number is exactly
-as stable as the event is. An event on a GOOGLE calendar with no sync id is an
-event created on the phone that Google has not carried up yet, and it will be
-given a real id within minutes. Same symptom, opposite answers, so the rule reads
-the CALENDAR rather than the event alone.
+**THE IMPORT CANNOT BE AT FAULT**, and that is what decided this session. It only
+ever sees what the provider hands over, and the provider handed over three.
+Everything between his calendar and that number is the `calendarIds` filter, and
+nothing on a phone can be used to look inside it.
 
-**WHAT IMPORTING ONE ANYWAY WOULD HAVE COST.** The task id is a function of the
-uid, so when the real id arrives the same meeting computes a different task id.
-The `row:` task stops appearing in the calendar's answer, the missing branch
-deletes it, and a fresh copy is added. While the task is still following that is
-a row that silently dies and comes back. If he had EDITED it, the task was
-detached, so the branch CANCELS it instead and his correction ends up on the Done
-tab under a task that no longer exists.
+**SO IT ASKS FOR EVERYTHING AND FILTERS NOTHING.** `List every event` queries
+every readable calendar over the same window and prints every calendar with its
+tick state and its event count — the empty ones included, because a calendar with
+no events in the window IS the answer to why nothing arrives from it — then one
+line per event with the calendar it actually sits on, whether that calendar is
+ticked, its id source, and whether it is ours.
 
-**HELD, COUNTED, AND SAID OUT LOUD.** `3 events not ready yet: Google has not
-given them a permanent id.` An event that never appears cannot be told from one
-the window missed, which is the reasoning that put a verbatim report behind
-`Sync now` in session 147.
+The two answers it separates need opposite fixes. An event present on an UNTICKED
+calendar means the tick list is reading a different row from the one the event is
+on. An event absent entirely means the phone does not have it, and no part of
+this app can reach it.
 
-**A TASK WHOSE EVENT IS HELD IS LEFT EXACTLY AS IT IS**, never read as gone.
-Build 64 already wrote some `row:` tasks and deleting one the moment this rule
-starts holding its event would be the identical harm by the other door.
-`planImport` carries the held uids so the missing branch skips them. When Google
-answers, the proper task is added and the `row:` one becomes genuinely missing in
-the SAME pass, so nothing is ever both deleted and absent.
+**NO KOTLIN CHANGE, DELIBERATELY.** `events()` has taken a list of calendar ids
+since session 148, so this hands it all of them rather than the ticked ones. A
+diagnostic that needed an APK rebuild would arrive a day after the question,
+which is the whole reason it exists.
 
-**WITH NO CALENDAR LIST HANDED IN, NOTHING IS HELD.** That is the behaviour
-before this rule and the safe direction when the answer is unknown: a task that
-arrives and later swaps its id is a smaller harm than a task that never arrives.
+**THE THIRD TIME AGGREGATE NUMBERS HAVE NOT BEEN ENOUGH** on this one feature.
+Session 147 shipped `Sync now` because four causes had one appearance. Session
+150 split the skip counts because `read 13` and `added 0` did not reconcile. This
+lists the rows. Each was the same lesson at a finer grain, and the rule it leaves
+is that a number is a diagnostic only when the thing it counts can be named.
 
-**THE UID SOURCES ARE COUNTED PER SOURCE** — `uid2445 8, syncid 3, rowid 1` —
-because `syncid, rowid` says both happened and nothing about the split, and the
-split is the entire question. One `rowid` among twelve is a local event; twelve of
-twelve is a phone where Google's adapter writes neither id. Ordered most
-trustworthy first, so the line reads as a ladder with the one untrustworthy
-source last.
+**A TASK THAT NEEDED NOTHING DONE WAS BEING CALLED A FOLDED OCCURRENCE**, found
+reading his report rather than from a failure. Session 150 derived the fold count
+as `considered − added − updated`, and an unchanged task is in `considered` and in
+neither of the others. The arithmetic was right and the WORD was wrong, which is
+the harder kind to notice because every number still added up.
 
-**NO KOTLIN CHANGE AND NO MIGRATION.** `events()` has returned `uidFrom` and
-`readable()` has returned `google` since session 148, so this is three web-half
-files and the APK built for build 64 carries everything it needs. Calendar shell
-stays at build 2.
+**A CLOSED OCCURRENCE IS A FOLD AND NOT A LEAVE-ALONE**, which is the opposite of
+what the new check first asserted and is what the check itself said.
+`nextPerSeries` drops a closed occurrence before the loop while it looks for the
+next live one, so with only that occurrence in the window the series offers
+nothing. The check was corrected to state the behaviour rather than the behaviour
+changed to suit the check.
 
-All nine checks green.
+No Kotlin change, no APK rebuild, no migration. All nine checks green.
 
 ## NEXT THREE JOBS
 
@@ -1036,3 +1031,18 @@ have landed. That is the price of the single table and it is accepted.
 - 8 Oct 2026 — The ours and declined gates run BEFORE this one, so an event this app wrote that also lacks an id is skipped as ours and is not counted as waiting — a number that double-counts is a number he would have to reconcile by hand.
 - 8 Oct 2026 — THE UID SOURCES ARE COUNTED PER SOURCE RATHER THAN LISTED — `uid2445 8, syncid 3, rowid 1` — because his report said `syncid, rowid`, which states that both happened and nothing about the split, and the split is the entire question: one `rowid` among twelve is a local event, twelve of twelve is a phone where Google's adapter writes neither id. Ordered most trustworthy first rather than by count, so the line reads as a ladder with the one untrustworthy source last.
 - 8 Oct 2026 — No Kotlin change and no migration: `events()` has returned `uidFrom` and `readable()` has returned `google` since session 148, so the fix is three web-half files and the APK built for build 64 still carries everything it needs. Calendar shell stays at build 2.
+- 8 Oct 2026 — A PROVIDER INSTANT IS NOT A WALL CLOCK, his report that a 7pm meeting in Google Calendar read 1:30pm in Cascade: the difference is 5 hours 30 minutes, which is his own offset, and the fault is one argument. Every instant inside this engine is LOCAL WALL CLOCK carried as a pseudo-epoch — `readInstant` builds `t` with `Date.UTC(...)` on the fields AS WRITTEN and keeps the offset beside it, which is what lets `midnight()` be one floor division — and `writeInstant` is its exact inverse, reading UTC fields and stamping the offset on them. Both are right. `fromEvent` handed the Android provider's TRUE epoch to the second one, so 13:30 UTC was labelled `13:30+05:30`.
+- 8 Oct 2026 — AN ALL-DAY EVENT IS NOT SHIFTED, and that is not symmetry for its own sake: the provider stores an all-day row as UTC midnight of its date, so its UTC fields already read as the right day, and adding the offset would put a phone west of UTC on 16:00 of the PREVIOUS day — the one way this could have been fixed and still been wrong, which is why the check asserts it at a negative offset as well as at his own.
+- 8 Oct 2026 — `offsetMs()` joins `writeInstant` and `readInstant` in `resolve.js` with ONE caller, `fromEvent` — nothing a person types ever needs it, because a typed line never carries an instant from outside this app; the import is the first thing in five sessions of Stage 2 to be handed an absolute instant by somebody else.
+- 8 Oct 2026 — THE MISSING-FROM-CALENDAR WINDOW TEST WAS OUT BY THE SAME OFFSET, found while fixing the first: `fromMs` and `toMs` are real epoch milliseconds and a stored `due_at` is wall clock, and the branch parsed the wall clock as though it were UTC — five and a half hours only matters within five and a half hours of either edge, which is exactly the shape of fault that waits months and then deletes a task.
+- 8 Oct 2026 — THE ONE FIELD NO CHECK WAS READING WAS THE ONLY ONE A PERSON READS. Session 148 asserted an imported task's shape in every detail — precision, anchor, firmness, significance, recurrence, the uid, the detach flag — and not the time on the row. The new cases are written as a KNOWN WALL CLOCK rather than as a round trip through `writeInstant` and `readInstant`, because a round trip agrees with itself whichever way round it is wrong; reverting the fix fails three of them, his `13:30` among them.
+- 8 Oct 2026 — EVERY SKIP HAS ITS OWN NUMBER AND THE FOUR SUM TO THE READ COUNT, his ask after a report read `read 13` and `added 0` with nothing in between: those two do not reconcile on their own, and an import that reads thirteen and writes nothing looks identical whether that is thirteen of his own events going back out or a pass that is broken — `ours`, `declined`, `not ready yet` and `considered` are counted IN THE ORDER THE GATES RUN so no event is counted twice, and `considered` minus added minus updated is what one-task-per-series folded away, which was the last number the report could not explain.
+- 8 Oct 2026 — The counting lives in `planImport` and not in the bridge, so `check_calendar.mjs` asserts the arithmetic rather than trusting it — a number on a screen that no check adds up is the same class of thing as the four silently lost alarm outcomes of session 123.
+- 8 Oct 2026 — Existing imported tasks correct themselves: a task still FOLLOWING has its date taken from Google on every import, so the next pass rewrites the wrong time; one he had already DETACHED keeps his own correction, which is what detached means and is the right answer even though it means a task he fixed by hand now differs from one the app fixed for him.
+- 9 Oct 2026 — `List every event` ON THE ACCOUNT SCREEN, asking the provider for EVERY readable calendar and filtering nothing, his report that a meeting on 24 October sitting on a TICKED calendar never arrived while `Import now` said `read 3 events` and the three that came back were already in the app: the import cannot have been at fault, because it only ever sees what the provider hands over and the provider handed over three — everything between the calendar and that number is the `calendarIds` filter, and nothing on a phone can be used to look inside it.
+- 9 Oct 2026 — IT LISTS EVERY CALENDAR INCLUDING THE EMPTY ONES, with its tick state and its event count, then every event with the calendar it actually sits on, whether that calendar is ticked, its id source and whether it is ours — a calendar with no events in the window IS the answer to why nothing arrives from it, and leaving it out would hide exactly that; the two answers it separates need opposite fixes: an event present on an UNTICKED calendar means the tick list is reading a different row from the one the event is on, and an event absent entirely means the phone does not have it and no part of this app can reach it.
+- 9 Oct 2026 — NO KOTLIN CHANGE, deliberately: `events()` has taken a list of calendar ids since session 148, so the diagnostic hands it ALL of them rather than the ticked ones — a diagnostic that needed an APK rebuild would arrive a day after the question, which is the whole reason it exists.
+- 9 Oct 2026 — THE THIRD TIME AGGREGATE NUMBERS HAVE NOT BEEN ENOUGH on this one feature: session 147 shipped `Sync now` because four causes had one appearance, session 150 split the skip counts because `read 13` and `added 0` did not reconcile, and this lists the rows themselves because a count of three says nothing about WHICH three. Each was the same lesson at a finer grain, and the rule it leaves is that a number is a diagnostic only when the thing it counts can be named.
+- 9 Oct 2026 — The list is a READ and writes nothing, to the store or to the calendar, so it is safe to press at any time and is the first thing to press when something is missing — stated on the screen rather than inferred from the word `list`.
+- 9 Oct 2026 — A TASK THAT NEEDED NOTHING DONE WAS BEING REPORTED AS AN OCCURRENCE THE SERIES FOLDED AWAY, found reading his own report rather than from a failure: session 150 derived the fold count as `considered − added − updated`, and an unchanged task is in `considered` and in neither of the others — the arithmetic was right and the WORD was wrong, which is the harder kind to notice because every number still added up. `unchanged` is counted explicitly now and `already right` is its own line.
+- 9 Oct 2026 — A CLOSED OCCURRENCE IS A FOLD AND NOT A LEAVE-ALONE, which is the opposite of what the first version of the new check asserted and is what the check itself said: `nextPerSeries` drops a closed occurrence BEFORE the loop while it looks for the next live one, so with only that occurrence in the window the series offers nothing at all — session 148's rule working exactly as written, and the check was corrected to state the behaviour rather than the behaviour changed to suit the check.

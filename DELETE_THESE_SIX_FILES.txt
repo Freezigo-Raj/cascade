@@ -1,4 +1,4 @@
-CASCADE — sessions 137 to 149. READ THIS BEFORE COMMITTING.
+CASCADE — sessions 137 to 151. READ THIS BEFORE COMMITTING.
 
 Three things must happen by hand. Do them in this order: the migration, the
 deletions, then the APK.
@@ -100,7 +100,7 @@ AFTER DELETING THE SIX FILES, run this and it must say GATE 2: PASS —
 
   python3 gate2.py
 
-Header should read build 65.
+Header should read build 67.
 
 
 == THEN ON THE PHONE, ACCOUNT SCREEN ==
@@ -126,6 +126,66 @@ like working sync right up to the day you install the app somewhere else.
 
 "events", "holidays" and "birthdays" are each their own CALENDAR in Google, not
 a type of event, which is why the choice is a tick list rather than a switch.
+
+
+== WHAT CHANGED IN SESSION 151 ==
+
+A NEW BUTTON: "List every event", on the account screen under Google Calendar.
+
+It asks the phone for EVERY readable calendar, ticked or not, over the same
+10-back / 60-forward window, and prints every calendar with its tick state and
+event count, then one line per event:
+
+  [x] exploredreams360@gmail.com - 3 events
+  [ ] xplore360tkts@gmail.com - 11 events
+
+  24 Oct 10:00  Collect Rs 57,000 - Asha Achari - Laksh
+     NOT TICKED - xplore360tkts@gmail.com - uid2445
+
+PRESS IT AND SEND ME WHAT IT SAYS. It answers the one thing nothing else could:
+whether the missing meeting is on a calendar you did not tick, or whether the
+phone does not have it at all. Those need opposite fixes.
+
+It is a READ. It writes nothing, to the store or to the calendar, so it is safe
+to press at any time.
+
+Also fixed: a task that already existed and needed no change was being counted
+as an occurrence the repeat rule folded away. The number was right and the word
+was wrong. It now prints as "already right".
+
+YOUR PHONE WAS ON BUILD 65, so this build also carries the session-150 clock
+fix (the 7pm meeting that read 1:30pm). One push covers both.
+
+
+== WHAT CHANGED IN SESSION 150 ==
+
+THE 7PM BUG. A 7pm meeting read 1:30pm, which is 5h30m out, which is your own
+offset. Every instant in this engine is LOCAL WALL CLOCK with the offset written
+on the end; the Android calendar provider hands over a TRUE epoch instant. One
+was passed straight into the other, so 13:30 UTC got labelled 13:30+05:30.
+
+An all-day event is deliberately NOT shifted: the provider stores it as UTC
+midnight of the date, so its date already reads correctly, and shifting would
+move a phone west of UTC to the previous day.
+
+A second fault of the same kind, found while fixing the first: the
+missing-from-calendar window test compared a wall clock against a true instant,
+so it was out by the same 5h30m at both edges of the window.
+
+YOUR EXISTING CALENDAR TASKS FIX THEMSELVES. A task still following Google has
+its date taken from the calendar on every import, so the next Import now
+rewrites the wrong time. One you had already edited is detached and keeps YOUR
+correction, which is what detached means.
+
+THE REPORT NOW ACCOUNTS FOR EVERY EVENT:
+
+  Read 13 events.
+  Added 0, updated 0, removed 0, cancelled 0.
+  Skipped: 9 already ours, 1 declined, 1 not ready yet, 2 later in a repeat.
+  Event ids from: syncid 13.
+
+The four skip numbers sum to the read count, so read and added reconcile without
+doing arithmetic in your head.
 
 
 == WHAT CHANGED IN SESSION 149 ==

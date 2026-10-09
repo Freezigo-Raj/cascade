@@ -526,5 +526,11 @@ So it is held, and **counted** out loud, because an event that never appears can
 
 The report counts per source, `uid2445 8, syncid 3, rowid 1`, ordered most trustworthy first.
 
+**A provider instant is not a wall clock** (session 150). Every instant in this engine is local wall clock carried as a pseudo-epoch, and the Android provider hands over a true epoch, so `fromEvent` shifts by the offset before writing. An all-day event is NOT shifted: the provider stores it as UTC midnight of its date, and adding the offset would put a phone west of UTC on the previous day.
+
+**The report accounts for every event it read.** `read` = `already ours` + `declined` + `not ready yet` + `considered`, and `considered` = added + updated + `already right` + folded by one-task-per-series. Counted in the order the gates run, in `planImport` rather than the bridge, so the check asserts the arithmetic.
+
+**`List every event`** (session 151) queries every readable calendar, ticked or not, over the same window, and prints every calendar with its tick state and event count, then one line per event with the calendar it sits on, whether that calendar is ticked, and its id source. It writes nothing. It exists because the import only sees what the provider hands over, so when an event never arrives the fault is between the calendar and the count, and nothing on a phone can look inside that.
+
 
 **Arrived since this page was written**, and now on it: recurrence, sync, the duration control, notes, firmness. **Decided and deliberately still absent:** Cancel and Archive as row actions. A row carries Done, Pin, Delete and its push targets, and a Done row carries Undone. Cancel and Archive stay members of `row_action` with no control on any screen, which is stated here so the gap reads as a decision rather than an oversight.

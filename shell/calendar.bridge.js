@@ -275,6 +275,13 @@ export async function importCalendar() {
     // waiting for Google to give it one, and an event that simply never appears
     // is indistinguishable from one the window missed.
     notReady: plan.notReady ?? 0,
+    // WHY THE REST WERE NOT IMPORTED, so `read` and `added` reconcile without
+    // arithmetic. `read` = ours + declined + notReady + considered, and
+    // `considered` − added − updated is what one-task-per-series collapsed.
+    ours: plan.ours ?? 0,
+    declined: plan.declined ?? 0,
+    considered: plan.considered ?? 0,
+    unchanged: plan.unchanged ?? 0,
     errors: [],
     // WHICH ID THE PHONE COULD GIVE, COUNTED PER SOURCE rather than listed.
     // His first import reported `syncid, rowid`, which says both happened and
@@ -487,4 +494,99 @@ export async function initCalendar() {
       .then((r) => { if (!r.ok && r.why) console.warn("calendar import:", r.why); })
       .catch((e) => console.warn("calendar import:", e?.message ?? e));
   }
+}
+
+/**
+ * EVERY EVENT THE PHONE CAN SEE, LISTED ONE BY ONE — the diagnostic, and the
+ * third time aggregate numbers have not been enough (session 151).
+ *
+ * His report: `read 3 events`, and a meeting fifteen days out, on a ticked
+ * calendar, that was never among the three. The import could not be at fault,
+ * because the import only sees what the provider hands over and the provider
+ * handed over three. Everything between the calendar and that number is the
+ * `calendarIds` filter, and nothing on a phone can be used to look inside it.
+ *
+ * SO IT ASKS FOR EVERYTHING AND FILTERS NOTHING. Every readable calendar, the
+ * same window, and one line per event saying which calendar it actually sits
+ * on, whether that calendar is ticked, and which id source it could give. If
+ * the meeting is in this list on an UNTICKED calendar, the tick list is reading
+ * a different row from the one the event is on. If it is not in this list at
+ * all, the provider does not have it and no part of this app can reach it.
+ *
+ * It is a READ. It writes nothing, to the store or to the calendar, so it is
+ * safe to press at any time and is the first thing to press when something is
+ * missing.
+ *
+ * NO KOTLIN CHANGE, deliberately. `events()` already takes a list of calendar
+ * ids; this one hands it ALL of them rather than the ticked ones. A diagnostic
+ * that needed an APK rebuild would arrive a day after the question.
+ */
+export async function diagnoseCalendar() {
+  const Cal = plugin();
+  if (!Cal || !Cal.events) {
+    return { ok: false, why: "This APK is older than the calendar import. Rebuild and reinstall it." };
+  }
+  const cals = await allCalendars();
+  if (!cals.length) return { ok: false, why: "The phone returned no readable calendars at all." };
+
+  const ticked = new Set(readCalendars().map(String));
+  const nameOf = new Map(cals.map((c) => [String(c.id), String(c.name || c.account || c.id)]));
+  const everyId = cals.map((c) => String(c.id));
+
+  const nowMs = Date.now();
+  const { fromMs, toMs } = windowFor(nowMs, partAConfig);
+  let events = [];
+  try {
+    const r = await Cal.events({ fromMs, toMs, calendarIds: everyId });
+    events = r.events ?? [];
+  } catch (e) {
+    return { ok: false, why: "events() refused: " + (e?.message ?? e) };
+  }
+
+  // EVERY CALENDAR IS LISTED, INCLUDING THE EMPTY ONES. A calendar with no
+  // events in the window is the answer to "why is nothing arriving from it",
+  // and leaving it out would hide exactly that.
+  const perCal = new Map(everyId.map((id) => [id, 0]));
+  const rows = [];
+  for (const e of events) {
+    const id = String(e.calendarId ?? "");
+    perCal.set(id, (perCal.get(id) ?? 0) + 1);
+    rows.push({
+      when: whenOf(e),
+      title: String(e.title ?? "").slice(0, 40),
+      calendar: nameOf.get(id) ?? `id ${id}`,
+      ticked: ticked.has(id),
+      uidFrom: String(e.uidFrom ?? "?"),
+      ours: String(e.description ?? "").includes("cascade:"),
+    });
+  }
+  rows.sort((a, b) => (a.when < b.when ? -1 : a.when > b.when ? 1 : 0));
+
+  return {
+    ok: true,
+    read: events.length,
+    calendars: everyId.map((id) => ({
+      name: nameOf.get(id) ?? `id ${id}`,
+      ticked: ticked.has(id),
+      events: perCal.get(id) ?? 0,
+    })),
+    rows,
+    from: dayOf(fromMs),
+    to: dayOf(toMs),
+  };
+}
+
+/** `24 Oct 10:00`, or `24 Oct` for an all-day row. Local, and short on purpose. */
+function whenOf(e) {
+  const d = new Date(Number(e.allDay ? e.startMs : e.startMs));
+  const day = dayOf(d.getTime());
+  if (e.allDay) return day;
+  const p = (n) => String(n).padStart(2, "0");
+  return `${day} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+function dayOf(ms) {
+  const d = new Date(ms);
+  return `${d.getDate()} ${MONTHS[d.getMonth()]}`;
 }

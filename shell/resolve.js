@@ -524,6 +524,19 @@ function readInstant(iso) {
   return { t: Date.UTC(+y, +mo - 1, +d, +h, +mi, +se), offset };
 }
 const MIN = 60000, HOUR = 60 * MIN, DAY = 24 * HOUR;
+/**
+ * An offset such as `+05:30` as milliseconds, signed.
+ *
+ * It exists for ONE caller: `fromEvent`, which is handed a true epoch by the
+ * Android calendar provider and has to turn it into the local wall clock that
+ * every other instant in this engine already is. Nothing a person types needs
+ * it, because a typed line never carries an instant from outside.
+ */
+function offsetMs(offset) {
+  const o = String(offset);
+  const sign = o[0] === "-" ? -1 : 1;
+  return sign * (Number(o.slice(1, 3)) * 60 + Number(o.slice(4, 6))) * MIN;
+}
 function writeInstant(t, offset) {
   const d = new Date(t), p = (n) => String(n).padStart(2, "0");
   return `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())}T` +
@@ -1170,7 +1183,26 @@ export function fromEvent(ev, opts) {
   const derived = fromVerb(action_verb, config);
   const normalised = readNormalised(title);
   const has_time = !ev.allDay;
-  const due_at = writeInstant(Number(ev.startMs), offset);
+  // THE PROVIDER'S MILLISECONDS ARE A TRUE INSTANT; `writeInstant` WANTS LOCAL
+  // WALL CLOCK (session 150, his report: a 7pm meeting read 1:30pm in the app,
+  // which is exactly +05:30 out).
+  //
+  // Every instant inside this engine is local wall clock carried as a
+  // pseudo-epoch: `readInstant` builds `t` with `Date.UTC(...)` on the fields as
+  // WRITTEN and keeps the offset beside it, which is what lets `midnight()` be
+  // one floor division. `writeInstant` is the exact inverse: it reads UTC fields
+  // and stamps the offset on them. Both are right, and handing a real epoch to
+  // the second one labels 13:30 UTC as `13:30+05:30`.
+  //
+  // ALL-DAY IS NOT SHIFTED, and that is not symmetry for its own sake. The
+  // provider stores an all-day row as UTC midnight of the date, so its UTC
+  // fields ALREADY read as the right day. Adding the offset would move a
+  // negative-offset phone to 16:00 on the PREVIOUS day, which is the one way
+  // this could be fixed and still be wrong.
+  const due_at = writeInstant(
+    has_time ? Number(ev.startMs) + offsetMs(offset) : Number(ev.startMs),
+    offset
+  );
   const nowAt = readInstant(now);
 
   const dates = {

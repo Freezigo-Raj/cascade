@@ -99,3 +99,21 @@
 }
 .cal-tick input { width: 18px; height: 18px; accent-color: var(--signal); flex: 0 0 auto; }
 .cal-pick { font-family: inherit; font-size: 13px; max-width: 60%; }
+
+/* THE EVENT LIST (session 151). A `<pre>` on purpose: it is a list of lines
+   that must stay lines, because the whole point is comparing one event's
+   calendar against the next one's, and reflowed prose destroys that. It wraps
+   rather than scrolling sideways, since a phone cannot scroll a block of text
+   horizontally without taking the page with it. */
+.said.probe {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  margin: var(--step) 0;
+  max-height: 60vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}

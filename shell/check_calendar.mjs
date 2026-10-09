@@ -15,6 +15,7 @@
 import { partAConfig as config } from "./config.js";
 import { wantsEvent, eventFor, desiredEvents, sameEvent, dateOf } from "./calendar.js";
 import { importedId, isOurs, declined, nextPerSeries, notReady, planImport, windowFor } from "./calendar.import.js";
+import { fromEvent } from "./resolve.js";
 
 let failed = 0;
 const say = (ok, what) => {
@@ -260,6 +261,104 @@ console.log("\nTHE WINDOW — his numbers.");
   const w = windowFor(NOW_MS, config);
   say(Math.round((NOW_MS - w.fromMs) / DAY) === 10, "10 days back");
   say(Math.round((w.toMs - NOW_MS) / DAY) === 60, "and 60 forward");
+}
+
+// ===========================================================================
+// THE CLOCK (session 150, his report: a 7pm meeting read 1:30pm in the app).
+//
+// THE ONE THING NO CHECK WAS LOOKING AT. Session 148 asserted the shape of an
+// imported task in every detail except the only one a person reads off the row.
+// Every case below is written as a KNOWN WALL CLOCK rather than as a round
+// trip through the same two functions, because a round trip agrees with itself
+// whichever way round it is wrong.
+
+console.log("\nTHE CLOCK — a provider instant is not a wall clock.");
+{
+  // 2026-10-09 19:00 in +05:30 is 13:30 UTC. His case, stated as the number.
+  const at7pm = Date.UTC(2026, 9, 9, 13, 30, 0);
+  const t = fromEvent(ev({ startMs: at7pm, allDay: false }), { id: "x", now: NOW, config });
+  say(t.due_at === "2026-10-09T19:00:00+05:30",
+      `a 7pm event reads 7pm and not 1:30pm — got ${t.due_at}`);
+  say(t.has_time === true, "and it carries a time");
+
+  // THE NEGATIVE OFFSET, which is where the naive fix breaks. 19:00 in -08:00
+  // is 03:00 UTC the NEXT day.
+  const NY = "2026-10-09T09:00:00-08:00";
+  const atLA = Date.UTC(2026, 9, 10, 3, 0, 0);
+  const west = fromEvent(ev({ startMs: atLA, allDay: false }), { id: "x", now: NY, config });
+  say(west.due_at === "2026-10-09T19:00:00-08:00",
+      `the same rule holds west of UTC — got ${west.due_at}`);
+
+  // ALL-DAY IS NOT SHIFTED. The provider stores it as UTC midnight of the date,
+  // so its UTC fields already read as the right day; adding the offset would
+  // move a negative-offset phone to the PREVIOUS day.
+  const day = Date.UTC(2026, 9, 9, 0, 0, 0);
+  const banner = fromEvent(ev({ startMs: day, allDay: true }), { id: "x", now: NOW, config });
+  say(banner.due_at.slice(0, 10) === "2026-10-09",
+      `an all-day event keeps its date — got ${banner.due_at}`);
+  const bannerWest = fromEvent(ev({ startMs: day, allDay: true }), { id: "x", now: NY, config });
+  say(bannerWest.due_at.slice(0, 10) === "2026-10-09",
+      `and keeps it west of UTC, which is the one way this could be fixed and still be wrong — got ${bannerWest.due_at}`);
+  say(banner.has_time === false, "and an all-day event carries no time");
+
+  // THE WINDOW TEST USES A TRUE INSTANT ON BOTH SIDES. A task sitting five
+  // hours inside the far edge must not read as outside it.
+  const w = windowFor(NOW_MS, config);
+  const nearEdge = {
+    ...task(), id: "edge", calendar_uid: "e-edge",
+    due_at: new Date(w.toMs - 2 * 3600000 + 5.5 * 3600000).toISOString().slice(0, 19) + "+05:30",
+  };
+  const p = planImport([], [nearEdge], { now: NOW, nowMs: NOW_MS, config });
+  say(p.remove.length === 1,
+      "a task two hours inside the far edge of the window is inside it");
+}
+
+// ===========================================================================
+// WHY EACH EVENT WAS NOT IMPORTED (session 150, his ask).
+
+console.log("\nTHE SKIPS ADD UP — read equals the four reasons.");
+{
+  const google = new Set(["7"]);
+  const events = [
+    ev({ uid: "a1" }),                                              // imported
+    ev({ uid: "a2", description: "cascade:t1" }),                   // ours
+    ev({ uid: "a3", selfStatus: 2 }),                               // declined
+    ev({ uid: "row:4", uidFrom: "rowid" }),                         // not ready
+    ev({ uid: "a1", startMs: NOW_MS + 8 * DAY }),                   // later in the series
+  ];
+  const p = planImport(events, [], { now: NOW, nowMs: NOW_MS, config, googleCalendars: google });
+  say(p.ours === 1, "one event was ours");
+  say(p.declined === 1, "one was declined");
+  say(p.notReady === 1, "one is not ready");
+  say(p.considered === 2, "two got past all three gates");
+  say(p.ours + p.declined + p.notReady + p.considered === events.length,
+      "and the four numbers sum to the read count, so nothing is counted twice or lost");
+  say(p.add.length === 1,
+      "one task is written, because the two that got through are the same series");
+  say(p.unchanged === 0, "nothing was already right, because the store was empty");
+  say(p.considered - p.add.length - p.update.length - p.unchanged === 1,
+      "and the difference is what one-task-per-series folded away");
+
+  // A TASK THAT NEEDS NOTHING DONE IS NOT A FOLDED OCCURRENCE (session 151).
+  // Without `unchanged` this landed in the folded number under the wrong name.
+  const done = planImport([ev({ uid: "b1" })], [], { now: NOW, nowMs: NOW_MS, config }).add[0];
+  const again = planImport([ev({ uid: "b1" })], [done], { now: NOW, nowMs: NOW_MS, config });
+  say(again.unchanged === 1, "a second import of an unchanged event counts it as already right");
+  say(again.add.length === 0 && again.update.length === 0, "and writes nothing");
+  say(again.considered - again.add.length - again.update.length - again.unchanged === 0,
+      "so the series folded nothing, which is the truth");
+
+  // A CLOSED OCCURRENCE IS A FOLD AND NOT A LEAVE-ALONE, which is the opposite
+  // of what I assumed writing this and is what the check said. `nextPerSeries`
+  // drops a closed occurrence BEFORE the loop, looking for the next live one;
+  // with only that occurrence in the window the series offers nothing at all.
+  // That is session 148's rule working, and the honest word for the number.
+  const shut = { ...done, task_state: "done", closed_at: NOW };
+  const after = planImport([ev({ uid: "b1" })], [shut], { now: NOW, nowMs: NOW_MS, config });
+  say(after.add.length === 0 && after.update.length === 0, "a closed occurrence writes nothing");
+  say(after.unchanged === 0, "and is not counted as a task left alone");
+  say(after.considered - after.add.length - after.update.length - after.unchanged === 1,
+      "it is counted as folded by the series, which is what the series did with it");
 }
 
 // ===========================================================================
