@@ -3949,3 +3949,137 @@ The error was captured all along. It went to `console.warn`, which on a phone is
 The block is drawn only when something is actually stuck, and it also says the one urgent thing no screen had ever said: **while that number is showing, those writes live only on that device. Do not clear app data or reinstall.**
 
 **Shell 68. No Kotlin change, no APK rebuild, no migration.** All nine checks green.
+
+---
+
+## Session 153 — 9 October 2026
+
+**His question:** can we import the unsynced events with our own id, and change the id later if Google syncs them, keeping `calendar_detached` false?
+
+Yes. And there is a reason to do it before anything else.
+
+### Import first, repair second
+
+Repairing a stale Google account means removing it from the phone and adding it back. **That deletes the local events it never uploaded.** A task in Cascade survives it; an event waiting for an id does not.
+
+### Session 149 was wrong, and this reverses it
+
+That rule held back any event carrying only a provider row number, reasoning that Google would give it a real id within minutes.
+
+On his second phone the account's calendar adapter last ran in **2025**. An event created there has no id now and will have none next year. Held became held for ever, and the meeting he was looking for was the thing being held.
+
+The assumption was reasonable and the phone disproved it.
+
+### The relink
+
+A task written on `row:812` keeps its own id. Only `calendar_uid` is rewritten, when the provider's **same row** comes back carrying a real uid.
+
+| | Before | After |
+|---|---|---|
+| task id | derived from `row:812` | unchanged |
+| `calendar_uid` | `row:812` | `ical-99` |
+| `calendar_detached` | false | false |
+| alarm, pin, notes | his | his |
+
+The row id is the only thing both versions of the event share, so it is the only thread between the task written before and the event seen after. Without it the task is deleted and a fresh copy added, which loses the alarm.
+
+**The task's own id does not move.** Rewriting it would mean a delete and an insert in Supabase, and would break any alarm armed against it. The id was never the identity. `calendar_uid` is, which is why `planImport` now indexes the store by that as well.
+
+**A detached task is relinked too**, and keeps his title. He owns the words from the moment he edits them. He does not own which event it came from, and a dead row number there would mean the task could never learn that Google had deleted its event.
+
+### The cost, stated
+
+A task seeded on a row number is correct on one phone only. A second device importing the same event, once it syncs, would mint a different id and hold a second copy. The relink keeps that to the one case nothing can fix, because this phone stops using the row number the moment the real id arrives.
+
+The count is in the report rather than left to be worked out:
+
+```
+3 of these are events Google has never seen — created on this phone and never
+uploaded. They are imported anyway, and relinked automatically if the account
+ever syncs.
+```
+
+### Calendar shell build 3
+
+`events()` returns `rowId` on every event. That is all the relink needs.
+
+On an older APK the field is absent, nothing matches, and the behaviour is exactly what it was before. The check asserts that too: **a feature that degrades into something worse than its absence is not a safe default.**
+
+### The list stopped scrolling
+
+His report. It was `max-height: 60vh; overflow-y: auto` — a scrolling box inside a scrolling page — and `overscroll-behavior: contain` then swallowed the gesture at the end of the box instead of handing it to the page. The box is gone. The page scrolls fine, and the entire point of that block is reading all of it.
+
+### How a phone nobody here can see was diagnosed
+
+Two facts did it:
+
+| Fact | What it proves |
+|---|---|
+| `Holidays in India — 0 events` over a window holding Dussehra, Diwali and Christmas | impossible for a calendar that syncs. The adapter is not running |
+| a 24 Oct 2026 event survived aeroplane mode, on an account whose last sync was 2025 | it was created on that phone and has never been uploaded |
+
+Together they name a fault in Android, not in this app. The diagnostic built in session 151 is what made both readable.
+
+**Shell 69. Calendar shell build 3 — the APK must be rebuilt for the relink.** The import of unsynced events works without it. All nine checks green.
+
+---
+
+## Session 154 — 9 October 2026
+
+**His two points.** The import order does not matter, because the imported tasks are local copies that never go back to Google. And: check the words and the date, and do not create duplicates.
+
+He is right about the first half and wrong about the second, and the wrong half was mine to have caught.
+
+### What I got wrong in session 153
+
+He is right that an imported task is a local copy and creates no duplicate in Google. He is wrong that the order is therefore free.
+
+Repairing a stale account removes it from the phone and adds it back. **That deletes the events it never uploaded.** The task's `calendar_uid` then matches nothing, so the missing-from-calendar branch would have deleted the very tasks the import was run to rescue.
+
+So importing first would not have saved them either. My advice was right for the wrong reason, and the reason is what mattered.
+
+### A local-only task is detached, never deleted
+
+| The task's uid | Its event disappears | Why |
+|---|---|---|
+| `row:812` | **detached**, stays open, keeps everything | Google never had a copy. The task is the only surviving record |
+| a real uid, following | deleted | Google had it and Google removed it. His answer 4, unchanged |
+| a real uid, detached | cancelled, revivable | his work, so it goes to Done rather than vanishing |
+
+That makes the order genuinely not matter, which is what he said. It just needed this rule to be true.
+
+### Same words, same day
+
+His rule. A task he typed is **adopted** by the matching event rather than a second row being written.
+
+```
+1 task you had already typed matched an event on the same day, so it was
+linked to it instead of being duplicated. Nothing you wrote was lost.
+```
+
+**Adopted, never deleted**, which is the one place this does not do what he asked literally. He said it would remove duplicates. Removing on a similarity score is a rule that will one day remove the wrong thing. Linking the row he already has reaches the same end state, one task, and cannot throw away anything he wrote: his notes, his alarm, his pin and his own id all survive.
+
+**Both halves are required, and the date half is what makes it safe.** `call raj` on Tuesday and `call raj` on Friday are two calls. A words-only rule would collapse every errand he repeats into whichever meeting shares its name.
+
+### The words test is the engine's own
+
+Exported as `titleSimilarity` rather than rewritten: `max(trigram, word)` over `compare_key`, against `config.duplicate.threshold`. The same measure the capture screen has warned with since Stage 2, tuned by fourteen key cases in section D.
+
+A second implementation inside the import would be a second thing to tune, and the two would disagree the first time either moved. That is exactly how `dayWord` came to need a comment saying it is a deliberate copy.
+
+Four things disqualify a candidate, each a case where two rows are right: a closed task, a task already linked to a **different** event, another day, and a task this import just wrote.
+
+### The exception that made the APK rebuild optional
+
+A `row:` task is the one kind that *can* be adopted despite already having a uid. A task from an event Google had never seen, meeting an event that now carries a real id with the same words on the same day, **is** that event.
+
+So the relink happens two ways:
+
+| Path | Needs | When it fires |
+|---|---|---|
+| by provider row id | calendar shell 3 | exact, always correct |
+| by same words and same day | nothing | fallback, and it needs no Kotlin at all |
+
+Which means calendar shell 3 is now an improvement rather than a requirement. An APK built before it relinks correctly.
+
+**Shell 70. No migration. The APK rebuild is optional.** All nine checks green.

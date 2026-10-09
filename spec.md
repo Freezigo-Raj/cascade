@@ -40,7 +40,7 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
   contract     58
   config       a.22
   answer_key   29
-  shell        68
+  shell        70
   gate1        signed on example 35
   gate2        signed on contract 32
   gate3        signed on shell 1
@@ -76,59 +76,59 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 
 ## THIS SESSION'S JOB
 
-Session 152: nothing had reached the server for hours, and the defect was mine.
+Session 154: his two rules, and a correction to the advice session 153 gave him.
 
-**`fromEvent` RETURNED `due_phrase` ON THE TASK RECORD.** It is a WORKING value:
-`resolve()` returns it under `working` and never on the task, because the
-sentence is recomputed from `due_at` every time a row is drawn and a stored copy
-would be a second truth going stale the moment the clock passed it. So there is
-no column for it. PostgREST refused the whole row, and because the outbox stops
-at the first failure to keep its order, ONE imported task blocked every write
-behind it, typed ones included.
+**HE WAS HALF RIGHT ABOUT THE ORDER, AND THE WRONG HALF WAS MINE.** He is right
+that an imported task is a local copy and creates no duplicate in Google.
+He is wrong that the order is therefore free, and so was I: repairing a stale
+account removes it from the phone and adds it back, which DELETES the events it
+never uploaded. The task's `calendar_uid` then matches nothing, and the
+missing-from-calendar branch would have deleted the very tasks the import was run
+to rescue. Importing first would not have saved them.
 
-**NINE CHECKS WERE GREEN THROUGHOUT**, and could not have been anything else.
-Every value `fromEvent` computed was correct; the defect was in what the record
-CARRIED. The same shape as session 123, where every branch of the alarm's
-`apply()` computed the right values and called the store wrongly. An assertion
-about a value could not catch either.
+**SO A TASK ON A `row:` UID IS DETACHED WHEN ITS EVENT GOES, NEVER DELETED.**
+That event was one Google had never seen, living on one phone and nowhere else,
+so there is no copy anywhere to put back and the task is the only surviving
+record of the thing. It becomes his own task, standing alone, which is what it
+now is. A task from an event Google DID have still goes with its event, which is
+his answer 4 from session 148 and is unchanged.
 
-**`toRow` WAS `{ ...task, owner }`**, so whatever the engine happened to put on a
-record went to Postgres. It is built from `TASK_COLUMNS` now. That list is not
-there to let fields be dropped quietly: it is there so a field with no column
-fails a check on this machine instead of a phone's outbox.
+**SAME WORDS AND SAME DAY MEANS THE SAME COMMITMENT**, his second rule. A task
+he typed is ADOPTED by the matching event rather than a second row being
+written. His notes, his alarm, his pin and his own id all survive; the task is
+simply linked from then on.
 
-**`check_writes.mjs` READS `schema.sql` AND RUNS BOTH WAYS.** A field the engine
-produces with no column is the defect above. A column `TASK_COLUMNS` has not got
-is a field that would be dropped silently on its way to the server, which is the
-same fault wearing a quieter face. It reads the schema rather than a second
-hand-kept copy of the names, because a copy goes stale on the first migration and
-then asserts that two wrong things agree. Reintroducing `due_phrase` fails it by
-name.
+**ADOPTED, AND NEVER DELETED**, which is the one place this does not do what he
+asked literally. He said it would remove duplicates. Removing on a SIMILARITY
+SCORE is a rule that will one day remove the wrong thing. Linking the row he
+already has reaches the same end state — one task — and cannot throw away
+anything he wrote.
 
-**A RECORD FROM AN OLDER BUILD IS SENT WITHOUT ITS STRAY FIELD**, which is what
-actually unblocks his phone. The five entries already in his outbox hold records
-as they were written and cannot be edited, so fixing `fromEvent` alone would have
-left them stuck for ever.
+**BOTH HALVES ARE REQUIRED AND THE DATE HALF IS WHAT MAKES IT SAFE.** `call raj`
+on Tuesday and `call raj` on Friday are two calls, and a words-only rule would
+collapse every errand he repeats into whichever meeting shares its name.
 
-**THE TRANSLATION LAYER IS ITS OWN FILE**, `shell/store.row.js`, and nothing in
-it imports anything. It lived inside `store.supabase.js`, which imports the
-Supabase client, which imports an npm package — so no check could read the one
-thing in this app that decides WHAT REACHES THE SERVER. The same seam session 127
-cut for the alarm's write path, and the same lesson arriving a second time.
+**THE WORDS TEST IS THE ENGINE'S OWN**, exported as `titleSimilarity` rather
+than rewritten: `max(trigram, word)` over `compare_key` against
+`config.duplicate.threshold`, the measure the capture screen has warned with
+since Stage 2 and that fourteen key cases in section D tune. A second
+implementation inside the import would be a second thing to tune, and the two
+would disagree the first time either moved.
 
-**A STUCK QUEUE STOPS READING GREEN.** The pill wore the good colour for hours
-while nothing was being sent, because the only two states with a colour were
-`sync` and `local`. Amber is what that stylesheet already reserved in a comment
-for "it is not" and had never used.
+**FOUR THINGS DISQUALIFY A CANDIDATE**, each a case where two rows are right: a
+closed task, because finished work is not a future meeting; a task already
+carrying a REAL `calendar_uid`, because it belongs to a different event; another
+day; and a task this very import just wrote, which would be the pass eating its
+own output.
 
-**AND IT SAYS WHY.** The Postgres answer naming the exact column was captured all
-along and went to a `console.warn`, which on a phone is a sentence nobody can
-read. It is held on the store and drawn verbatim on the account screen, because a
-message rewritten in friendlier words cannot be looked up. Drawn only when
-something is stuck, and it also says the writes live only on that device until
-the queue clears.
+**A `row:` UID IS THE ONE EXCEPTION, and it matters more than the rule it
+bends.** A task from an event Google had never seen, meeting an event that now
+carries a real id with the same words on the same day, IS that event. So the
+relink happens by CONTENT as well as by row id — and the content path needs no
+Kotlin, which makes calendar shell 3 an improvement rather than a requirement.
+An APK built before it relinks correctly.
 
-No Kotlin change, no APK rebuild, no migration. All nine checks green.
+No migration. The APK rebuild is now optional. All nine checks green.
 
 ## NEXT THREE JOBS
 
@@ -1060,3 +1060,21 @@ have landed. That is the price of the single table and it is accepted.
 - 9 Oct 2026 — A STUCK QUEUE STOPS READING GREEN: the pill wore the good colour for hours while nothing was being sent, because the only two states with a colour were `sync` and `local` — `.sync.stuck` is amber, which is the colour that stylesheet already reserved in a comment for `it is not synced` and had never used.
 - 9 Oct 2026 — AND IT SAYS WHY, in words, on the account screen: the Postgres answer naming the exact column was captured all along and went to a `console.warn`, which on a phone is a sentence nobody can read — it is held on the store and drawn verbatim, a message rewritten in friendlier words being a message that cannot be looked up, which is the rule `Sync now` set in session 147. Drawn only when something is actually stuck.
 - 9 Oct 2026 — The block also says the writes live ONLY on that device until the queue clears, and not to clear the app's data or reinstall — the one piece of advice that was urgent and that nothing on any screen had ever given.
+- 9 Oct 2026 — AN EVENT GOOGLE HAS NEVER SEEN IS IMPORTED RATHER THAN HELD, his call and a REVERSAL of session 149: that rule rested on one assumption, that an event with no id is one Google has not carried up YET and will within minutes — on his second phone the account's calendar adapter last ran in 2025, so an event created there has no id now and will have none next year, held became held for ever, and the meeting he was looking for was the thing being held.
+- 9 Oct 2026 — IMPORTING IT IS ALSO WHAT RESCUES IT, and that settles the order of operations: repairing a stale Google account means removing it from the phone and adding it back, which DELETES the local events it never uploaded — a task in Cascade survives that and an event waiting for an id does not, so the import runs before the repair.
+- 9 Oct 2026 — THE RELINK, his design: a task written on `row:<n>` keeps its own id and has only its `calendar_uid` rewritten when the provider's SAME ROW comes back carrying a real uid — the row id is the one thing both versions of the event share and is therefore the only thread between the task written before and the event seen after; without it the task is deleted and a fresh copy added, losing the alarm he set on it, the pin and the notes.
+- 9 Oct 2026 — THE TASK'S OWN ID DOES NOT MOVE, deliberately: rewriting it would mean a delete and an insert in Supabase and would break any alarm armed against it, and the id was never the identity — `calendar_uid` is, which is why `planImport` indexes the store by it as well as by id.
+- 9 Oct 2026 — `calendar_detached` STAYS FALSE through a relink, his point: the task is attached and always was, and nothing about an event finally getting an id is him touching it.
+- 9 Oct 2026 — A DETACHED TASK IS RELINKED TOO and keeps HIS title: he owns the words from the moment he edits them, and he does not own which event the task came from — leaving a dead row number there would mean the task could never be told that Google had deleted its event.
+- 9 Oct 2026 — THE COST, STATED: a task seeded on `row:<n>` is correct on one phone only, so a second device importing the same event once it finally syncs would mint a different id and hold a second copy — the relink keeps that to the one case nothing can fix, because this phone stops using the row number the moment the real id arrives. The count is reported rather than left to be worked out.
+- 9 Oct 2026 — Calendar shell build 3 returns `rowId` on every event, which is all the relink needs. On an older APK the field is absent, nothing matches, and the behaviour is exactly what it was — the check asserts that too, because a feature that degrades into something WORSE than its absence is not a safe default.
+- 9 Oct 2026 — `List every event` stopped scrolling partway, his report: it was `max-height: 60vh; overflow-y: auto`, a scrolling box inside a scrolling page, and `overscroll-behavior: contain` then swallowed the gesture at the end of the box rather than handing it to the page — the box is gone, because the page scrolls perfectly well and the entire point of that block is reading all of it.
+- 9 Oct 2026 — DIAGNOSED FROM HIS SECOND PHONE WITHOUT SEEING IT, and the two facts that did it: `Holidays in India — 0 events` over a window containing Dussehra, Diwali and Christmas, which is impossible for a calendar that syncs, and a 24 October 2026 event that survived aeroplane mode on an account whose last sync was 2025 — the first says the adapter is not running, the second says the event was created on that phone and has never been uploaded, and together they name a fault that is in Android rather than in this app.
+- 9 Oct 2026 — HIS ORDER CLAIM WAS HALF RIGHT AND THE HALF THAT WAS WRONG WAS MINE TO HAVE CAUGHT: he is right that an imported task is a local copy and creates no duplicate in Google, and wrong that the order is therefore free — repairing a stale account removes it from the phone and adds it back, which DELETES the events it never uploaded, and the task's `calendar_uid` then matches nothing, so the missing-from-calendar branch would have deleted the very tasks the import was run to rescue; session 153's advice to import first was right for the wrong reason, and importing first would not have saved them.
+- 9 Oct 2026 — A TASK ON A `row:` UID IS DETACHED WHEN ITS EVENT GOES, NEVER DELETED: that event was one Google had never seen, living on one phone and nowhere else, so there is no copy anywhere to put back and the task is the only surviving record of the thing — it becomes his own task, standing alone, which is what it now is. A task from an event Google DID have still goes with its event, which is his answer 4 from session 148 and is unchanged.
+- 9 Oct 2026 — SAME WORDS AND SAME DAY MEANS THE SAME COMMITMENT, his rule: a task he typed is ADOPTED by the matching event rather than a second row being written — his notes, his alarm, his pin and his own id all survive, and the task is simply linked from then on.
+- 9 Oct 2026 — ADOPTED, AND NEVER DELETED, which is the one place I did not do what he asked literally: he said it would remove duplicates, and removing on a SIMILARITY SCORE is a rule that will one day remove the wrong thing — linking the row he already has reaches the same end state, one task, and cannot throw away anything he wrote.
+- 9 Oct 2026 — BOTH HALVES ARE REQUIRED AND THE DATE HALF IS WHAT MAKES IT SAFE: `call raj` on Tuesday and `call raj` on Friday are two calls, and a words-only rule would collapse every errand he repeats into whichever meeting shares its name.
+- 9 Oct 2026 — THE WORDS TEST IS THE ENGINE'S OWN, exported as `titleSimilarity` rather than rewritten: `max(trigram, word)` over `compare_key` against `config.duplicate.threshold`, the measure the capture screen has warned with since Stage 2 and that fourteen key cases in section D tune — a second implementation inside the import would be a second thing to tune and the two would disagree the first time either moved.
+- 9 Oct 2026 — FOUR THINGS DISQUALIFY A CANDIDATE and each is a case where two rows are the right answer: a closed task, because finished work is not a future meeting; a task already carrying a REAL `calendar_uid`, because it belongs to a different event; another day; and a task this very import just wrote, which would be the pass eating its own output. The strongest match wins rather than the first, because the store comes back in no order.
+- 9 Oct 2026 — A `row:` UID IS THE ONE EXCEPTION TO THE SECOND RULE, and it turned out to matter more than the rule it bends: a task from an event Google had never seen, meeting an event that now carries a real id with the same words on the same day, IS that event — so the relink happens by CONTENT as well as by row id, and the content path needs no Kotlin, which makes calendar shell 3 an improvement rather than a requirement. An APK built before it relinks correctly.

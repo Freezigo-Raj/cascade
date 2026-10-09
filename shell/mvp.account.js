@@ -574,13 +574,30 @@ export function mountAccount(root, { onBack, onSignedOut } = {}) {
                 const skips = [];
                 if (r.ours) skips.push(`${r.ours} already ours`);
                 if (r.declined) skips.push(`${r.declined} declined`);
-                if (r.notReady) skips.push(`${r.notReady} not ready yet`);
+
                 if (r.unchanged) skips.push(`${r.unchanged} already right`);
                 const folded = (r.considered ?? 0) - r.added - r.updated - (r.unchanged ?? 0);
                 if (folded > 0) skips.push(`${folded} later in a repeat`);
                 if (skips.length) lines.push(`Skipped: ${skips.join(", ")}.`);
-                if (r.notReady) {
-                  lines.push(`Not ready means Google has not given ${r.notReady === 1 ? "that event" : "those events"} a permanent id yet. ${r.notReady === 1 ? "It" : "They"} will arrive on a later import.`);
+                // IMPORTED, AND SAID OUT LOUD (session 153). These are events
+                // Google has never seen, so the task is carried on the
+                // provider's row number and is correct on this phone only
+                // until the account syncs. Not a skip, and not silent either.
+                if (r.unsynced) {
+                  lines.push(`${r.unsynced} of these ${r.unsynced === 1 ? "is an event" : "are events"} Google has never seen — created on this phone and never uploaded. ${r.unsynced === 1 ? "It is" : "They are"} imported anyway, and relinked automatically if the account ever syncs.`);
+                }
+                // ADOPTED AND DETACHED, both said out loud, because each is
+                // the import changing a task he already had rather than
+                // writing a new one — and a silent change to his own rows is
+                // the thing he would never think to look for.
+                if (r.adopted) {
+                  lines.push(`${r.adopted} task${r.adopted === 1 ? "" : "s"} you had already typed matched ${r.adopted === 1 ? "an event" : "events"} on the same day, so ${r.adopted === 1 ? "it was linked to it" : "they were linked to them"} instead of being duplicated. Nothing you wrote was lost.`);
+                }
+                if (r.detached) {
+                  lines.push(`${r.detached} task${r.detached === 1 ? "" : "s"} lost ${r.detached === 1 ? "its" : "their"} event, which Google had never seen, so ${r.detached === 1 ? "it is" : "they are"} now yours alone rather than deleted.`);
+                }
+                if (r.relinked) {
+                  lines.push(`${r.relinked} task${r.relinked === 1 ? "" : "s"} relinked: Google has now given ${r.relinked === 1 ? "its event" : "their events"} a permanent id, and the task kept its own id, alarm, pin and notes.`);
                 }
                 // WHICH ID THE PHONE COULD GIVE, COUNTED PER SOURCE. `uid2445`
                 // and `syncid` are the same on every device; `rowid` is a local

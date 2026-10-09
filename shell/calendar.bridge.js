@@ -44,7 +44,7 @@ const nowIso = () => {
 };
 
 /** What `CascadeCalendarPlugin.kt` states as its own build. */
-export const CALENDAR_SHELL_EXPECTED = 2;
+export const CALENDAR_SHELL_EXPECTED = 3;
 
 const ON_KEY = "cascade:calendar-on";
 const CAL_KEY = "cascade:calendar-id";
@@ -253,28 +253,21 @@ export async function importCalendar() {
     return { ok: false, why: "events() refused: " + (e?.message ?? e) };
   }
 
-  // WHICH OF THE TICKED CALENDARS SYNC, which is what decides whether a local
-  // row number is a usable identity or a temporary one. `readable()` states
-  // `google` per calendar and this is the only thing that reads it. If the
-  // call fails the set is empty, which accepts every row id — the behaviour
-  // before session 149, and the safe direction when the answer is unknown: a
-  // task that arrives and later swaps id beats a task that never arrives.
-  const google = new Set();
-  for (const c of await allCalendars()) {
-    if (c?.google && ids.includes(String(c.id))) google.add(String(c.id));
-  }
-
   const existing = await tasks.all();
-  const plan = planImport(events, existing, {
-    now: nowIso(), nowMs, config: partAConfig, googleCalendars: google,
-  });
+  const plan = planImport(events, existing, { now: nowIso(), nowMs, config: partAConfig });
   const report = {
     ok: true, read: events.length,
     added: 0, updated: 0, removed: 0, cancelled: 0,
     // HELD, NOT DROPPED. An event with no stable id on a syncing calendar is
     // waiting for Google to give it one, and an event that simply never appears
     // is indistinguishable from one the window missed.
-    notReady: plan.notReady ?? 0,
+    // IMPORTED, NOT HELD (session 153). Carried on the provider's row number
+    // because Google has never seen the event, which is correct on this phone
+    // and nowhere else until it syncs.
+    unsynced: plan.unsynced ?? 0,
+    relinked: plan.relinked ?? 0,
+    adopted: plan.adopted ?? 0,
+    detached: plan.detached ?? 0,
     // WHY THE REST WERE NOT IMPORTED, so `read` and `added` reconcile without
     // arithmetic. `read` = ours + declined + notReady + considered, and
     // `considered` − added − updated is what one-task-per-series collapsed.

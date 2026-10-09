@@ -532,5 +532,11 @@ The report counts per source, `uid2445 8, syncid 3, rowid 1`, ordered most trust
 
 **`List every event`** (session 151) queries every readable calendar, ticked or not, over the same window, and prints every calendar with its tick state and event count, then one line per event with the calendar it sits on, whether that calendar is ticked, and its id source. It writes nothing. It exists because the import only sees what the provider hands over, so when an event never arrives the fault is between the calendar and the count, and nothing on a phone can look inside that.
 
+**An event Google has never seen is imported, not held** (sessions 153 and 154). It carries `row:<n>`, the provider's own row number, which is correct on that phone and nowhere else. When Google finally gives the event a real id the task is RELINKED: it keeps its own id, alarm, pin and notes, and only `calendar_uid` changes. Two paths find it — the provider row id (calendar shell 3, exact) and the same words on the same day (no Kotlin, so an older APK works).
+
+**A task on a `row:` uid is DETACHED when its event goes, never deleted.** Google never had a copy, so the task is the only surviving record. Repairing a stale Google account deletes the phone's unuploaded events, and this is what stops that taking the tasks with it. A task from an event Google did have still goes with its event.
+
+**Same words, same day, one task.** A task he typed is ADOPTED by the matching event rather than duplicated: his notes, alarm, pin and id all survive and the task is linked from then on. The words test is the engine's own `titleSimilarity` against `config.duplicate.threshold`, not a second copy. It adopts and never deletes, because removing on a similarity score is a rule that one day removes the wrong thing. Disqualified: a closed task, one already linked to a different event, and another day.
+
 
 **Arrived since this page was written**, and now on it: recurrence, sync, the duration control, notes, firmness. **Decided and deliberately still absent:** Cancel and Archive as row actions. A row carries Done, Pin, Delete and its push targets, and a Done row carries Undone. Cancel and Archive stay members of `row_action` with no control on any screen, which is stated here so the gap reads as a decision rather than an oversight.

@@ -112,8 +112,10 @@
   font-size: 12px;
   line-height: 1.5;
   margin: var(--step) 0;
-  max-height: 60vh;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
 }
+/* NO INNER SCROLL BOX (session 153, his report: the list stops going down).
+   It had `max-height: 60vh; overflow-y: auto`, which puts a scrolling box
+   inside a scrolling page: the finger scrolls the box to its end and then
+   `overscroll-behavior: contain` swallows the gesture rather than handing it
+   to the page, so the list simply stops. The page scrolls perfectly well on
+   its own and the whole point of this block is reading all of it. */

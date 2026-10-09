@@ -1,4 +1,4 @@
-CASCADE — sessions 137 to 152. READ THIS BEFORE COMMITTING.
+CASCADE — sessions 137 to 154. READ THIS BEFORE COMMITTING.
 
 Three things must happen by hand. Do them in this order: the migration, the
 deletions, then the APK.
@@ -100,7 +100,7 @@ AFTER DELETING THE SIX FILES, run this and it must say GATE 2: PASS —
 
   python3 gate2.py
 
-Header should read build 68.
+Header should read build 70.
 
 
 == THEN ON THE PHONE, ACCOUNT SCREEN ==
@@ -128,7 +128,67 @@ like working sync right up to the day you install the app somewhere else.
 a type of event, which is why the choice is a tick list rather than a switch.
 
 
-== WHAT CHANGED IN SESSION 152 — INSTALL THIS ONE ==
+== WHAT CHANGED IN SESSION 154 ==
+
+TWO RULES OF YOURS, AND A CORRECTION TO WHAT I TOLD YOU LAST TIME.
+
+1. THE ORDER REALLY DOES NOT MATTER NOW, but not for the reason either of us
+   gave. Repairing the Google account deletes the events it never uploaded, and
+   the task's link would then match nothing — the old rule would have DELETED
+   those tasks, which is the opposite of rescuing them. A task from an event
+   Google never saw is now DETACHED instead: it stays open, keeps its alarm,
+   its notes and its pin, and simply becomes yours alone. A task from a real
+   Google event still goes when Google deletes it, which is unchanged.
+
+2. SAME WORDS AND SAME DAY MEANS ONE TASK. If you already typed it and the
+   calendar has it too, the task you typed is LINKED to the event rather than
+   a second row being added. Nothing you wrote is lost.
+
+   It ADOPTS rather than deletes. You said remove duplicates; removing on a
+   similarity score is a rule that one day removes the wrong thing. Linking
+   gets you to one task and cannot throw anything away.
+
+   Both halves are needed. "call raj" on Tuesday and "call raj" on Friday stay
+   two tasks.
+
+THE APK REBUILD IS NOW OPTIONAL. The relink also works by matching words and
+date, which needs no Kotlin. Rebuilding to calendar shell 3 makes it exact
+rather than possible, but build 70 works correctly on your current APK.
+
+
+== WHAT CHANGED IN SESSION 153 ==
+
+EVENTS GOOGLE HAS NEVER SEEN ARE NOW IMPORTED. Session 149 held them back,
+expecting Google to give them an id within minutes. On the second phone the
+calendar adapter last ran in 2025, so that never happens and they were held for
+ever. Your call, and it is right.
+
+DO THIS IN ORDER ON THAT PHONE:
+
+  1. Install build 69 and press Import now. The unsynced events become tasks.
+  2. ONLY THEN repair the Google account.
+
+WHY THAT ORDER: repairing a stale account means removing it from the phone and
+adding it back, and that DELETES the local events it never uploaded. Once they
+are tasks in Cascade they survive it.
+
+THE RELINK. A task imported from an event Google has not seen is carried on the
+phone's own row number. If the account ever starts syncing, the same event gets
+a real id and the task is relinked automatically: it keeps its own id, its
+alarm, its pin and its notes, and stays attached. Only the hidden id changes.
+
+THIS NEEDS A REBUILT APK (calendar shell build 3). Importing works without it;
+relinking does not. One file changed:
+
+  android\app\src\main\java\com\cascade\calendar\CascadeCalendarPlugin.kt
+
+No new permissions. Copy it into the cascade-shell project and rebuild.
+
+ALSO FIXED: "List every event" stopped scrolling partway down. It was a
+scrolling box inside a scrolling page. The box is gone.
+
+
+== WHAT CHANGED IN SESSION 152 ==
 
 YOUR PHONE HAS NOT SENT ANYTHING TO THE SERVER FOR HOURS. The pill reading
 "5 waiting" is five writes stuck in the outbox. This build is the fix.

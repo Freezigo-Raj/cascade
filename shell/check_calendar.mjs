@@ -14,7 +14,7 @@
 
 import { partAConfig as config } from "./config.js";
 import { wantsEvent, eventFor, desiredEvents, sameEvent, dateOf } from "./calendar.js";
-import { importedId, isOurs, declined, nextPerSeries, notReady, planImport, windowFor } from "./calendar.import.js";
+import { importedId, isOurs, declined, nextPerSeries, localOnly, planImport, windowFor } from "./calendar.import.js";
 import { fromEvent } from "./resolve.js";
 
 let failed = 0;
@@ -316,31 +316,30 @@ console.log("\nTHE CLOCK — a provider instant is not a wall clock.");
 // ===========================================================================
 // WHY EACH EVENT WAS NOT IMPORTED (session 150, his ask).
 
-console.log("\nTHE SKIPS ADD UP — read equals the four reasons.");
+console.log("\nTHE SKIPS ADD UP — read equals the reasons.");
 {
-  const google = new Set(["7"]);
   const events = [
-    ev({ uid: "a1" }),                                              // imported
-    ev({ uid: "a2", description: "cascade:t1" }),                   // ours
-    ev({ uid: "a3", selfStatus: 2 }),                               // declined
-    ev({ uid: "row:4", uidFrom: "rowid" }),                         // not ready
-    ev({ uid: "a1", startMs: NOW_MS + 8 * DAY }),                   // later in the series
+    ev({ uid: "a1" }),                                 // imported
+    ev({ uid: "a2", description: "cascade:t1" }),      // ours
+    ev({ uid: "a3", selfStatus: 2 }),                  // declined
+    ev({ uid: "row:4", uidFrom: "rowid", rowId: "4" }),// imported, on a row number
+    ev({ uid: "a1", startMs: NOW_MS + 8 * DAY }),      // later in the a1 series
   ];
-  const p = planImport(events, [], { now: NOW, nowMs: NOW_MS, config, googleCalendars: google });
+  const p = planImport(events, [], { now: NOW, nowMs: NOW_MS, config });
   say(p.ours === 1, "one event was ours");
   say(p.declined === 1, "one was declined");
-  say(p.notReady === 1, "one is not ready");
-  say(p.considered === 2, "two got past all three gates");
-  say(p.ours + p.declined + p.notReady + p.considered === events.length,
-      "and the four numbers sum to the read count, so nothing is counted twice or lost");
-  say(p.add.length === 1,
-      "one task is written, because the two that got through are the same series");
+  say(p.considered === 3, "three got past both gates");
+  say(p.ours + p.declined + p.considered === events.length,
+      "and the three numbers sum to the read count, so nothing is counted twice or lost");
+  say(p.unsynced === 1,
+      "one of the three is an event Google has never seen, counted but NOT skipped");
+  say(p.add.length === 2,
+      "two tasks are written: the a1 series and the row-number event");
   say(p.unchanged === 0, "nothing was already right, because the store was empty");
   say(p.considered - p.add.length - p.update.length - p.unchanged === 1,
       "and the difference is what one-task-per-series folded away");
 
   // A TASK THAT NEEDS NOTHING DONE IS NOT A FOLDED OCCURRENCE (session 151).
-  // Without `unchanged` this landed in the folded number under the wrong name.
   const done = planImport([ev({ uid: "b1" })], [], { now: NOW, nowMs: NOW_MS, config }).add[0];
   const again = planImport([ev({ uid: "b1" })], [done], { now: NOW, nowMs: NOW_MS, config });
   say(again.unchanged === 1, "a second import of an unchanged event counts it as already right");
@@ -348,11 +347,9 @@ console.log("\nTHE SKIPS ADD UP — read equals the four reasons.");
   say(again.considered - again.add.length - again.update.length - again.unchanged === 0,
       "so the series folded nothing, which is the truth");
 
-  // A CLOSED OCCURRENCE IS A FOLD AND NOT A LEAVE-ALONE, which is the opposite
-  // of what I assumed writing this and is what the check said. `nextPerSeries`
-  // drops a closed occurrence BEFORE the loop, looking for the next live one;
-  // with only that occurrence in the window the series offers nothing at all.
-  // That is session 148's rule working, and the honest word for the number.
+  // A CLOSED OCCURRENCE IS A FOLD AND NOT A LEAVE-ALONE. `nextPerSeries` drops
+  // it before the loop while it looks for the next live one, so with only that
+  // occurrence in the window the series offers nothing at all.
   const shut = { ...done, task_state: "done", closed_at: NOW };
   const after = planImport([ev({ uid: "b1" })], [shut], { now: NOW, nowMs: NOW_MS, config });
   say(after.add.length === 0 && after.update.length === 0, "a closed occurrence writes nothing");
@@ -362,55 +359,153 @@ console.log("\nTHE SKIPS ADD UP — read equals the four reasons.");
 }
 
 // ===========================================================================
-// AN EVENT WITH NO STABLE ID (session 149, his first import: `syncid, rowid`).
+// AN EVENT GOOGLE HAS NEVER SEEN (session 153, his second phone).
 //
-// The same row number is a good identity on a calendar that does not sync and a
-// temporary one on a calendar that does, so the rule reads the calendar rather
-// than the event alone.
+// Session 149 HELD these back, on the reasoning that an event with no id is one
+// Google has not carried up yet. That phone's calendar adapter last ran in
+// 2025, so held became held for ever and the meeting he was looking for was the
+// thing being held. His call: import them, and relink when the id arrives.
 
-console.log("\nNOT READY — a row number on a syncing calendar is not an identity.");
+console.log("\nNEVER SYNCED — imported on the row number, not held.");
 {
-  const google = new Set(["7"]);
-  const rowid = ev({ uid: "row:812", uidFrom: "rowid" });
+  const rowEv = ev({ uid: "row:812", uidFrom: "rowid", rowId: "812" });
 
-  say(notReady(rowid, google),
-      "an event with only a row id, on a GOOGLE calendar, is not ready");
-  say(!notReady(rowid, new Set(["9"])),
-      "the same event on a calendar that does not sync IS ready — a row id there is as stable as the event");
-  say(!notReady(ev({ uidFrom: "syncid" }), google),
-      "a Google event id is the same on every device, so it is ready");
-  say(!notReady(ev({ uidFrom: "uid2445" }), google), "and so is an iCalendar UID");
-  say(!notReady(rowid, undefined),
-      "with no calendar list handed in nothing is held — the behaviour before this rule, and the safe direction when the answer is unknown");
+  say(localOnly(rowEv), "an event carrying only a row number is recognised as never uploaded");
+  say(!localOnly(ev({ uidFrom: "syncid" })), "one with a Google event id is not");
+  say(!localOnly(ev({ uidFrom: "uid2445" })), "and nor is one with an iCalendar UID");
 
-  const held = planImport([rowid], [], { now: NOW, nowMs: NOW_MS, config, googleCalendars: google });
-  say(held.add.length === 0, "it is not imported");
-  say(held.notReady === 1, "and it is COUNTED, because an event that never appears cannot be told from one the window missed");
+  const p = planImport([rowEv], [], { now: NOW, nowMs: NOW_MS, config });
+  say(p.add.length === 1, "it is IMPORTED — reversing session 149, which held it");
+  say(p.unsynced === 1, "and counted, because a task on a row number is correct on one phone only");
+  say(p.add[0].calendar_uid === "row:812", "the task carries the row number as its uid");
+  say(p.add[0].calendar_detached === false, "and is attached, because nothing about this is him touching it");
+}
 
-  const taken = planImport([rowid], [], { now: NOW, nowMs: NOW_MS, config, googleCalendars: new Set(["9"]) });
-  say(taken.add.length === 1, "on a non-syncing calendar the same event becomes a task");
-  say(taken.notReady === 0, "and nothing is counted as waiting");
+console.log("\nTHE RELINK — the row id is the thread when the real uid arrives.");
+{
+  const rowEv = ev({ uid: "row:812", uidFrom: "rowid", rowId: "812" });
+  const first = planImport([rowEv], [], { now: NOW, nowMs: NOW_MS, config }).add[0];
+  // He set an alarm on it, which is the whole thing a relink protects.
+  const mine = { ...first, alarm_type: "on", alarm_lead_min: 15, pinned: true, notes: "ask about the balance" };
 
-  // A build-64 import already wrote some `row:` tasks. Deleting one the moment
-  // this rule starts holding its event would be the same harm by the other door.
-  const old = { ...task(), id: importedId("row:812", NOW_MS + DAY), calendar_uid: "row:812", due_at: ev().startMs ? "2026-10-09T12:00:00+05:30" : "" };
-  const kept = planImport([rowid], [old], { now: NOW, nowMs: NOW_MS, config, googleCalendars: google });
-  say(kept.remove.length === 0 && kept.cancel.length === 0,
-      "a task whose event is HELD is left alone, not read as gone");
+  // The adapter finally runs. SAME ROW, now with a real id.
+  const synced = ev({ uid: "ical-99", uidFrom: "uid2445", rowId: "812" });
+  const p = planImport([synced], [mine], { now: NOW, nowMs: NOW_MS, config });
 
-  // And once Google answers, the swap happens in ONE pass: the proper task is
-  // added and the `row:` one becomes genuinely missing at the same time.
-  const real = ev({ uid: "ical-99", uidFrom: "uid2445" });
-  const swap = planImport([real], [old], { now: NOW, nowMs: NOW_MS, config, googleCalendars: google });
-  say(swap.add.length === 1 && swap.remove.length === 1,
-      "when the real id arrives the proper task is added and the row: one goes, in the same pass");
+  say(p.add.length === 0, "no second copy is added");
+  say(p.remove.length === 0 && p.cancel.length === 0, "and the task is not read as gone");
+  say(p.relinked === 1, "it is relinked, and counted");
+  say(p.update.length === 1, "as one update");
+  const out = p.update[0];
+  say(out.id === mine.id, "the task keeps its own id, so nothing armed against it breaks");
+  say(out.calendar_uid === "ical-99", "and carries the real uid from here on");
+  say(out.calendar_detached === false, "still attached, his point");
+  say(out.alarm_type === "on" && out.alarm_lead_min === 15 && out.pinned && out.notes === "ask about the balance",
+      "the alarm, the pin and the notes survive — which is the entire reason not to delete and re-add");
 
-  // The declined and ours gates still come first, so a held event that is also
-  // ours is not counted twice over.
-  const mineRow = ev({ uid: "row:9", uidFrom: "rowid", description: "cascade:t4" });
-  const neither = planImport([mineRow], [], { now: NOW, nowMs: NOW_MS, config, googleCalendars: google });
-  say(neither.notReady === 0 && neither.add.length === 0,
-      "an event this app wrote is ours before it is anything else, and is not counted as waiting");
+  // Idempotent: a second pass over the same synced event must not relink again.
+  const again = planImport([synced], [out], { now: NOW, nowMs: NOW_MS, config });
+  say(again.relinked === 0 && again.update.length === 0,
+      "a second import relinks nothing, because the task now holds the real uid");
+
+  // A DETACHED task gets its uid corrected too, and keeps his words.
+  const edited = { ...mine, calendar_detached: true, title: "collect from asha, confirmed" };
+  const d = planImport([synced], [edited], { now: NOW, nowMs: NOW_MS, config });
+  say(d.relinked === 1 && d.update.length === 1, "a detached task is relinked as well");
+  say(d.update[0].title === "collect from asha, confirmed",
+      "and keeps HIS title, because detached means he owns the words");
+  say(d.update[0].calendar_uid === "ical-99",
+      "while still learning which event it came from, or it could never be told the event was deleted");
+
+  // A CLOSED task is never resurrected by a relink.
+  const shut = { ...mine, task_state: "done", closed_at: NOW };
+  const c = planImport([synced], [shut], { now: NOW, nowMs: NOW_MS, config });
+  say(c.relinked === 0 && c.update.length === 0 && c.add.length === 1,
+      "a task he closed is left closed, and the event becomes a new task rather than reopening it");
+
+  // AN OLDER APK RETURNS NO `rowId`, so nothing matches and nothing is worse.
+  const noRow = ev({ uid: "ical-99", uidFrom: "uid2445" });
+  const old = planImport([noRow], [mine], { now: NOW, nowMs: NOW_MS, config });
+  say(old.relinked === 0, "with calendar shell 2 there is no row id, so no relink by row id happens");
+  say(old.add.length === 0 && old.adopted === 1,
+      "but the same words on the same day relink it anyway — so an APK built before build 3 still works");
+  say(old.update[0].id === mine.id && old.update[0].calendar_uid === "ical-99",
+      "same task, real uid, alarm intact, with no Kotlin involved at all");
+  say(old.remove.length === 0, "and nothing is deleted");
+}
+
+// ===========================================================================
+// SAME WORDS, SAME DAY (session 154, his rule).
+
+console.log("\nADOPTED, NOT DUPLICATED — and never deleted.");
+{
+  const typed = {
+    ...task(), id: "typed-1", calendar_uid: "", calendar_detached: false,
+    title: "collect 57000 from asha", normalised: "collect 57000 from asha",
+    due_at: "2026-10-09T13:00:00+05:30", has_time: true,
+    notes: "balance before travel", alarm_type: "on", pinned: true,
+  };
+  const sameDay = ev({ uid: "m1", title: "Collect 57,000 - Asha Achari", startMs: Date.parse("2026-10-09T10:00:00+05:30") });
+
+  const p = planImport([sameDay], [typed], { now: NOW, nowMs: NOW_MS, config });
+  say(p.add.length === 0, "no second row is written for one commitment");
+  say(p.adopted === 1, "the task he typed is adopted, and counted");
+  say(p.update.length === 1, "as one update");
+  const out = p.update[0];
+  say(out.id === "typed-1", "it keeps its own id");
+  say(out.calendar_uid === "m1", "and is linked to the event from now on");
+  say(out.calendar_detached === false, "attached, because it is");
+  say(out.notes === "balance before travel" && out.alarm_type === "on" && out.pinned,
+      "his notes, his alarm and his pin all survive — adoption never throws his work away");
+
+  // ANOTHER DAY IS ANOTHER THING. `call raj` Tuesday and `call raj` Friday are
+  // two calls, and a words-only rule would collapse every errand he repeats.
+  const otherDay = ev({ uid: "m2", title: "Collect 57,000 - Asha Achari", startMs: Date.parse("2026-10-20T10:00:00+05:30") });
+  const q = planImport([otherDay], [typed], { now: NOW, nowMs: NOW_MS, config });
+  say(q.adopted === 0 && q.add.length === 1, "the same words on a different day are a different thing");
+
+  // DIFFERENT WORDS, SAME DAY, likewise.
+  const otherWords = ev({ uid: "m3", title: "Dentist", startMs: Date.parse("2026-10-09T10:00:00+05:30") });
+  const r = planImport([otherWords], [typed], { now: NOW, nowMs: NOW_MS, config });
+  say(r.adopted === 0 && r.add.length === 1, "and different words on the same day are too");
+
+  // A TASK ALREADY FROM A CALENDAR IS NOT ADOPTED: it belongs to another event,
+  // and two meetings named the same on one day are two meetings.
+  const fromCal = { ...typed, id: "cal-1", calendar_uid: "other-event" };
+  const u = planImport([sameDay], [fromCal], { now: NOW, nowMs: NOW_MS, config });
+  say(u.adopted === 0 && u.add.length === 1, "a task already linked to a different event is left alone");
+
+  // A CLOSED TASK IS NOT ADOPTED EITHER. Finished work is not a future meeting.
+  const done = { ...typed, id: "done-1", task_state: "done", closed_at: NOW };
+  const w = planImport([sameDay], [done], { now: NOW, nowMs: NOW_MS, config });
+  say(w.adopted === 0 && w.add.length === 1, "and a task he has finished is not adopted into a meeting");
+}
+
+console.log("\nA LOCAL-ONLY TASK IS DETACHED WHEN ITS EVENT GOES, never deleted.");
+{
+  // Repairing a stale Google account removes it from the phone and adds it
+  // back, which DELETES the events it had never uploaded. Google has no copy
+  // to return, so the task is the only record left of the thing.
+  const rowEv = ev({ uid: "row:812", uidFrom: "rowid", rowId: "812" });
+  const mine = planImport([rowEv], [], { now: NOW, nowMs: NOW_MS, config }).add[0];
+  const withWork = { ...mine, alarm_type: "on", notes: "take the file" };
+
+  const gone = planImport([], [withWork], { now: NOW, nowMs: NOW_MS, config });
+  say(gone.remove.length === 0, "it is NOT deleted");
+  say(gone.cancel.length === 0, "and not cancelled either");
+  say(gone.detached === 1 && gone.update.length === 1, "it is detached, and counted");
+  say(gone.update[0].calendar_detached === true, "so Google never touches it again");
+  say(gone.update[0].task_state === "ready", "it stays open, because the work has not gone anywhere");
+  say(gone.update[0].notes === "take the file" && gone.update[0].alarm_type === "on",
+      "and everything on it survives — which is the whole point of importing before repairing the account");
+
+  // A task from a REAL event still goes with its event, which is his answer 4
+  // from session 148 and is unchanged.
+  const realEv = ev({ uid: "ical-7", uidFrom: "uid2445", rowId: "7" });
+  const following = planImport([realEv], [], { now: NOW, nowMs: NOW_MS, config }).add[0];
+  const d = planImport([], [following], { now: NOW, nowMs: NOW_MS, config });
+  say(d.remove.length === 1 && d.detached === 0,
+      "a task from an event Google DID have still goes when Google deletes it");
 }
 
 console.log(failed ? `\nCHECK CALENDAR: ${failed} FAILED\n` : "\nCHECK CALENDAR: PASS\n");

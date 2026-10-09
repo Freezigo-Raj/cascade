@@ -19,10 +19,11 @@
 //   5. `task_state` IS ALWAYS CASCADE'S. A task he has closed is never reopened
 //      by an import, whatever the calendar still holds.
 //
-// AND ONE RULE HIS FIRST IMPORT ADDED, session 149: an event on a GOOGLE
-// calendar carrying neither an iCalendar UID nor a Google id is not yet an
-// identity, so it is held rather than imported. See `notReady` for what
-// importing one anyway costs.
+// AND ONE HIS SECOND PHONE ADDED, session 153: an event Google has never seen
+// carries no id of its own, so it is imported on the provider's row number and
+// RELINKED when the real id finally arrives. Session 149 held these back; that
+// rested on Google giving the event an id within minutes, which is false on a
+// phone whose calendar adapter last ran in 2025.
 //
 // THE LOOP, AND THE TWO GATES THAT STOP IT. Without them the push and the
 // import feed each other for ever: a task writes an event, the event is read
@@ -34,7 +35,7 @@
 // Each is one line, and each is useless without the other.
 
 const v = new URL(import.meta.url).search;
-const { fromEvent } = await import(`./resolve.js${v}`);
+const { fromEvent, titleSimilarity } = await import(`./resolve.js${v}`);
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -80,46 +81,33 @@ export function declined(ev) {
 }
 
 /**
- * AN EVENT THAT DOES NOT YET HAVE A STABLE IDENTITY, and is left alone until it
- * does (session 149, his first import: `event ids from: syncid, rowid`).
+ * AN EVENT GOOGLE HAS NEVER SEEN, carried on the provider's own row number.
  *
  * `uidFrom` says which of three the phone could give. `uid2445` is the
- * iCalendar UID and `syncid` is Google's own event id, and both are the same on
- * every device that syncs that account. `rowid` means NEITHER EXISTED and the
- * last resort was the provider's local row number.
+ * iCalendar UID and `syncid` is Google's event id; both are the same on every
+ * device. `rowid` means NEITHER EXISTED, so the event has never been uploaded.
  *
- * WHY A ROW NUMBER IS SOMETIMES FINE AND SOMETIMES NOT, which is the whole of
- * this rule. An event on a calendar that does not sync — Birthdays, a local
- * calendar — exists on this phone and nowhere else, so its row number is as
- * stable as the event is and is a perfectly good identity. An event on a GOOGLE
- * calendar with no sync id is a different thing entirely: it is an event
- * created on the phone that Google has not carried up yet, and it WILL be given
- * a real id within minutes.
+ * SESSION 149 HELD THESE BACK AND SESSION 153 IMPORTS THEM, which is a reversal
+ * and his call. The hold rested on one assumption — that an event with no id is
+ * one Google has not carried up YET, and will within minutes. On his second
+ * phone that assumption is false: the account's calendar adapter last ran in
+ * 2025, so an event created there has no id now and will have none next year.
+ * Held became held for ever, and the meeting he was looking for was the thing
+ * being held.
  *
- * WHAT IMPORTING IT ANYWAY COSTS. The task's id is a function of the uid, so
- * when the real id arrives the same meeting computes a different task id: the
- * `row:` task stops appearing in the calendar's answer, and the missing-from-
- * calendar branch below deletes it while a fresh copy is added. A task that
- * silently dies and comes back as a new row is bad enough while it is still
- * following; if he had edited it, it was DETACHED, so the branch cancels it
- * instead and his correction ends up on the Done tab under a task that no
- * longer exists.
+ * IMPORTING IT IS ALSO WHAT RESCUES IT. Repairing a stale Google account means
+ * removing it from the phone and adding it back, and that DELETES the local
+ * events it never uploaded. A task in Cascade survives that; an event waiting
+ * for an id does not.
  *
- * So: skipped, and COUNTED rather than dropped quietly, because an event that
- * never appears is indistinguishable from one the window missed.
- *
- * `googleCalendars` is a set of calendar ids. It comes from `readable()`, which
- * states `google` per calendar, and the bridge hands over the ticked ones. With
- * nothing handed in, nothing is treated as syncing and every row id is accepted
- * — which is the old behaviour, and is what every check written before this
- * rule asserts.
+ * THE COST, STATED. The task id is seeded on `row:<n>`, which is a row number
+ * on one phone, so a second device importing the same event once it finally
+ * syncs would mint a different id and hold a second copy. `relink` below is
+ * what keeps that to the one case nothing can fix: this phone recognises the
+ * event when its real id arrives and stops using the row number.
  */
-export function notReady(ev, googleCalendars) {
-  if (String(ev?.uidFrom ?? "") !== "rowid") return false;
-  const g = googleCalendars;
-  if (!g) return false;
-  const id = String(ev?.calendarId ?? "");
-  return typeof g.has === "function" ? g.has(id) : Boolean(g[id]);
+export function localOnly(ev) {
+  return String(ev?.uidFrom ?? "") === "rowid";
 }
 
 /**
@@ -153,6 +141,60 @@ export function importedId(uid, startMs) {
 }
 
 const closed = (t) => Boolean(t) && (t.task_state !== "ready" || t.archived);
+
+/** The local calendar day of a stored instant, which is what "same date" means. */
+const dayOf = (iso) => String(iso ?? "").slice(0, 10);
+
+/**
+ * A TASK HE ALREADY TYPED THAT IS THIS SAME COMMITMENT, or null.
+ *
+ * HIS RULE: "check the words and date — if they are the same as an existing
+ * task it'll remove duplicates." Both halves are required, and the date half is
+ * what makes it safe: `call raj` on Tuesday and `call raj` on Friday are two
+ * calls, and a words-only rule would collapse every recurring errand he types
+ * into whichever meeting shares its name.
+ *
+ * THE WORDS TEST IS THE ENGINE'S OWN, imported rather than rewritten.
+ * `titleSimilarity` is `max(trigram, word)` over `compare_key`, the same
+ * measure the capture screen has warned with since Stage 2, against the same
+ * `config.duplicate.threshold`. A second implementation here would be a second
+ * thing to tune and the two would disagree the first time either moved.
+ *
+ * FOUR THINGS DISQUALIFY A CANDIDATE, and each is a case where two rows are the
+ * right answer:
+ *   · it is closed — a finished task is not the same work as a future meeting;
+ *   · it already carries a REAL `calendar_uid` — it belongs to a different
+ *     event, and two meetings named the same on one day are two meetings.
+ *     A `row:` uid is the exception: that task came from an event Google had
+ *     never seen, and an event arriving with a real id and the same words on
+ *     the same day is that same event, now synced. This is the relink again,
+ *     by content rather than by row id — which matters because it needs no
+ *     Kotlin at all, so it works on an APK built before build 3;
+ *   · it is on another day;
+ *   · it is one this very import just wrote, which would be the pass eating
+ *     its own output.
+ *
+ * The STRONGEST match wins, not the first, because the store comes back in no
+ * order and "whichever we looked at first" is not a rule.
+ */
+function adoptable(ev, task, existing, opts) {
+  const threshold = opts?.config?.duplicate?.threshold ?? 0.6;
+  const day = dayOf(task.due_at);
+  if (!day) return null;
+  let best = null;
+  const syncedEvent = !localOnly(ev);
+  for (const t of existing ?? []) {
+    if (closed(t)) continue;
+    const uid = String(t.calendar_uid ?? "");
+    const localTask = uid.startsWith("row:");
+    if (uid && !(localTask && syncedEvent)) continue;
+    if (dayOf(t.due_at) !== day) continue;
+    const score = titleSimilarity(t.normalised, task.normalised);
+    if (score < threshold) continue;
+    if (!best || score > best.score) best = { score, task: t };
+  }
+  return best ? best.task : null;
+}
 
 /**
  * ONE OCCURRENCE PER SERIES, his rule: "for repeat tasks on google, only show
@@ -207,7 +249,8 @@ export function nextPerSeries(events, existing) {
  * is exactly what stops a series handing back an occurrence he has finished.
  *
  * @returns {{add: object[], update: object[], remove: string[], cancel: object[], unchanged: number,
- *            notReady: number, ours: number, declined: number, considered: number}}
+ *            unsynced: number, relinked: number, adopted: number, detached: number,
+ *            ours: number, declined: number, considered: number}}
  */
 export function planImport(events, existing, opts) {
   const now = opts.now;
@@ -228,21 +271,24 @@ export function planImport(events, existing, opts) {
   // ready.
   const ours = all.filter(isOurs).length;
   const said_no = all.filter((ev) => !isOurs(ev) && declined(ev)).length;
-  const skipped = all.filter((ev) => notReady(ev, google) && !isOurs(ev) && !declined(ev));
-  const waiting = skipped.length;
-  // THE UIDS BEING WAITED ON, so the missing-from-calendar branch does not read
-  // "skipped" as "gone". A build-64 import already wrote some `row:` tasks, and
-  // deleting one the moment this rule starts skipping its event would be the
-  // exact harm the rule exists to prevent, arriving by the other door.
-  const held = new Set(skipped.map((ev) => String(ev.uid ?? "")));
-  const live = all.filter((ev) => !isOurs(ev) && !declined(ev) && !notReady(ev, google));
+  const live = all.filter((ev) => !isOurs(ev) && !declined(ev));
+  // NOT A SKIP ANY MORE (session 153). It is counted and imported, and the
+  // count is reported because a task carried on a row number is correct on one
+  // phone only, which is a thing he should be able to see rather than infer.
+  const unsynced = live.filter(localOnly).length;
   const want = nextPerSeries(live, existing);
   const byId = new Map((existing ?? []).map((t) => [t.id, t]));
+  // BY `calendar_uid` AS WELL AS BY ID, which is what makes a relink possible.
+  // A task written from `row:812` has an id derived from `row:812`, so when the
+  // same event turns up carrying a real uid its id no longer matches anything —
+  // the row number is the only thread between the two.
+  const byUid = new Map();
+  for (const t of existing ?? []) if (t.calendar_uid) byUid.set(String(t.calendar_uid), t);
   const seen = new Set();
 
   const plan = {
     add: [], update: [], remove: [], cancel: [],
-    notReady: waiting, ours, declined: said_no,
+    unsynced, relinked: 0, adopted: 0, detached: 0, ours, declined: said_no,
     // EVERY EVENT THAT GOT PAST ALL THREE GATES, and every one of those is then
     // added, updated, left alone, or folded into the occurrence before it. The
     // four account for `considered` exactly:
@@ -259,8 +305,65 @@ export function planImport(events, existing, opts) {
   for (const ev of want) {
     seen.add(ev.id);
     const task = fromEvent(ev, { id: ev.id, now, config });
-    const have = byId.get(ev.id);
+    let have = byId.get(ev.id);
+
+    // THE RELINK (session 153, his design). An event imported before Google
+    // had ever seen it was written on `row:<n>`, and the task's id is derived
+    // from that — so when the adapter finally runs and the SAME ROW comes back
+    // carrying a real uid, the uid-derived id matches nothing and the task
+    // looks like a stranger. Deleted, and a fresh copy added, losing the alarm
+    // he set on it, the pin, and the notes.
+    //
+    // The provider's row id is the one thing both versions of the event share,
+    // so it is the thread. The task KEEPS ITS OWN ID — rewriting that would
+    // mean a delete and an insert in Supabase and would break any alarm armed
+    // against it — and only `calendar_uid` moves to the real one.
+    //
+    // `calendar_detached` STAYS FALSE, his point: the task is attached and
+    // always was. Nothing about getting an id is him touching it.
+    //
+    // Needs calendar shell build 3, which is the build that returns `rowId`.
+    // On an older APK `rowId` is absent, nothing matches, and the behaviour is
+    // what it was — no worse, and no relink.
+    let relinked = false;
+    if (!have && ev.rowId && !localOnly(ev)) {
+      const was = byUid.get(`row:${ev.rowId}`);
+      if (was && !closed(was) && String(was.calendar_uid) !== String(ev.uid)) {
+        have = was;
+        relinked = true;
+        // Its own id, not the event's, or the missing branch below would read
+        // the task we just recognised as gone.
+        seen.add(was.id);
+      }
+    }
+
     if (!have) {
+      // SAME WORDS, SAME DAY, SAME THING (session 154, his rule). He types
+      // `collect 57,000 from asha` and the same meeting is on the calendar;
+      // without this he gets two rows for one commitment and has to notice
+      // and merge them by hand, every time.
+      //
+      // ADOPTED, NEVER DELETED. The task he typed is kept and LINKED to the
+      // event: his notes, his alarm, his pin and his own id all survive, and
+      // nothing he wrote is thrown away by a guess about what matched. A rule
+      // that deletes on a similarity score is a rule that will one day delete
+      // the wrong thing, and this one cannot.
+      //
+      // ONLY A TASK FROM NO CALENDAR. One already carrying a `calendar_uid`
+      // belongs to a different event, and two meetings with the same name on
+      // the same day are two meetings.
+      const twin = adoptable(ev, task, existing, opts);
+      if (twin) {
+        seen.add(twin.id);
+        plan.adopted += 1;
+        plan.update.push({
+          ...twin,
+          calendar_uid: String(ev.uid),
+          calendar_detached: false,
+          updated_at: now,
+        });
+        continue;
+      }
       plan.add.push(task);
       continue;
     }
@@ -270,8 +373,20 @@ export function planImport(events, existing, opts) {
     // DETACHED MEANS HIS. Google stopped owning the title and the date the
     // moment he corrected one of them; everything else about the task was
     // always his.
-    if (have.calendar_detached) { plan.unchanged += 1; continue; }
-    if (have.title === task.title && have.due_at === task.due_at && have.has_time === task.has_time) {
+    // A DETACHED TASK STILL GETS ITS UID CORRECTED. He owns the title and the
+    // date from the moment he edits one; he does not own which event it came
+    // from, and leaving a dead row number there would mean the task never
+    // learns that Google deleted its event.
+    if (have.calendar_detached) {
+      if (relinked) {
+        plan.relinked += 1;
+        plan.update.push({ ...have, calendar_uid: String(ev.uid), updated_at: now });
+      } else {
+        plan.unchanged += 1;
+      }
+      continue;
+    }
+    if (!relinked && have.title === task.title && have.due_at === task.due_at && have.has_time === task.has_time) {
       // ALREADY RIGHT. Counted, because `considered` minus added minus updated
       // was being reported as what one-task-per-series folded away, and a task
       // that simply needed nothing done landed in that number under the wrong
@@ -284,8 +399,13 @@ export function planImport(events, existing, opts) {
     // FOLLOWING: Google's title and date win, and everything he set stays. The
     // alarm, the type, the firmness, the notes and the pin are his on every
     // task, so they are carried across rather than rebuilt.
+    if (relinked) plan.relinked += 1;
     plan.update.push({
       ...have,
+      // The real uid from here on, or the next import would look for the row
+      // number again and relink the same task for ever.
+      calendar_uid: String(ev.uid),
+      calendar_detached: false,
       title: task.title,
       normalised: task.normalised,
       verb_phrase: task.verb_phrase,
@@ -307,11 +427,6 @@ export function planImport(events, existing, opts) {
     if (!t.calendar_uid) continue;
     if (closed(t)) continue;
     if (seen.has(t.id)) continue;
-    // Its event was HELD rather than read. Left exactly as it is: when Google
-    // gives the event a real id, the proper task is added and this one becomes
-    // genuinely missing in the same pass, so the swap happens once and nothing
-    // is ever both deleted and absent.
-    if (held.has(String(t.calendar_uid))) continue;
     // A TRUE INSTANT ON BOTH SIDES. `fromMs` and `toMs` are real epoch
     // milliseconds, and a stored `due_at` is local wall clock with its offset
     // written on the end — so parsing it as if the wall clock were UTC and
@@ -325,6 +440,20 @@ export function planImport(events, existing, opts) {
     // the event. A task he detached and edited is HIS, and is cancelled rather
     // than deleted: it shows on the Done tab with `Revive`, because losing work
     // because somebody else tidied their calendar is not a thing this app does.
+    // A LOCAL-ONLY TASK IS DETACHED, NEVER DELETED (session 154, and it
+    // corrects the advice session 153 gave him). Its event was one Google had
+    // never seen, living on that phone and nowhere else — and REPAIRING a
+    // stale Google account removes it from the phone and adds it back, which
+    // deletes exactly those events. Google has no copy to put back, so the
+    // task is the only surviving record of the thing. Deleting it would hand
+    // the repair the data the import was run to rescue.
+    //
+    // It becomes his own task, standing alone, which is what it now is.
+    if (String(t.calendar_uid).startsWith("row:")) {
+      plan.detached += 1;
+      plan.update.push({ ...t, calendar_detached: true, updated_at: now });
+      continue;
+    }
     if (t.calendar_detached) plan.cancel.push({ ...t, task_state: "cancelled", closed_at: now, updated_at: now });
     else plan.remove.push(t.id);
   }

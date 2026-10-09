@@ -456,6 +456,30 @@ function diceWords(a, b) {
  * 0.4468 is 0.45, not 0.44. */
 const round2 = (x) => Math.round(x * 100) / 100;
 
+/**
+ * HOW ALIKE TWO TITLES ARE, on the engine's own measure, exported for ONE
+ * caller: the calendar import's duplicate rule (session 154, his rule — "check
+ * the words and date, if they are the same as an existing task it'll remove
+ * duplicates").
+ *
+ * EXPORTED RATHER THAN COPIED, and that is the whole reason it is three lines
+ * here instead of thirty there. The duplicate measure is `max(trigram, word)`
+ * over `compare_key`, compared against `config.duplicate.threshold`, and it has
+ * been tuned against fourteen key cases in section D. A second implementation
+ * in `calendar.import.js` would be a second thing to tune, and the two would
+ * disagree the first time either moved — which is exactly how `dayWord` and
+ * `readDuePhrase` came to need a comment saying they are deliberate copies.
+ *
+ * It takes NORMALISED titles and does the `compare_key` reduction itself, so no
+ * caller has to know that numeric tokens are dropped before comparing.
+ */
+export function titleSimilarity(normalisedA, normalisedB) {
+  const a = readCompareKey(String(normalisedA ?? ""));
+  const b = readCompareKey(String(normalisedB ?? ""));
+  if (!a || !b) return 0;
+  return round2(Math.max(diceBags(trigrams(a), trigrams(b)), diceWords(a, b)));
+}
+
 function readDuplicate(normalised, compare_key, existing, config, now) {
   const out = { similarity: 0, numeric_variant: false, duplicate_dialog: null };
   const mine = trigrams(compare_key);

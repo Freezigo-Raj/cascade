@@ -57,7 +57,7 @@ class CascadeCalendarPlugin : Plugin() {
          * open; this half only changes when the APK is rebuilt, so the two
          * drift by design and the app has to be able to see how far.
          */
-        const val CALENDAR_BUILD = 2
+        const val CALENDAR_BUILD = 3
 
         private const val PERM_REQUEST = 9101
 
@@ -265,6 +265,17 @@ class CascadeCalendarPlugin : Plugin() {
                             .put("calendarId", calId)
                             .put("description", c.getString(5) ?: "")
                             .put("selfStatus", c.getInt(6))
+                            // THE PROVIDER'S OWN ROW ID, always, and not only
+                            // as the uid fallback (build 3, session 153). An
+                            // event Google has never seen has no UID and no
+                            // sync id, so Cascade imports it on `row:<id>`.
+                            // When the adapter finally runs, the SAME ROW gains
+                            // a real uid — and the row id is the only thing
+                            // that connects the task written before to the
+                            // event seen after. Without it the task is deleted
+                            // and a fresh copy added, which loses the alarm,
+                            // the pin and the notes on it.
+                            .put("rowId", eventId.toString())
                     )
                 }
             }
