@@ -4083,3 +4083,122 @@ So the relink happens two ways:
 Which means calendar shell 3 is now an improvement rather than a requirement. An APK built before it relinks correctly.
 
 **Shell 70. No migration. The APK rebuild is optional.** All nine checks green.
+
+---
+
+## Session 155 — 9 October 2026
+
+**His two things.** Stop checking for updates on every open: once a week, and on a button. And: the unsynced Google events still do not import, so does the APK need changing after build 67?
+
+### The calendar is settled, and it is not this app
+
+Your own event list answers it. All three events on `exploredreams360` are marked **`ours`** — Cascade wrote them. That calendar holds **zero** real Google events in a seventy-day window, and the 24 Oct meeting is not in the list at all.
+
+**No APK change can help.** Build 70 already imports events Google has never seen. There is nothing on that phone to import, because the phone's calendar database does not have it.
+
+One test left, and it needs no code: install any other calendar app on that OnePlus and look at 24 Oct. It will also show nothing. At that point it is an Android repair.
+
+### The update check was one request
+
+Smaller than it sounds. Every module has carried `?v=<SHELL_VERSION>` and been served cache-first since session 119, because a versioned URL names immutable content — same number, same bytes, nothing to ask.
+
+One request was left on a cold start: **`index.html`**, which cannot carry a version because it *is* the address, and which `sw.js` fetched with `cache: "reload"` to get past GitHub Pages' ten-minute lifetime.
+
+That one request was the whole update mechanism. A new build reaches the phone because the fresh page names new `?v=` addresses. So serving it from the cache stops the checking and the updating in the same line.
+
+### The cost, stated
+
+A defect fixed in the morning used to reach the phone on the next open. It now waits for the weekly check or the button.
+
+Eleven of the last eighteen sessions shipped a fix you installed the same day. That is not a small cost. It is yours to accept, and the button is what makes it acceptable rather than a trap: a weekly cache with no button leaves a fix sitting on the server for six days with nothing on the phone able to fetch it.
+
+### The safety net, deliberately earlier than you asked for
+
+The browser re-fetches `sw.js` past its own cache on navigation whenever its copy is over a day old. That is the platform's own rule and nothing here can break it. A changed `SHELL` makes `sw.js` a new file, so a new worker installs — and its install handler now caches a fresh `index.html` too.
+
+| Route | How often | Costs the boot path |
+|---|---|---|
+| the button | whenever you press it | nothing |
+| the weekly check | `config.update.check_days` | nothing, it is never awaited |
+| a new worker installing | about a day, the browser's own rule | nothing, it is in the background |
+
+So an update still arrives on its own within about a day. A locked-out app, needing app data cleared to escape a bad build, is a far worse failure than an update you did not ask for — and none of these three routes slows the open, which was the actual complaint.
+
+### How it is split
+
+`shell/update.js` decides **when**. `sw.js` does it, holds no interval and no policy, and answers one message — it owns the cache, so it owns the one fetch that can get past it.
+
+- The reply comes back on a `MessageChannel` port rather than a broadcast, so the button learns *its own* answer.
+- No reply in fifteen seconds says so, rather than leaving a button reading `Checking…` for ever.
+- **The clock moves even on a failed check.** Otherwise a phone offline for a fortnight tries on every single open, which is the behaviour you asked to remove arriving by the back door.
+- A build found waiting is remembered across opens, because the sentence saying so has to survive the very thing it asks you to do.
+- Nothing reloads the page by itself. A page swapped under a caret being typed into is session 106's defect with a new cause.
+
+The account screen now shows when it last looked, and `Check for updates` forces one.
+
+**Shell 71, config a.23. No migration, no APK.** All nine checks green.
+
+Note: build 70 is still network-first for the page, so 71 arrives on the next open as usual. The new policy starts from 71.
+
+---
+
+## Session 156 — 9 October 2026
+
+**His test:** calendar sync stopped, then an event added. It does not show in Cascade.
+
+I could not read the evidence, because of two defects in my own diagnostic.
+
+### The list sorted alphabetically on a formatted date
+
+```
+1 Nov
+10 Oct
+11 Nov
+11 Oct
+12 Oct
+```
+
+The field that printed the date was the field it sorted on. Every event sat in a place nobody could predict, and the 14 Oct entry he was looking for fell between `13 Oct` and `15 Nov` — exactly where his screenshots had a gap. So the list could neither confirm nor rule out the thing it exists to answer.
+
+The instant is its own field now. The printed date is only for reading.
+
+`List every event` was built in session 151 precisely because aggregate numbers were not enough. A diagnostic that cannot be read is not a diagnostic.
+
+### Both reports now say when they were read
+
+```
+Read 13 events at 17:49.
+```
+
+The text stays on screen after a press, so a line read twenty minutes ago looks exactly like one read just now. A `Read 13 events` from 17:21 appeared in a 17:47 screenshot and was taken as evidence about an event created at 17:48.
+
+Four words remove a whole class of wrong conclusion, mine included.
+
+### Only the ticked calendars list their events
+
+His ask. Every calendar keeps its **count**, because a calendar reading zero is the whole answer to why nothing arrives from it and costs one line. The events behind the unticked ones were sixty-eight lines, mostly three copies of each Indian holiday, burying the single row he was looking for.
+
+### And then his test answered five sessions of this
+
+He stopped that account's sync, created `Offline calendar check` on 14 October, and checked: it is in neither the import nor the full event list. On a phone whose calendar is otherwise healthy — sixty-eight events read, fifteen Indian holidays among them.
+
+**An event created in Google Calendar while sync is off does not reach the phone's calendar database at all.** Google Calendar holds it in its own pending store until the sync adapter runs. The provider never sees it, so no app on that phone can. Including this one.
+
+That explains the second phone with no more guessing:
+
+| Observed there | Now explained |
+|---|---|
+| last sync 2025 | the adapter has not run in a year |
+| `Holidays in India — 0 events` | nothing has entered the provider since |
+| the 24 Oct meeting nowhere | made on that phone, still in the pending store |
+| only Cascade's own events present | this app writes straight to the provider, so its own events are the only ones there |
+
+No APK change and no import rule could ever have reached it. The repair is to make that account sync, and nothing in this app is on the path.
+
+### What that costs session 153
+
+Recorded, not reverted. Importing events carried on a provider row id is still right for an event another app writes straight into the provider, and `rowid` can still appear. It is **not** the route by which a Google Calendar event made offline arrives, because that event is not in the provider to be read.
+
+The rule costs nothing. The reasoning behind it was wrong about the common case, which is worth writing down.
+
+**Shell 72. No migration, no APK.** All nine checks green.

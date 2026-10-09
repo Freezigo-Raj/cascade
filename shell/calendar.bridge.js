@@ -257,6 +257,11 @@ export async function importCalendar() {
   const plan = planImport(events, existing, { now: nowIso(), nowMs, config: partAConfig });
   const report = {
     ok: true, read: events.length,
+    // STAMPED, for the same reason the event list is (session 156): the line
+    // stays on screen after a press, so one read twenty minutes ago is
+    // indistinguishable from one read just now — and a stale `read 13 events`
+    // was taken as evidence about an event created after it.
+    at: clockOf(nowMs),
     added: 0, updated: 0, removed: 0, cancelled: 0,
     // HELD, NOT DROPPED. An event with no stable id on a syncing calendar is
     // waiting for Google to give it one, and an event that simply never appears
@@ -544,7 +549,19 @@ export async function diagnoseCalendar() {
   for (const e of events) {
     const id = String(e.calendarId ?? "");
     perCal.set(id, (perCal.get(id) ?? 0) + 1);
+    // EVENTS ONLY FROM THE CALENDARS HE TICKED (session 156, his ask). Every
+    // calendar still gets a COUNT, because a calendar reading zero is the whole
+    // answer to "why does nothing arrive from it" and costs one line. Listing
+    // every unticked event cost sixty-eight, most of them three copies of each
+    // Indian holiday, and buried the one row he was looking for.
+    if (!ticked.has(id)) continue;
     rows.push({
+      // THE INSTANT, FOR SORTING, and the printed date is for reading. They
+      // were the same field, so the list came back ordered `1 Nov, 10 Oct,
+      // 11 Nov, 11 Oct` — an alphabetical sort on a formatted date, which put
+      // every event in a place nobody could predict and made the one he was
+      // looking for impossible to find (session 156, his screenshots).
+      at: Number(e.startMs) || 0,
       when: whenOf(e),
       title: String(e.title ?? "").slice(0, 40),
       calendar: nameOf.get(id) ?? `id ${id}`,
@@ -553,11 +570,16 @@ export async function diagnoseCalendar() {
       ours: String(e.description ?? "").includes("cascade:"),
     });
   }
-  rows.sort((a, b) => (a.when < b.when ? -1 : a.when > b.when ? 1 : 0));
+  rows.sort((a, b) => a.at - b.at);
 
   return {
     ok: true,
     read: events.length,
+    // WHEN THIS ANSWER WAS READ. The report stays on screen after a press, so
+    // a line read twenty minutes ago looks exactly like one read just now —
+    // which is how a stale `read 13 events` came to be evidence about an event
+    // created after it (session 156).
+    at: clockOf(nowMs),
     calendars: everyId.map((id) => ({
       name: nameOf.get(id) ?? `id ${id}`,
       ticked: ticked.has(id),
@@ -576,6 +598,13 @@ function whenOf(e) {
   if (e.allDay) return day;
   const p = (n) => String(n).padStart(2, "0");
   return `${day} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+/** `17:49`, local, for stamping a report so a stale one is visible. */
+function clockOf(ms) {
+  const d = new Date(ms);
+  const p = (n) => String(n).padStart(2, "0");
+  return `${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];

@@ -422,6 +422,12 @@ export interface Config {
   hedge_words: string[];
   /** Words that turn the alarm on from the line. Only while `has_time`. */
   alarm_words: string[];
+  /** How often the app looks for a newer build of itself. */
+  update: {
+    /** Days between automatic checks. A button forces one in between. */
+    check_days: number;
+  };
+
   /** How a task and a calendar event become each other. */
   calendar: {
     /** How long a timed task is drawn for on the phone's calendar, in minutes. */

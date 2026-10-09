@@ -10,7 +10,7 @@ import type { Config } from "./types";
 const active = (id: string) => ({ id, active: true });
 
 export const partAConfig: Config = {
-  version: "a.22",
+  version: "a.23",
 
   // --- Vocabulary: records hold these members ---
   // Drawn only from what the example exercises. Thin on purpose:
@@ -113,6 +113,14 @@ export const partAConfig: Config = {
   // minutes reads as a commitment somebody made. One stated number claims
   // nothing about the task. Using the duration instead is a second amendment
   // to the quiet-field rule, after the slot totals, and it is his to make.
+  // HOW OFTEN THE APP LOOKS FOR A NEWER BUILD OF ITSELF (session 155, his
+  // call). It used to look on every open. The cost of a week is that a fix
+  // ships today and arrives next Friday unless he presses the button, which is
+  // why there is a button.
+  update: {
+    check_days: 7,
+  },
+
   calendar: {
     block_min: 30,
     // THE IMPORT WINDOW, his numbers. Reading a whole calendar on every sync is

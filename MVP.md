@@ -539,4 +539,23 @@ The report counts per source, `uid2445 8, syncid 3, rowid 1`, ordered most trust
 **Same words, same day, one task.** A task he typed is ADOPTED by the matching event rather than duplicated: his notes, alarm, pin and id all survive and the task is linked from then on. The words test is the engine's own `titleSimilarity` against `config.duplicate.threshold`, not a second copy. It adopts and never deletes, because removing on a similarity score is a rule that one day removes the wrong thing. Disqualified: a closed task, one already linked to a different event, and another day.
 
 
+## Updating itself
+
+It looks for a newer build **once a week**, and whenever `Check for updates` is pressed on the account screen (session 155, his call). It used to look on every open.
+
+Only one request was ever the update check: `index.html`, which cannot carry a `?v=` because it is the address. Every module already carried one and was served cache-first, so a matching number meant matching bytes and there was nothing to ask.
+
+**The cost:** a fix shipped today reaches the phone on the weekly check or on the button, not on the next open. The button is what makes that acceptable.
+
+| Route | How often | Costs the boot path |
+|---|---|---|
+| the button | on press | nothing |
+| the weekly check | `config.update.check_days` | nothing, never awaited |
+| a new service worker installing | about a day, the browser's own rule | nothing, in the background |
+
+The third is a deliberate safety net: a locked-out app needing its data cleared is a far worse failure than an update arriving a few days early. The account screen says when it last looked, and a build found waiting is remembered across opens, because the sentence saying so has to survive being told to close the app.
+
+Nothing reloads the page by itself.
+
+
 **Arrived since this page was written**, and now on it: recurrence, sync, the duration control, notes, firmness. **Decided and deliberately still absent:** Cancel and Archive as row actions. A row carries Done, Pin, Delete and its push targets, and a Done row carries Undone. Cancel and Archive stay members of `row_action` with no control on any screen, which is stated here so the gap reads as a decision rather than an oversight.

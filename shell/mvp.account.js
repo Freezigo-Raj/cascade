@@ -28,6 +28,7 @@
 
 const v = new URL(import.meta.url).search;
 const { tasks, mode, sync } = await import(`./store.select.js${v}`);
+const update = await import(`./update.js${v}`);
 const { account } = await import(`./auth.js${v}`);
 const { partAConfig } = await import(`./config.js${v}`);
 const { SHELL_VERSION } = await import(`./version.js${v}`);
@@ -176,8 +177,58 @@ export function mountAccount(root, { onBack, onSignedOut } = {}) {
     conf.appendChild(el("span", "stat-label", "Config"));
     conf.appendChild(el("span", "stat-value", partAConfig.version));
     build.appendChild(conf);
+    // WHEN IT LAST LOOKED, AND A WAY TO LOOK NOW (session 155, his call: not on
+    // every open, once a week, and on a button). A weekly cache with no button
+    // is a trap — a fix shipped this morning would sit on the server for six
+    // days with nothing on the phone able to fetch it — so the button is the
+    // half of this that makes the other half safe.
+    const when = update.lastChecked();
+    const waiting = update.updateWaiting();
+    const ago = (ms) => {
+      if (!ms) return "never";
+      const mins = Math.round((Date.now() - ms) / 60000);
+      if (mins < 2) return "just now";
+      if (mins < 60) return `${mins} minutes ago`;
+      const hours = Math.round(mins / 60);
+      if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+      const days = Math.round(hours / 24);
+      return `${days} day${days === 1 ? "" : "s"} ago`;
+    };
+    const checked = el("div", "stat");
+    checked.appendChild(el("span", "stat-label", "Checked"));
+    checked.appendChild(el("span", "stat-value", ago(when)));
+    build.appendChild(checked);
+
+    const look = el("button", "act", "Check for updates");
+    look.type = "button";
+    const looked = el("div", "said");
+    if (waiting) {
+      looked.textContent = `Build ${waiting} is ready. Close the app completely and open it again to load it.`;
+    }
+    look.addEventListener("click", async () => {
+      look.textContent = "Checking…";
+      looked.textContent = "";
+      let r;
+      try {
+        r = await update.checkNow();
+      } catch (e) {
+        r = { ok: false, found: 0, why: "It threw: " + (e?.message ?? e) };
+      }
+      look.textContent = "Check for updates";
+      if (r.found) {
+        looked.textContent = `Build ${r.found} is ready. Close the app completely and open it again to load it.`;
+      } else if (r.ok) {
+        looked.textContent = `Build ${SHELL_VERSION} is the newest there is. Nothing to do.`;
+      } else {
+        looked.textContent = r.why || "It could not check.";
+      }
+      checked.lastChild.textContent = ago(update.lastChecked());
+    });
+    build.appendChild(look);
+    build.appendChild(looked);
+
     build.appendChild(el("div", "said",
-      "If the app looks like the last version, this number is how you tell. A phone can hold on to an old copy; closing the app fully and opening it again fetches this one."));
+      "If the app looks like the last version, this number is how you tell. It looks for a newer build once a week, not on every open, so press the button when you know one has shipped. Closing the app fully and opening it again is what actually loads it."));
     root.appendChild(build);
 
     // THE ANDROID APP, AND WHY IT HAS A GROUP OF ITS OWN (session 146, his
@@ -558,7 +609,7 @@ export function mountAccount(root, { onBack, onSignedOut } = {}) {
               pull.textContent = "Import now";
               const lines = [];
               if (r.read !== undefined) {
-                lines.push(`Read ${r.read} events.`);
+                lines.push(`Read ${r.read} events${r.at ? ` at ${r.at}` : ""}.`);
                 lines.push(`Added ${r.added}, updated ${r.updated}, removed ${r.removed}, cancelled ${r.cancelled}.`);
                 // HELD, AND NOT SILENTLY (session 149). An event with no stable
                 // id on a syncing calendar has not been given one by Google
@@ -637,18 +688,27 @@ export function mountAccount(root, { onBack, onSignedOut } = {}) {
               }
               probe.textContent = "List every event";
               if (!r.ok) { probed.textContent = r.why || "No answer."; return; }
-              const out = [`${r.from} to ${r.to}, every calendar, ticked or not.`, ""];
+              const out = [`${r.from} to ${r.to}. Read at ${r.at}.`, ""];
+              // EVERY CALENDAR IS COUNTED and only the ticked ones are listed
+              // (session 156, his ask). A count is one line and answers "why
+              // does nothing come from that one"; the events behind it were
+              // sixty-eight lines, mostly triplicate Indian holidays.
               for (const c of r.calendars) {
-                out.push(`${c.ticked ? "[x]" : "[ ]"} ${c.name} — ${c.events} event${c.events === 1 ? "" : "s"}`);
+                if (c.ticked) out.push(`[x] ${c.name} — ${c.events} event${c.events === 1 ? "" : "s"}`);
               }
-              out.push("", `${r.read} event${r.read === 1 ? "" : "s"}:`);
+              const off = r.calendars.filter((c) => !c.ticked);
+              if (off.length) {
+                out.push("", "Not ticked, so their events are not listed:");
+                for (const c of off) out.push(`[ ] ${c.name} — ${c.events}`);
+              }
+              out.push("", `${r.rows.length} event${r.rows.length === 1 ? "" : "s"} on the ticked calendars:`);
               // Each event on two lines, because a phone is narrow and a title
               // wrapped into the middle of its own calendar name is unreadable.
               for (const e of r.rows) {
                 out.push(`${e.when}  ${e.title}`);
-                out.push(`   ${e.ticked ? "ticked" : "NOT TICKED"} · ${e.calendar} · ${e.uidFrom}${e.ours ? " · ours" : ""}`);
+                out.push(`   ${e.calendar} · ${e.uidFrom}${e.ours ? " · ours" : ""}`);
               }
-              if (!r.rows.length) out.push("(none — the phone has no events in this window on any calendar)");
+              if (!r.rows.length) out.push("(none — the phone holds no events in this window on the calendars you ticked)");
               probed.textContent = out.join("\n");
             });
             cal.appendChild(probe);

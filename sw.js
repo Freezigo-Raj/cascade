@@ -28,7 +28,7 @@ const STORE = "cascade-shell";
  * THE SHELL VERSION, AND IT IS HELD TO `shell/version.js` BY `gate2.py`.
  * Bump it with every other number when the shell changes.
  */
-const SHELL = 70;
+const SHELL = 72;
 
 /**
  * PRE-CACHED, AND THAT IS A REVERSAL (session 142, his report: "in airplane
@@ -93,6 +93,7 @@ const PRECACHE = [
   "shell/resolve.js",
   "shell/search.js",
   "shell/store.js",
+  "shell/update.js",
   "shell/store.row.js",
   "shell/store.select.js",
   "shell/store.supabase.js",
@@ -116,6 +117,36 @@ self.addEventListener("install", (e) => {
         if (res && res.ok) await store.put(url, res.clone());
       }),
     );
+    // AND THE PAGE ITSELF, which is the safety net for session 155.
+    //
+    // From build 71 the document is served from the cache, so the ONE request
+    // that used to bring a new build down now happens on a weekly timer or on
+    // his button. If that mechanism were ever the only route, a bug in it would
+    // lock the phone on a build with no way to leave it but clearing app data.
+    //
+    // It is not the only route. The browser re-fetches THIS FILE on navigation,
+    // past its own cache, whenever its copy is over a day old — that is the
+    // platform's own rule and nothing here can break it. A changed `SHELL`
+    // makes this a new file, so a new worker installs, and these lines are what
+    // make that install bring the new page with it. Updates therefore still
+    // arrive on their own within about a day; the weekly check and the button
+    // are how he makes one arrive NOW.
+    //
+    // Earlier than he asked for, and deliberately: a locked-out app is a much
+    // worse failure than an update he did not ask for, and neither of these
+    // costs anything on the boot path, which was his actual complaint.
+    try {
+      const page = new URL("./index.html", self.registration.scope).href;
+      const res = await fetch(page, { cache: "reload", credentials: "same-origin" });
+      if (res && res.ok) {
+        const store2 = await caches.open(STORE);
+        await store2.put(key(page), res.clone());
+        await store2.put(key(self.registration.scope), res.clone());
+      }
+    } catch {
+      // No signal during an install is not a reason to fail the install: the
+      // old page stays cached and the next one takes its chance.
+    }
     await self.skipWaiting();
   })());
 });
@@ -150,6 +181,47 @@ const key = (url) => {
   return u.href;
 };
 
+/**
+ * LOOK FOR A NEWER BUILD, ONCE, BECAUSE SOMETHING ASKED.
+ *
+ * `shell/update.js` decides WHEN — a week, or his button. This decides nothing
+ * and holds no interval: the worker owns the cache and therefore owns the one
+ * fetch that can get past it, and that is the whole of its part.
+ *
+ * It fetches `index.html` past every cache, reads the `?v=` the page pins its
+ * modules to, and compares that to the version THIS worker was built with. A
+ * higher number means a newer build is deployed. The fresh page is stored
+ * either way, so the next open loads it with nothing left to ask.
+ *
+ * It does not reload anybody. A page swapped under a caret being typed into is
+ * session 106's defect with a new cause, so the app says a build is ready and
+ * he closes it when he is ready.
+ */
+self.addEventListener("message", (e) => {
+  if (!e.data || e.data.type !== "cascade:check-update") return;
+  const port = e.ports && e.ports[0];
+  e.waitUntil((async () => {
+    const reply = (m) => { if (port) port.postMessage(m); };
+    try {
+      const url = new URL("./index.html", self.registration.scope).href;
+      const fresh = await fetch(url, { cache: "reload", credentials: "same-origin" });
+      if (!fresh || !fresh.ok) return reply({ ok: false, found: 0, why: `The server answered ${fresh ? fresh.status : "nothing"}.` });
+      const text = await fresh.clone().text();
+      const store = await caches.open(STORE);
+      // Stored under the scope AND under the bare address: a navigation asks
+      // for one or the other depending on how the app was opened, and a hit on
+      // only one of them is a check that finds a build it then cannot serve.
+      await store.put(key(url), fresh.clone());
+      await store.put(key(self.registration.scope), fresh.clone());
+      const seen = [...text.matchAll(/[?&]v=(\d+)/g)].map((m) => Number(m[1]));
+      const found = seen.length ? Math.max(...seen) : 0;
+      reply({ ok: true, found: found > SHELL ? found : 0, running: SHELL });
+    } catch (err) {
+      reply({ ok: false, found: 0, why: String((err && err.message) || err) });
+    }
+  })());
+});
+
 self.addEventListener("fetch", (e) => {
   const req = e.request;
   if (req.method !== "GET") return;
@@ -177,6 +249,19 @@ self.addEventListener("fetch", (e) => {
   const document_ = req.mode === "navigate" || req.destination === "document";
 
   e.respondWith((async () => {
+    // THE DOCUMENT IS SERVED FROM THE CACHE TOO (session 155, his call: the app
+    // should not check for updates every time it opens).
+    //
+    // This is the one request a cold start still made, and it IS the update
+    // mechanism: a fresh `index.html` names new `?v=` addresses and that is how
+    // a new build reaches the phone. Serving it from the cache stops the
+    // checking and stops the updating in the same line, which is why the
+    // `cascade:check-update` message below exists and why the account screen
+    // has a button for it. The cost is written down in `shell/update.js`.
+    if (document_) {
+      const hit = await caches.match(key(req.url));
+      if (hit) return hit;
+    }
     // A versioned file already in the cache is the file: same number, same
     // bytes. Every launch used to pay one network round trip per module to
     // learn that nothing had changed; the version already says so.

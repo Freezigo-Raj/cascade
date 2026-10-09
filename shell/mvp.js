@@ -403,6 +403,16 @@ async function start() {
   } catch (e) {
     console.warn("calendar: not started —", e?.message ?? e);
   }
+  // THE WEEKLY LOOK FOR A NEWER BUILD (session 155, his call). Last, and NOT
+  // awaited: session 141 is why, three awaits on the boot path turned an
+  // offline launch into twenty-six seconds of blank screen and the sign-in
+  // page, with no alarm armed. Nothing here is worth one frame of the list.
+  try {
+    const { checkWeekly } = await import(`./update.js${v}`);
+    checkWeekly();
+  } catch (e) {
+    console.warn("update: not checked —", e?.message ?? e);
+  }
 }
 
 let whoEmail = "";

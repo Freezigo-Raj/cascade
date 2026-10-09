@@ -13,7 +13,7 @@ Current stage: 5
 The six hand-signed gates were RETIRED in session 135. `gate2.py` and `gate4.mjs` keep their names because they are checks that run. Nothing in this file is waiting on a hand.
 Stage 4 is closed and signed. Stage 5 is open: the rules go in one at a time and the same command is read the other way round, so a case that still fails names a rule not yet written. `gate4.mjs` reads the stage out of the line above and inverts its own verdict on it. Every case in the key agrees with the engine. Section I taps a type, a significance and a bound task, which no case did before, and section B and H state what the card says. `gate4.mjs` reads Stage 5 and passes: 142 run, 142 green, 0 on invariants alone, 0 errored. Nine rules are written and every obligation the contract records is now met except the ranking, which is Stage 6's. Gate 5 is the hand that says Stage 5 is finished.
 
-Status: the contract is written in the protocol's three groups, with Name, Type, Required, Unit, Range, Example and From per item. 13 inputs, 13 working values, the 46-field `Task`, 39 rendered outputs, 13 cross-field invariants, and config at 39 objects populated. `tsc --strict` compiles clean and `gate2.py` passes. `resolve()` returns three keys, `task`, `list` and `capture`, and the contract names that shape. The answer key holds 144 key cases. `UndoEntry` left the contract in session 137 with the rest of undo, and the Stage 3 shell was deleted in the same session.
+Status: the contract is written in the protocol's three groups, with Name, Type, Required, Unit, Range, Example and From per item. 13 inputs, 13 working values, the 46-field `Task`, 39 rendered outputs, 13 cross-field invariants, and config at 40 objects populated. `tsc --strict` compiles clean and `gate2.py` passes. `resolve()` returns three keys, `task`, `list` and `capture`, and the contract names that shape. The answer key holds 144 key cases. `UndoEntry` left the contract in session 137 with the rest of undo, and the Stage 3 shell was deleted in the same session.
 
 D-1: **Typing the thought is the whole of the work.**
 
@@ -37,10 +37,10 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 ## VERSIONS
 
   example      47
-  contract     58
-  config       a.22
+  contract     59
+  config       a.23
   answer_key   29
-  shell        70
+  shell        72
   gate1        signed on example 35
   gate2        signed on contract 32
   gate3        signed on shell 1
@@ -61,7 +61,7 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 **Built, and only as verified as the gate above it:**
 - `spec/example.md` — Stage 1 finished example. Gate 1 signed on the current file.
 - `schema/contract.md`, `schema/types.ts` — Stage 2. Gate 2 signed on the current file; `tsc --strict` compiles clean.
-- `config.ts` — the 39 config objects. Every vocabulary member is reachable from the lexicon.
+- `config.ts` — the 40 config objects. Every vocabulary member is reachable from the lexicon.
 - `shell/lemma.js` — wink-nlp and its English web model, MIT, bundled once and committed. 3.6 MB. No build step at run time: the shell serves it as a static file and the gate imports the same one. Read last in the verb chain.
 - The record also carries its four handed-in values, `raw_text`, `id`, `created_at` and `config_version`, which is what makes a case able to be green at all.
 - `tests/answer_key.md` — the hand-written key, Gate 4 signed on the current file. Every case a table row and every case carrying a derivation. 142 run and every one states a value; the two that do not run each name the gate that answers them.
@@ -76,59 +76,45 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 
 ## THIS SESSION'S JOB
 
-Session 154: his two rules, and a correction to the advice session 153 gave him.
+Session 156: the diagnostic could not be read, and then it answered the question.
 
-**HE WAS HALF RIGHT ABOUT THE ORDER, AND THE WRONG HALF WAS MINE.** He is right
-that an imported task is a local copy and creates no duplicate in Google.
-He is wrong that the order is therefore free, and so was I: repairing a stale
-account removes it from the phone and adds it back, which DELETES the events it
-never uploaded. The task's `calendar_uid` then matches nothing, and the
-missing-from-calendar branch would have deleted the very tasks the import was run
-to rescue. Importing first would not have saved them.
+**IT SORTED ALPHABETICALLY ON A FORMATTED DATE.** His screenshots: `1 Nov, 10
+Oct, 11 Nov, 11 Oct, 12 Oct`. The field that printed the date was also the field
+it sorted on, so a 14 October entry fell between `13 Oct` and `15 Nov`. The
+instant is its own field now. A diagnostic that cannot be read is not a
+diagnostic, and this one exists because aggregate numbers were not enough.
 
-**SO A TASK ON A `row:` UID IS DETACHED WHEN ITS EVENT GOES, NEVER DELETED.**
-That event was one Google had never seen, living on one phone and nowhere else,
-so there is no copy anywhere to put back and the task is the only surviving
-record of the thing. It becomes his own task, standing alone, which is what it
-now is. A task from an event Google DID have still goes with its event, which is
-his answer 4 from session 148 and is unchanged.
+**BOTH REPORTS CARRY THE TIME THEY WERE READ.** The text stays on screen after a
+press, so a `Read 13 events` from 17:21 was taken as evidence about an event
+created at 17:48.
 
-**SAME WORDS AND SAME DAY MEANS THE SAME COMMITMENT**, his second rule. A task
-he typed is ADOPTED by the matching event rather than a second row being
-written. His notes, his alarm, his pin and his own id all survive; the task is
-simply linked from then on.
+**EVENTS ARE LISTED ONLY FROM THE CALENDARS HE TICKED**, his ask, while every
+calendar keeps its count. A count is one line and is the whole answer to why
+nothing arrives from a calendar; the events behind it were sixty-eight lines,
+mostly three copies of each Indian holiday.
 
-**ADOPTED, AND NEVER DELETED**, which is the one place this does not do what he
-asked literally. He said it would remove duplicates. Removing on a SIMILARITY
-SCORE is a rule that will one day remove the wrong thing. Linking the row he
-already has reaches the same end state — one task — and cannot throw away
-anything he wrote.
+**AND THEN THE TEST ANSWERED FIVE SESSIONS OF THIS.** He stopped that account's
+sync, created `Offline calendar check` on 14 October, and it is in neither the
+import nor the full event list — on a phone whose calendar is otherwise healthy,
+sixty-eight events read, fifteen Indian holidays among them. **An event created
+in Google Calendar while sync is off does not reach the phone's calendar
+database at all.** Google Calendar holds it in its own pending store until the
+adapter runs. The provider never sees it, so no app on that phone can, this one
+included.
 
-**BOTH HALVES ARE REQUIRED AND THE DATE HALF IS WHAT MAKES IT SAFE.** `call raj`
-on Tuesday and `call raj` on Friday are two calls, and a words-only rule would
-collapse every errand he repeats into whichever meeting shares its name.
+**THAT EXPLAINS THE SECOND PHONE WITH NO MORE GUESSING.** Its account last synced
+in 2025, so every event made on it since has lived in that pending store. Which
+is why `Holidays in India` read zero, why the meeting he wanted was nowhere, and
+why no APK or import rule could ever have reached it.
 
-**THE WORDS TEST IS THE ENGINE'S OWN**, exported as `titleSimilarity` rather
-than rewritten: `max(trigram, word)` over `compare_key` against
-`config.duplicate.threshold`, the measure the capture screen has warned with
-since Stage 2 and that fourteen key cases in section D tune. A second
-implementation inside the import would be a second thing to tune, and the two
-would disagree the first time either moved.
+**SESSION 153'S IMPORT OF UNSYNCED EVENTS IS NARROWER THAN IT LOOKED**, recorded
+rather than reverted. It is still right for an event another app writes straight
+into the provider, and `rowid` can still appear. It is not the route by which a
+Google Calendar event made offline arrives, because that event is not there to
+be read. The rule costs nothing; the reasoning behind it was wrong about the
+common case.
 
-**FOUR THINGS DISQUALIFY A CANDIDATE**, each a case where two rows are right: a
-closed task, because finished work is not a future meeting; a task already
-carrying a REAL `calendar_uid`, because it belongs to a different event; another
-day; and a task this very import just wrote, which would be the pass eating its
-own output.
-
-**A `row:` UID IS THE ONE EXCEPTION, and it matters more than the rule it
-bends.** A task from an event Google had never seen, meeting an event that now
-carries a real id with the same words on the same day, IS that event. So the
-relink happens by CONTENT as well as by row id — and the content path needs no
-Kotlin, which makes calendar shell 3 an improvement rather than a requirement.
-An APK built before it relinks correctly.
-
-No migration. The APK rebuild is now optional. All nine checks green.
+No migration, no APK. All nine checks green.
 
 ## NEXT THREE JOBS
 
@@ -1078,3 +1064,17 @@ have landed. That is the price of the single table and it is accepted.
 - 9 Oct 2026 — THE WORDS TEST IS THE ENGINE'S OWN, exported as `titleSimilarity` rather than rewritten: `max(trigram, word)` over `compare_key` against `config.duplicate.threshold`, the measure the capture screen has warned with since Stage 2 and that fourteen key cases in section D tune — a second implementation inside the import would be a second thing to tune and the two would disagree the first time either moved.
 - 9 Oct 2026 — FOUR THINGS DISQUALIFY A CANDIDATE and each is a case where two rows are the right answer: a closed task, because finished work is not a future meeting; a task already carrying a REAL `calendar_uid`, because it belongs to a different event; another day; and a task this very import just wrote, which would be the pass eating its own output. The strongest match wins rather than the first, because the store comes back in no order.
 - 9 Oct 2026 — A `row:` UID IS THE ONE EXCEPTION TO THE SECOND RULE, and it turned out to matter more than the rule it bends: a task from an event Google had never seen, meeting an event that now carries a real id with the same words on the same day, IS that event — so the relink happens by CONTENT as well as by row id, and the content path needs no Kotlin, which makes calendar shell 3 an improvement rather than a requirement. An APK built before it relinks correctly.
+- 9 Oct 2026 — THE APP LOOKS FOR A NEWER BUILD OF ITSELF ONCE A WEEK AND ON A BUTTON, his call, and the change is smaller than it sounds: every module has carried `?v=<SHELL_VERSION>` and been served cache-first since session 119, because a versioned URL names immutable content — ONE request left on every cold start, `index.html`, which cannot carry a version because it IS the address, and which `sw.js` fetched with `cache: "reload"` to get past GitHub Pages' ten-minute lifetime. That one request was the whole update mechanism, so serving it from the cache stops the checking and the updating in the same line.
+- 9 Oct 2026 — THE COST, STATED RATHER THAN DISCOVERED: a defect fixed in the morning used to reach the phone on the next open and now waits for the weekly check or the button — eleven of the last eighteen sessions shipped a fix he installed the same day, so this is not a small cost; it is his to accept, and the button is what makes it acceptable rather than a trap. A weekly cache with no button would leave a fix sitting on the server for six days with nothing on the phone able to fetch it.
+- 9 Oct 2026 — A NEW WORKER BRINGS THE NEW PAGE WITH IT, which is the safety net and is deliberately earlier than he asked for: the browser re-fetches `sw.js` past its own cache on navigation whenever its copy is over a day old, that is the platform's rule and nothing here can break it, and a changed `SHELL` makes `sw.js` a new file — so the install handler now caches a fresh `index.html` too and an update still arrives on its own within about a day. A locked-out app is a far worse failure than an update he did not ask for, and neither route costs anything on the boot path, which was his actual complaint.
+- 9 Oct 2026 — `shell/update.js` DECIDES WHEN AND `sw.js` DOES IT: the worker holds no interval and no policy and answers one message, because it owns the cache and therefore owns the one fetch that can get past it — the interval is `config.update.check_days`, a stated number like every other. It answers on a `MessageChannel` port rather than broadcasting, so the button learns its own answer rather than any answer, and a check that gets no reply in fifteen seconds says so rather than leaving a button reading `Checking…` for ever.
+- 9 Oct 2026 — THE CLOCK MOVES EVEN ON A FAILED CHECK, deliberately: otherwise a phone offline for a fortnight tries on every single open, which is the behaviour he asked to remove arriving by the back door.
+- 9 Oct 2026 — A BUILD FOUND WAITING IS REMEMBERED ACROSS OPENS, because the sentence saying so has to survive the very thing it asks him to do — close the app and open it again — and it clears itself when the app comes back running that build.
+- 9 Oct 2026 — Nothing reloads the page by itself when a build is found: a page swapped under a caret being typed into is session 106's defect with a new cause, so the app says a build is ready and he closes it when he is ready.
+- 9 Oct 2026 — HIS SECOND PHONE'S CALENDAR IS SETTLED AND IT IS NOT THIS APP: the full event list shows all three events on `exploredreams360` marked `ours`, which means Cascade wrote them, so that calendar holds ZERO real Google events in a seventy-day window and the meeting he is looking for is not in the provider at all — no APK change can help, because build 70 already imports events Google has never seen and there is nothing on that phone to import. The remaining test needs no code: any other calendar app on that handset will also show nothing.
+- 9 Oct 2026 — `List every event` SORTED ITS ROWS ALPHABETICALLY ON A FORMATTED DATE, his screenshots: `1 Nov, 10 Oct, 11 Nov, 11 Oct, 12 Oct` — the field that printed the date was also the field it sorted on, so every event sat in a place nobody could predict and the one he was looking for was impossible to find. The instant is its own field now and the printed date is only for reading. A diagnostic that cannot be read is not a diagnostic, and this one was built in session 151 precisely because aggregate numbers were not enough.
+- 9 Oct 2026 — BOTH REPORTS CARRY THE TIME THEY WERE READ. The text stays on screen after a press, so a line read twenty minutes ago looks exactly like one read just now — and a `Read 13 events` from 17:21 was taken as evidence about an event created at 17:48. Four words on screen remove a whole class of wrong conclusion, mine included.
+- 9 Oct 2026 — `List every event` LISTS EVENTS ONLY FROM THE CALENDARS HE TICKED, his ask, while every calendar keeps its COUNT: a count is one line and is the whole answer to why nothing arrives from a particular calendar, where the events behind it were sixty-eight lines, mostly three copies of each Indian holiday, burying the one row he was looking for.
+- 9 Oct 2026 — AN EVENT CREATED IN GOOGLE CALENDAR WHILE THAT ACCOUNT'S SYNC IS OFF DOES NOT REACH THE PHONE'S CALENDAR DATABASE AT ALL, which his own test establishes and which is the answer to five sessions of this: he stopped sync, added `Offline calendar check` on 14 October, and it is in neither the import nor the full event list on a phone whose calendar is otherwise healthy — sixty-eight events read, fifteen Indian holidays among them. Google Calendar holds such an event in its own pending store until the adapter runs; the provider never sees it, so no app on that phone can, this one included.
+- 9 Oct 2026 — THAT EXPLAINS THE SECOND PHONE WITHOUT ANY MORE GUESSING: its account last synced in 2025, so every event made on it since has lived in Google Calendar's pending store and never entered the provider — which is why `Holidays in India` read zero and why the meeting he wanted was nowhere, and why no APK or import rule could ever have reached it. The repair is to make that account sync, and nothing in this app is on the path.
+- 9 Oct 2026 — SESSION 153'S IMPORT OF UNSYNCED EVENTS IS NARROWER THAN IT LOOKED, recorded rather than reverted: it is still right for an event another app writes straight into the provider, and `rowid` can still appear, but it is NOT the route by which a Google Calendar event made offline arrives, because that event is not in the provider to be read. The rule costs nothing and the reasoning behind it was wrong about the common case.

@@ -1,4 +1,4 @@
-CASCADE — sessions 137 to 154. READ THIS BEFORE COMMITTING.
+CASCADE — sessions 137 to 156. READ THIS BEFORE COMMITTING.
 
 Three things must happen by hand. Do them in this order: the migration, the
 deletions, then the APK.
@@ -100,7 +100,7 @@ AFTER DELETING THE SIX FILES, run this and it must say GATE 2: PASS —
 
   python3 gate2.py
 
-Header should read build 70.
+Header should read build 72.
 
 
 == THEN ON THE PHONE, ACCOUNT SCREEN ==
@@ -126,6 +126,72 @@ like working sync right up to the day you install the app somewhere else.
 
 "events", "holidays" and "birthdays" are each their own CALENDAR in Google, not
 a type of event, which is why the choice is a tick list rather than a switch.
+
+
+== WHAT CHANGED IN SESSION 156 ==
+
+TWO FIXES TO THE DIAGNOSTIC, both mine.
+
+1. "List every event" was sorted alphabetically on the printed date, so it ran
+   1 Nov, 10 Oct, 11 Nov, 11 Oct. Unreadable. It is in date order now.
+
+2. Both reports now say WHEN they were read:
+
+     Read 13 events at 17:49.
+
+   The text stays on screen after you press, so an old line looked exactly like
+   a fresh one. A report from 17:21 was read as evidence about an event made at
+   17:48.
+
+3. "List every event" now lists events ONLY from the calendars you ticked.
+   Every calendar still shows its count, because a calendar reading zero is
+   the answer to why nothing comes from it. The unticked events were 68 lines,
+   mostly three copies of each Indian holiday.
+
+YOUR TEST ANSWERED THE WHOLE CALENDAR QUESTION, so nothing more is needed here.
+
+You stopped that account's sync, made "Offline calendar check" on 14 October,
+and it is in neither the import nor the event list — on a phone whose calendar
+is otherwise fine, 68 events read.
+
+AN EVENT MADE IN GOOGLE CALENDAR WHILE SYNC IS OFF NEVER REACHES THE PHONE'S
+CALENDAR DATABASE. Google Calendar keeps it in its own pending store until the
+sync adapter runs. No app on the phone can see it. Not Cascade, not any other
+calendar app.
+
+That is also the full answer for the second phone: its account last synced in
+2025, so everything made on it since has sat in that pending store. No APK
+change and no rule in this app could ever have reached those events. Making
+that account sync is the only fix, and it is an Android repair.
+
+
+== WHAT CHANGED IN SESSION 155 ==
+
+THE APP NO LONGER LOOKS FOR A NEWER BUILD ON EVERY OPEN. Your call. It looks
+once a week, and whenever you press the new button.
+
+  Account screen -> This build -> "Check for updates"
+
+It also shows when it last looked. If a newer build is there it says so, and
+you close the app fully and open it again to load it.
+
+READ THIS PART. A fix I ship in the morning used to reach your phone on the
+next open. From build 71 it waits for the weekly check or for you to press the
+button. When I tell you a build is ready, press the button.
+
+SAFETY NET, on purpose. The browser re-checks the service worker about once a
+day on its own, and a new one now brings the new page with it. So an update
+still arrives by itself within roughly a day. None of this slows the app
+opening, which was the actual problem.
+
+Build 70 is still the old behaviour, so build 71 reaches you on the next open
+as normal. The new policy starts once 71 is running.
+
+CALENDAR, ANSWERED: no APK change will help that second phone. Its event list
+shows all three events on exploredreams360 marked "ours", meaning Cascade wrote
+them. That calendar holds no real Google events at all, so there is nothing for
+the app to import. Install any other calendar app on that phone and look at
+24 Oct — it will be empty there too, which makes it an Android repair.
 
 
 == WHAT CHANGED IN SESSION 154 ==

@@ -38,6 +38,7 @@ export default [
         setTimeout: "readonly", clearTimeout: "readonly",
         setInterval: "readonly", clearInterval: "readonly",
         CustomEvent: "readonly", Event: "readonly", Blob: "readonly",
+        MessageChannel: "readonly",
         URL: "readonly", URLSearchParams: "readonly",
         atob: "readonly", btoa: "readonly", alert: "readonly", console: "readonly",
         // Node, for the checks that run there.
