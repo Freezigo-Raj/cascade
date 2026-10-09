@@ -43,7 +43,7 @@
 // fetched. `index.html` says the same thing about `boot.js`.
 const v = new URL(import.meta.url).search;
 const { makeStore } = await import(`./store.js${v}`);
-const { toRow, fromRow } = await import(`./store.supabase.js${v}`);
+const { toRow, fromRow } = await import(`./store.row.js${v}`);
 
 const OUTBOX = "outbox";
 
@@ -106,6 +106,8 @@ export function makeSyncStore(db, config) {
   // Ordered by `seq` rather than by insertion, because localStorage hands rows
   // back in no order at all and a delete overtaking its own add would leave a
   // task that exists on one device and not the other.
+  // The reason the outbox stopped, verbatim, or null while it is moving.
+  let blocked = null;
   let seq = 0;
   const nextSeq = () => `${Date.now()}-${String(seq++).padStart(4, "0")}`;
 
@@ -153,14 +155,20 @@ export function makeSyncStore(db, config) {
             if (error) throw error;
           }
           await queue.remove(item.id);
+          blocked = null;
         } catch (e) {
           online = false;
-          // `message` alone says "violates foreign key constraint" and stops.
-          // `details`, `hint` and `code` say which one, which is the answer.
-          console.warn("store.sync: queued and waiting", {
+          // HELD WHERE A SCREEN CAN READ IT (session 152). This was a
+          // `console.warn` and nothing else, and a phone has no console — so a
+          // queue blocked for hours showed as `5 waiting` and no reason, while
+          // the sentence naming the exact column sat in a log nobody could open.
+          // The same lesson as `Sync now` in session 147, one layer down.
+          blocked = {
             action: item.action, task: item.task_id,
-            code: e.code, message: e.message, details: e.details, hint: e.hint,
-          });
+            code: e.code ?? "", message: e.message ?? String(e),
+            details: e.details ?? "", hint: e.hint ?? "",
+          };
+          console.warn("store.sync: queued and waiting", blocked);
           return;
         }
       }
@@ -295,7 +303,9 @@ export function makeSyncStore(db, config) {
   /** Everything that is not yet on the server, for a line on the screen. */
   async function status() {
     const waiting = (await pending()).length;
-    return { online, waiting };
+    // `blocked` is the verbatim Postgres answer to "why is that number not
+    // going down", and it is null whenever the last attempt got through.
+    return { online, waiting, blocked: waiting ? blocked : null };
   }
 
   /**

@@ -40,7 +40,7 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
   contract     58
   config       a.22
   answer_key   29
-  shell        67
+  shell        68
   gate1        signed on example 35
   gate2        signed on contract 32
   gate3        signed on shell 1
@@ -76,52 +76,57 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 
 ## THIS SESSION'S JOB
 
-Session 151: list every event, because a count of three says nothing about which three.
+Session 152: nothing had reached the server for hours, and the defect was mine.
 
-**HIS REPORT.** A meeting on 24 October, fifteen days out, on a calendar he had
-ticked, never arrived. `Import now` said `read 3 events`, and the three that came
-back were already in the app.
+**`fromEvent` RETURNED `due_phrase` ON THE TASK RECORD.** It is a WORKING value:
+`resolve()` returns it under `working` and never on the task, because the
+sentence is recomputed from `due_at` every time a row is drawn and a stored copy
+would be a second truth going stale the moment the clock passed it. So there is
+no column for it. PostgREST refused the whole row, and because the outbox stops
+at the first failure to keep its order, ONE imported task blocked every write
+behind it, typed ones included.
 
-**THE IMPORT CANNOT BE AT FAULT**, and that is what decided this session. It only
-ever sees what the provider hands over, and the provider handed over three.
-Everything between his calendar and that number is the `calendarIds` filter, and
-nothing on a phone can be used to look inside it.
+**NINE CHECKS WERE GREEN THROUGHOUT**, and could not have been anything else.
+Every value `fromEvent` computed was correct; the defect was in what the record
+CARRIED. The same shape as session 123, where every branch of the alarm's
+`apply()` computed the right values and called the store wrongly. An assertion
+about a value could not catch either.
 
-**SO IT ASKS FOR EVERYTHING AND FILTERS NOTHING.** `List every event` queries
-every readable calendar over the same window and prints every calendar with its
-tick state and its event count — the empty ones included, because a calendar with
-no events in the window IS the answer to why nothing arrives from it — then one
-line per event with the calendar it actually sits on, whether that calendar is
-ticked, its id source, and whether it is ours.
+**`toRow` WAS `{ ...task, owner }`**, so whatever the engine happened to put on a
+record went to Postgres. It is built from `TASK_COLUMNS` now. That list is not
+there to let fields be dropped quietly: it is there so a field with no column
+fails a check on this machine instead of a phone's outbox.
 
-The two answers it separates need opposite fixes. An event present on an UNTICKED
-calendar means the tick list is reading a different row from the one the event is
-on. An event absent entirely means the phone does not have it, and no part of
-this app can reach it.
+**`check_writes.mjs` READS `schema.sql` AND RUNS BOTH WAYS.** A field the engine
+produces with no column is the defect above. A column `TASK_COLUMNS` has not got
+is a field that would be dropped silently on its way to the server, which is the
+same fault wearing a quieter face. It reads the schema rather than a second
+hand-kept copy of the names, because a copy goes stale on the first migration and
+then asserts that two wrong things agree. Reintroducing `due_phrase` fails it by
+name.
 
-**NO KOTLIN CHANGE, DELIBERATELY.** `events()` has taken a list of calendar ids
-since session 148, so this hands it all of them rather than the ticked ones. A
-diagnostic that needed an APK rebuild would arrive a day after the question,
-which is the whole reason it exists.
+**A RECORD FROM AN OLDER BUILD IS SENT WITHOUT ITS STRAY FIELD**, which is what
+actually unblocks his phone. The five entries already in his outbox hold records
+as they were written and cannot be edited, so fixing `fromEvent` alone would have
+left them stuck for ever.
 
-**THE THIRD TIME AGGREGATE NUMBERS HAVE NOT BEEN ENOUGH** on this one feature.
-Session 147 shipped `Sync now` because four causes had one appearance. Session
-150 split the skip counts because `read 13` and `added 0` did not reconcile. This
-lists the rows. Each was the same lesson at a finer grain, and the rule it leaves
-is that a number is a diagnostic only when the thing it counts can be named.
+**THE TRANSLATION LAYER IS ITS OWN FILE**, `shell/store.row.js`, and nothing in
+it imports anything. It lived inside `store.supabase.js`, which imports the
+Supabase client, which imports an npm package — so no check could read the one
+thing in this app that decides WHAT REACHES THE SERVER. The same seam session 127
+cut for the alarm's write path, and the same lesson arriving a second time.
 
-**A TASK THAT NEEDED NOTHING DONE WAS BEING CALLED A FOLDED OCCURRENCE**, found
-reading his report rather than from a failure. Session 150 derived the fold count
-as `considered − added − updated`, and an unchanged task is in `considered` and in
-neither of the others. The arithmetic was right and the WORD was wrong, which is
-the harder kind to notice because every number still added up.
+**A STUCK QUEUE STOPS READING GREEN.** The pill wore the good colour for hours
+while nothing was being sent, because the only two states with a colour were
+`sync` and `local`. Amber is what that stylesheet already reserved in a comment
+for "it is not" and had never used.
 
-**A CLOSED OCCURRENCE IS A FOLD AND NOT A LEAVE-ALONE**, which is the opposite of
-what the new check first asserted and is what the check itself said.
-`nextPerSeries` drops a closed occurrence before the loop while it looks for the
-next live one, so with only that occurrence in the window the series offers
-nothing. The check was corrected to state the behaviour rather than the behaviour
-changed to suit the check.
+**AND IT SAYS WHY.** The Postgres answer naming the exact column was captured all
+along and went to a `console.warn`, which on a phone is a sentence nobody can
+read. It is held on the store and drawn verbatim on the account screen, because a
+message rewritten in friendlier words cannot be looked up. Drawn only when
+something is stuck, and it also says the writes live only on that device until
+the queue clears.
 
 No Kotlin change, no APK rebuild, no migration. All nine checks green.
 
@@ -1046,3 +1051,12 @@ have landed. That is the price of the single table and it is accepted.
 - 9 Oct 2026 — The list is a READ and writes nothing, to the store or to the calendar, so it is safe to press at any time and is the first thing to press when something is missing — stated on the screen rather than inferred from the word `list`.
 - 9 Oct 2026 — A TASK THAT NEEDED NOTHING DONE WAS BEING REPORTED AS AN OCCURRENCE THE SERIES FOLDED AWAY, found reading his own report rather than from a failure: session 150 derived the fold count as `considered − added − updated`, and an unchanged task is in `considered` and in neither of the others — the arithmetic was right and the WORD was wrong, which is the harder kind to notice because every number still added up. `unchanged` is counted explicitly now and `already right` is its own line.
 - 9 Oct 2026 — A CLOSED OCCURRENCE IS A FOLD AND NOT A LEAVE-ALONE, which is the opposite of what the first version of the new check asserted and is what the check itself said: `nextPerSeries` drops a closed occurrence BEFORE the loop while it looks for the next live one, so with only that occurrence in the window the series offers nothing at all — session 148's rule working exactly as written, and the check was corrected to state the behaviour rather than the behaviour changed to suit the check.
+- 9 Oct 2026 — `fromEvent` RETURNED `due_phrase` ON THE TASK RECORD, and that is why his phone showed `5 waiting` for hours: `due_phrase` is a WORKING value — `resolve()` returns it under `working` and never on the task, because the sentence is recomputed from `due_at` every time a row is drawn and a stored copy would be a second truth going stale the moment the clock passed it — so there is no column for it, PostgREST refused the whole row, and because the outbox stops at the first failure to keep its order ONE imported task blocked every write behind it, typed ones included.
+- 9 Oct 2026 — NINE CHECKS WERE GREEN THROUGHOUT, and could not have been anything else: every value `fromEvent` computed was correct and the defect was in what the record CARRIED — the same shape as session 123, where every branch of the alarm's `apply()` computed the right values and called the store wrongly. An assertion about a value could not catch either.
+- 9 Oct 2026 — `toRow` WAS `{ ...task, owner }`, so whatever the engine happened to put on a record went to Postgres: it is built from `TASK_COLUMNS` now, a stated list of every column `cascade_task` has, and the list is NOT there to let fields be dropped quietly — it is there so a field with no column fails a check on this machine instead of a phone's outbox.
+- 9 Oct 2026 — `check_writes.mjs` READS `schema.sql` AND RUNS BOTH WAYS: a field the engine produces with no column is the defect above, and a column `TASK_COLUMNS` has not got is a field that would be dropped silently on its way to the server, which is the same fault wearing a quieter face — it reads the schema rather than a second hand-kept copy of the column names, because a copy goes stale on the first migration and then asserts that two wrong things agree; the same answer as the `sw.js` pre-cache list in session 142, and reintroducing `due_phrase` fails it by name.
+- 9 Oct 2026 — A RECORD FROM AN OLDER BUILD IS SENT WITHOUT ITS STRAY FIELD, which is what actually unblocks his phone: the five entries already in his outbox hold records as they were written and cannot be edited, so fixing `fromEvent` alone would have left them stuck for ever — the filter in `toRow` is what lets the queue drain.
+- 9 Oct 2026 — THE TRANSLATION LAYER IS ITS OWN FILE, `shell/store.row.js`, and nothing in it imports anything: it lived inside `store.supabase.js`, which imports the Supabase client, which imports an npm package, so no check could read the one thing in this app that decides WHAT REACHES THE SERVER — the same seam session 127 cut for the alarm's write path, and the same lesson arriving a second time, that a path no check can reach is a path that stays green while it is broken.
+- 9 Oct 2026 — A STUCK QUEUE STOPS READING GREEN: the pill wore the good colour for hours while nothing was being sent, because the only two states with a colour were `sync` and `local` — `.sync.stuck` is amber, which is the colour that stylesheet already reserved in a comment for `it is not synced` and had never used.
+- 9 Oct 2026 — AND IT SAYS WHY, in words, on the account screen: the Postgres answer naming the exact column was captured all along and went to a `console.warn`, which on a phone is a sentence nobody can read — it is held on the store and drawn verbatim, a message rewritten in friendlier words being a message that cannot be looked up, which is the rule `Sync now` set in session 147. Drawn only when something is actually stuck.
+- 9 Oct 2026 — The block also says the writes live ONLY on that device until the queue clears, and not to clear the app's data or reinstall — the one piece of advice that was urgent and that nothing on any screen had ever given.

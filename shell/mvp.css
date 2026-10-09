@@ -46,7 +46,7 @@
      serving an old stylesheet has now cost three sessions of guessing at what
      had and had not arrived. A number that can be read is worth more than a
      number that has to be trusted. */
-  --css-version: 67;
+  --css-version: 68;
 
   --step: 4px;
   --r-card: 18px;
@@ -205,6 +205,12 @@ html, body {
 .sync .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--good-ink); }
 .sync.local { background: var(--sunk); color: var(--quiet); }
 .sync.local .dot { background: var(--quiet); }
+/* WAITING IS NOT SYNCED (session 152). Writes stuck in the outbox wore the
+   green dot for hours because nothing told them apart. Amber is the colour
+   this file already reserves for "it is not", and the account screen says the
+   reason in words. */
+.sync.stuck { background: var(--signal-wash); color: var(--signal-deep); }
+.sync.stuck .dot { background: var(--warn); }
 
 /* A line that only appears when the app cannot trust what it is running on. It
    is the loudest thing on the screen on purpose: it means the screen is lying. */

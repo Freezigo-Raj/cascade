@@ -443,7 +443,11 @@ export function mountList(root, { openEdit, openAccount, openAlarms, onTasks } =
    * frame beats a header that moves after the page has settled.
    */
   function syncPill() {
-    const pill = el("div", "sync" + (mode === "sync" ? "" : " local"));
+    // STUCK IS NOT SYNCED, AND MUST NOT LOOK LIKE IT (session 152). A queue
+    // blocked for hours wore the green dot, because the only two states with a
+    // colour were sync and local. Green here means the server has everything.
+    const stuck = mode === "sync" && syncWord.endsWith("waiting");
+    const pill = el("div", "sync" + (mode === "sync" ? "" : " local") + (stuck ? " stuck" : ""));
     pill.appendChild(el("span", "dot"));
     pill.appendChild(el("span", "", mode === "sync" ? syncWord : "on this device"));
     return pill;

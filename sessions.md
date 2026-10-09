@@ -3885,3 +3885,67 @@ That is session 148's rule working exactly as written. The check was corrected t
 **Shell 67. No Kotlin change, no APK rebuild, no migration.** All nine checks green.
 
 Note: his phone was on build 65, so this build carries the session-150 clock fix with it.
+
+---
+
+## Session 152 — 9 October 2026
+
+**Your report:** `5 waiting` on the header pill, for hours.
+
+That is the outbox. Five writes made on the phone had not reached Supabase. The defect was mine, and it was in session 148.
+
+### `fromEvent` returned `due_phrase` on the task record
+
+`due_phrase` is a **working value**. `resolve()` returns it under `working` and never on the task, because the sentence is recomputed from `due_at` every time a row is drawn, and a stored copy would be a second truth going stale the moment the clock passed it.
+
+So there is no `due_phrase` column. PostgREST refused the whole row. The outbox stops at the first failure to keep its order, so **one imported task blocked every write behind it** — typed ones included.
+
+**Nine checks were green throughout**, and could not have been anything else. Every value `fromEvent` computed was correct. The defect was in what the record *carried*.
+
+That is the same shape as session 123, where every branch of the alarm's `apply()` computed the right values and called the store wrongly. An assertion about a value cannot catch either.
+
+### `toRow` was `{ ...task, owner }`
+
+Whatever the engine happened to put on a record went to Postgres. It is built from a stated `TASK_COLUMNS` list now.
+
+That list is **not** there to let fields be dropped quietly. It is there so a field with no column fails a check on my machine instead of your phone's outbox.
+
+### The check that makes this class impossible
+
+`check_writes.mjs` now reads `schema.sql` and runs both ways:
+
+| Direction | What it catches |
+|---|---|
+| field with no column | this defect. The row is refused and the queue stalls |
+| column not in `TASK_COLUMNS` | a field dropped silently on its way to the server |
+
+It reads the schema rather than a second hand-kept copy of the names, because a copy goes stale on the first migration and then asserts that two wrong things agree. Same answer as the `sw.js` pre-cache list in session 142.
+
+Reintroducing `due_phrase` fails it by name:
+
+```
+FAIL  an imported event carries no field without a column — due_phrase
+```
+
+### Why your five will actually drain
+
+The entries already in your outbox hold records **as they were written**, and cannot be edited. Fixing `fromEvent` alone would have left them stuck for ever. The filter in `toRow` strips the stray field on the way out, so the queue clears on its own once build 68 is on the phone.
+
+### A new file, for the same reason as session 127
+
+`shell/store.row.js`. The translation layer lived inside `store.supabase.js`, which imports the Supabase client, which imports an npm package. So no check could read **the one thing in this app that decides what reaches the server**.
+
+That is the seam session 127 cut for the alarm's write path, and the same lesson arriving a second time: a path no check can reach is a path that stays green while it is broken.
+
+### The pill was lying, twice
+
+| What it did | What it does now |
+|---|---|
+| wore the **green** dot while nothing was being sent | amber, which `mvp.css` already reserved in a comment for "it is not" and had never used |
+| said `5 waiting` and no reason | the account screen prints the Postgres error verbatim, naming the exact column |
+
+The error was captured all along. It went to `console.warn`, which on a phone is a sentence nobody can read. Same rule as `Sync now` in session 147: a message rewritten in friendlier words cannot be looked up.
+
+The block is drawn only when something is actually stuck, and it also says the one urgent thing no screen had ever said: **while that number is showing, those writes live only on that device. Do not clear app data or reinstall.**
+
+**Shell 68. No Kotlin change, no APK rebuild, no migration.** All nine checks green.

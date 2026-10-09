@@ -25,6 +25,9 @@ import { partAConfig as config } from "./config.js";
 import { applyOutcome } from "./alarm.apply.js";
 import { successorId } from "./repeat.js";
 import { catchUpRepeats } from "./catchup.js";
+import { readFileSync } from "node:fs";
+import { resolve, fromEvent } from "./resolve.js";
+import { TASK_COLUMNS, toRow } from "./store.row.js";
 
 let bad = 0;
 const say = (ok, what) => {
@@ -326,6 +329,101 @@ for (const off of ["+05:30", "-08:00"]) {
   say(drift > -60_000, `and not in the past at ${off}, or newest-wins could resurrect it`);
 }
 
+
+
+// ===========================================================================
+// EVERY FIELD THE ENGINE PRODUCES HAS A COLUMN (session 152).
+//
+// THE DEFECT THIS EXISTS FOR, stated plainly because it cost him hours of a
+// phone that looked fine. `toRow` was `{ ...task, owner }`, so whatever the
+// engine put on a record went to Postgres. `fromEvent` put `due_phrase` on one
+// — a WORKING value, returned by `resolve()` under `working` and never on the
+// task, because the sentence is recomputed from `due_at` on every draw.
+// PostgREST refused the whole row, the outbox stops at the first failure to
+// keep its order, and ONE imported task blocked every write behind it, typed
+// ones included. Nine checks were green. The only sign was a pill reading
+// `5 waiting`, in green, on the phone.
+//
+// IT READS `schema.sql` RATHER THAN A LIST WRITTEN HERE. A second copy of the
+// column names, hand-kept, would go stale on the first migration and would
+// then be asserting that two wrong things agreed. The same reasoning as the
+// `sw.js` pre-cache list in session 142: a second inventory is fine exactly
+// when something reads the first one.
+//
+// IT RUNS IN BOTH DIRECTIONS. A field with no column is the defect above. A
+// column `TASK_COLUMNS` has not got is a field that would be dropped silently
+// on its way to the server, which is the same fault wearing a quieter face.
+
+console.log("\nEVERY FIELD HAS A COLUMN — the record and the table, both ways.");
+{
+  const sql = readFileSync(new URL("../schema.sql", import.meta.url), "utf8");
+  const head = sql.slice(sql.indexOf("create table if not exists cascade_task ("));
+  const cols = new Set();
+  for (const line of head.slice(0, head.indexOf("\n);")).split("\n")) {
+    const m = line.match(/^\s{2}([a-z_]+)\s+(uuid|text|jsonb|integer|boolean|timestamptz)/);
+    if (m) cols.add(m[1]);
+  }
+  say(cols.size > 40, `schema.sql was read and names ${cols.size} columns`);
+
+  const listed = TASK_COLUMNS.filter((c) => !cols.has(c));
+  say(listed.length === 0,
+      `TASK_COLUMNS names no column the table lacks${listed.length ? " — " + listed.join(", ") : ""}`);
+  const missed = [...cols].filter((c) => !TASK_COLUMNS.includes(c));
+  say(missed.length === 0,
+      `and leaves none out, or that field would be dropped on its way to the server${missed.length ? " — " + missed.join(", ") : ""}`);
+
+  // THE TWO WAYS A TASK IS BORN. A typed line and an imported event, checked
+  // the same way, because `fromEvent` was written five sessions after
+  // `resolve()` and nothing held the two to one shape.
+  const NOW = "2026-10-09T13:49:00+05:30";
+  const INSTANTS = ["due_at", "earliest_start", "first_due_at", "created_at",
+                    "updated_at", "closed_at", "alarm_snoozed_until", "alarm_unanswered_at"];
+  const audit = (label, task) => {
+    const extra = Object.keys(task).filter((k) => {
+      if (cols.has(k)) return false;
+      const base = k.replace(/_offset$/, "");
+      return !(k.endsWith("_offset") && INSTANTS.includes(base) && cols.has(k));
+    });
+    say(extra.length === 0,
+        `${label} carries no field without a column${extra.length ? " — " + extra.join(", ") : ""}`);
+  };
+
+  audit("a typed line", resolve({
+    typed_line: "call kushan 5pm", chip_spans: [], type_chip_tap: null,
+    significance_tap: null, duration_tap: null, firmness_tap: null,
+    notes_text: "", bound_task_id: null, row_action: null, now: NOW,
+    new_id: "44444444-4444-7444-8444-444444444444", config, existing_tasks: [],
+  }).task);
+
+  audit("an imported event", fromEvent({
+    uid: "u1", title: "Collect money", description: "", allDay: false,
+    startMs: Date.parse(NOW), endMs: Date.parse(NOW) + 900000,
+    selfStatus: 1, calendarId: "7", uidFrom: "uid2445",
+  }, { id: "t2", now: NOW, config }));
+
+  audit("an imported all-day event", fromEvent({
+    uid: "u2", title: "Diwali", description: "", allDay: true,
+    startMs: Date.parse("2026-11-08T00:00:00Z"), endMs: 0,
+    selfStatus: 1, calendarId: "7", uidFrom: "uid2445",
+  }, { id: "t3", now: NOW, config }));
+
+  // AND THE ROW ITSELF, which is what actually reaches Postgres.
+  const row = toRow(fromEvent({
+    uid: "u3", title: "Collect money", description: "", allDay: false,
+    startMs: Date.parse(NOW), endMs: Date.parse(NOW) + 900000,
+    selfStatus: 1, calendarId: "7", uidFrom: "uid2445",
+  }, { id: "t4", now: NOW, config }), "owner-uuid");
+  const rowExtra = Object.keys(row).filter((k) => !cols.has(k));
+  say(rowExtra.length === 0,
+      `the row toRow builds has nothing Postgres would refuse${rowExtra.length ? " — " + rowExtra.join(", ") : ""}`);
+  say(row.owner === "owner-uuid", "and it carries the owner");
+
+  // A record carrying a stray field must not reach the server with it, because
+  // the outbox holds records written by OLDER builds and they cannot be edited.
+  const stray = toRow({ id: "x", title: "t", due_phrase: "Due at five" }, "o");
+  say(!("due_phrase" in stray),
+      "a record from an older build carrying a working value is sent without it, so a queue stuck behind one drains");
+}
 
 console.log(`\n${bad === 0 ? "CHECK WRITES: PASS" : `CHECK WRITES: ${bad} FAILED`}\n`);
 process.exit(bad ? 1 : 0);

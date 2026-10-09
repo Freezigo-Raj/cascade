@@ -1,4 +1,4 @@
-CASCADE — sessions 137 to 151. READ THIS BEFORE COMMITTING.
+CASCADE — sessions 137 to 152. READ THIS BEFORE COMMITTING.
 
 Three things must happen by hand. Do them in this order: the migration, the
 deletions, then the APK.
@@ -100,7 +100,7 @@ AFTER DELETING THE SIX FILES, run this and it must say GATE 2: PASS —
 
   python3 gate2.py
 
-Header should read build 67.
+Header should read build 68.
 
 
 == THEN ON THE PHONE, ACCOUNT SCREEN ==
@@ -126,6 +126,34 @@ like working sync right up to the day you install the app somewhere else.
 
 "events", "holidays" and "birthdays" are each their own CALENDAR in Google, not
 a type of event, which is why the choice is a tick list rather than a switch.
+
+
+== WHAT CHANGED IN SESSION 152 — INSTALL THIS ONE ==
+
+YOUR PHONE HAS NOT SENT ANYTHING TO THE SERVER FOR HOURS. The pill reading
+"5 waiting" is five writes stuck in the outbox. This build is the fix.
+
+WHAT HAPPENED: I put a field called due_phrase on the task record when a
+calendar event is imported. It is a computed sentence, not a stored field, so
+there is no column for it. Postgres refused the whole row. The outbox stops at
+the first failure so that writes stay in order, which means ONE imported task
+blocked every write behind it, including tasks you typed yourself.
+
+Nothing is lost. The five are on the phone. They will send by themselves within
+a minute of build 68 loading.
+
+UNTIL THEN: do not clear the app's data and do not reinstall it. Those five
+writes exist only on that phone.
+
+ALSO IN THIS BUILD:
+  - the pill goes AMBER when the queue is stuck. It was green the whole time.
+  - the account screen now prints WHY, in the server's own words, naming the
+    exact column. That sentence existed all along and went to a log a phone
+    cannot show.
+  - a new check reads schema.sql and fails if the app ever again produces a
+    field with no column, or stops sending one that has.
+
+One new file, shell/store.row.js. It is in the zip. Nothing to do by hand.
 
 
 == WHAT CHANGED IN SESSION 151 ==

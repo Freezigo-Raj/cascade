@@ -28,7 +28,7 @@ const STORE = "cascade-shell";
  * THE SHELL VERSION, AND IT IS HELD TO `shell/version.js` BY `gate2.py`.
  * Bump it with every other number when the shell changes.
  */
-const SHELL = 67;
+const SHELL = 68;
 
 /**
  * PRE-CACHED, AND THAT IS A REVERSAL (session 142, his report: "in airplane
@@ -93,6 +93,7 @@ const PRECACHE = [
   "shell/resolve.js",
   "shell/search.js",
   "shell/store.js",
+  "shell/store.row.js",
   "shell/store.select.js",
   "shell/store.supabase.js",
   "shell/store.sync.js",

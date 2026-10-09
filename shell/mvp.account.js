@@ -27,7 +27,7 @@
 // this version wrote rather than a shape invented for the file.
 
 const v = new URL(import.meta.url).search;
-const { tasks, mode } = await import(`./store.select.js${v}`);
+const { tasks, mode, sync } = await import(`./store.select.js${v}`);
 const { account } = await import(`./auth.js${v}`);
 const { partAConfig } = await import(`./config.js${v}`);
 const { SHELL_VERSION } = await import(`./version.js${v}`);
@@ -117,6 +117,43 @@ export function mountAccount(root, { onBack, onSignedOut } = {}) {
     stats.appendChild(count("Done", all.filter((t) => t.task_state === "done").length));
     stats.appendChild(count("Repeating", all.filter((t) => open(t) && t.recurrence).length));
     root.appendChild(stats);
+
+    // WHY THE OUTBOX IS NOT MOVING, in words (session 152). A queue blocked
+    // for hours showed as `5 waiting` on the header pill and nothing else: the
+    // Postgres sentence naming the exact column sat in a `console.warn`, and a
+    // phone has no console. It is drawn only when something is actually stuck,
+    // so a healthy app is not given a block of text about syncing it does not
+    // need to think about.
+    const sync = el("div", "group");
+    sync.dataset.sync = "1";
+    root.appendChild(sync);
+    (async () => {
+      if (mode !== "sync" || !sync || !sync.status) return;
+      let st;
+      try { st = await sync.status(); } catch { return; }
+      if (!st || !st.waiting) return;
+      sync.appendChild(el("div", "label", "Not yet on the server"));
+      sync.appendChild(el("div", "said",
+        `${st.waiting} change${st.waiting === 1 ? "" : "s"} made on this device ${st.waiting === 1 ? "has" : "have"} not reached the server. ` +
+        "They are held here in order and sent oldest first, and the queue stops at the first one the server refuses so the order survives. " +
+        "Nothing is lost while this says a number, but it lives only on this device until it clears: do not clear the app's data or reinstall."));
+      if (st.blocked) {
+        // VERBATIM. A message rewritten in friendlier words is a message that
+        // cannot be looked up, which is the rule `Sync now` set in session 147.
+        const lines = [
+          `It stopped on: ${st.blocked.action} ${st.blocked.task}`,
+          st.blocked.code ? `code ${st.blocked.code}` : "",
+          st.blocked.message,
+          st.blocked.details,
+          st.blocked.hint,
+        ].filter(Boolean);
+        const why = el("pre", "said probe", lines.join("\n"));
+        sync.appendChild(why);
+      } else {
+        sync.appendChild(el("div", "said",
+          "No error yet — it has not had a chance to try since the app opened. Leave it a minute."));
+      }
+    })();
 
     const out = el("div", "group");
     out.appendChild(el("div", "label", "Your data"));

@@ -16,55 +16,11 @@
 const v = new URL(import.meta.url).search;
 const { client } = await import(`./supabase.js${v}`);
 const { account } = await import(`./auth.js${v}`);
-
-/** The eight instant fields, each stored as a `timestamptz` and an offset. */
-const INSTANTS = ["due_at", "earliest_start", "first_due_at", "created_at", "updated_at", "closed_at",
-                  "alarm_snoozed_until", "alarm_unanswered_at"];
-
-export const offsetOf = (iso) => (iso ? iso.slice(-6) : null);
-
-/**
- * A record into a row. The instant goes to Postgres as an absolute moment,
- * which is what comparing wants; the offset goes beside it, which is what
- * reading it back as the person meant wants. Dropping the offset would move
- * every band boundary, because `deadline_band` is a local calendar day.
- */
-export function toRow(task, owner) {
-  const row = { ...task, owner };
-  for (const f of INSTANTS) {
-    const v = task[f];
-    row[f] = v || null;
-    row[`${f}_offset`] = offsetOf(v);
-  }
-  return row;
-}
-
-/** A row back into a record: the offset rejoins its instant. */
-export function fromRow(row) {
-  const task = { ...row };
-  delete task.owner;
-  for (const f of INSTANTS) {
-    const at = row[f], off = row[`${f}_offset`];
-    delete task[`${f}_offset`];
-    // Postgres hands back UTC. The offset says what local reading produced it,
-    // so the record is rebuilt in the zone it was written in rather than in the
-    // zone of whatever machine is reading.
-    task[f] = at && off ? shift(at, off) : null;
-  }
-  return task;
-}
-
-/** An ISO instant re-expressed at a stated offset, to the second. */
-export function shift(iso, offset) {
-  const sign = offset[0] === "-" ? -1 : 1;
-  const mins = sign * (Number(offset.slice(1, 3)) * 60 + Number(offset.slice(4, 6)));
-  const local = new Date(Date.parse(iso) + mins * 60 * 1000);
-  const p = (n) => String(n).padStart(2, "0");
-  return (
-    `${local.getUTCFullYear()}-${p(local.getUTCMonth() + 1)}-${p(local.getUTCDate())}` +
-    `T${p(local.getUTCHours())}:${p(local.getUTCMinutes())}:${p(local.getUTCSeconds())}${offset}`
-  );
-}
+// THE TRANSLATION LAYER IS ITS OWN FILE because a check cannot import this
+// one: it reaches the Supabase client and an npm package. Re-exported so
+// every existing caller keeps the name it already uses.
+const row = await import(`./store.row.js${v}`);
+export const { TASK_COLUMNS, offsetOf, toRow, fromRow, shift } = row;
 
 export function makeSupabaseStore(config) {
   // The client is made once in `supabase.js` and shared, so the store and the

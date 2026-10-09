@@ -1221,8 +1221,18 @@ export function fromEvent(ev, opts) {
     due_at,
     has_time,
   };
-  const deadline_band = readBand(due_at, nowAt);
-  const due_phrase = readDuePhrase(dates, deadline_band, nowAt) || readFromPhrase(dates, nowAt);
+  // NO `due_phrase` AND NO `deadline_band` HERE (session 152, the defect that
+  // stopped his phone syncing for hours). Both are WORKING VALUES: `resolve()`
+  // returns them under `working` and never on the task, because the sentence is
+  // recomputed from `due_at` every time a row is drawn and a stored copy would
+  // be a second truth going stale the moment the clock moved past it.
+  //
+  // This function returned `due_phrase` ON THE RECORD. There is no column for
+  // it, PostgREST refused the whole row, and the outbox stops at the first
+  // failure to keep its order — so one imported task blocked every write behind
+  // it, typed ones included, and the only sign was a pill reading `5 waiting`
+  // in green. `check_writes.mjs` now reads `schema.sql` and fails any field the
+  // engine produces that has no column, which is the general form of this.
 
   return {
     id: opts.id,
@@ -1283,7 +1293,6 @@ export function fromEvent(ev, opts) {
     // again. The alarm, the type, the firmness, the notes, the pin and done are
     // his on every task and detach nothing.
     calendar_detached: false,
-    due_phrase,
   };
 }
 
