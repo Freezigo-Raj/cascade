@@ -40,7 +40,7 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
   contract     59
   config       a.23
   answer_key   29
-  shell        73
+  shell        74
   gate1        signed on example 35
   gate2        signed on contract 32
   gate3        signed on shell 1
@@ -76,37 +76,42 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 
 ## THIS SESSION'S JOB
 
-Session 157: the field that separates an empty calendar from a withheld one.
+Session 158: a button looks like a button, and the tag explains itself.
 
-**HIS REPORT.** The other user's Google Calendar syncs to the web and to the
-Android app, and still nothing reaches Cascade. The diagnostic said every
-calendar there held zero events, on a phone whose calendar plainly works.
+**HIS CALL: a person has to be able to tell what is clickable.** `.act` is
+10.5px uppercase quiet text with no border and no background. On a LIST ROW that
+is right — session 104 settled that row actions are subordinate by weight, size,
+tracking and contrast, because colour on that screen means three states and only
+three. On the account screen it meant `STOP READING THE CALENDAR`, `IMPORT NOW`
+and `LIST EVERY EVENT` were a heading, a switch and a diagnostic in one typeface
+at one size, with nothing saying which could be pressed.
 
-**A CALENDAR ROW AND ITS EVENTS ARE TWO DIFFERENT THINGS**, and only the row has
-ever been visible from here. `CalendarContract.Calendars.SYNC_EVENTS` says
-whether the phone STORES that calendar's events at all. At 0, the provider holds
-none and never will, while the Google Calendar app goes on showing them from its
-own copy. The row still lists, which is why `readable()` has always returned it.
+**SCOPED TO `[data-screen="account"]` AND NOWHERE ELSE**, which is the whole
+reason it is safe: the list's pins, bins and push rungs are `.act` too and keep
+every bit of their subordinacy. A rule written for one screen cannot reach the
+screen it was written against.
 
-**THAT IS THE DIFFERENCE FIVE SESSIONS COULD NOT SEE.** A calendar with nothing
-in the window and a calendar the phone keeps no events for produced the
-identical line, a count of zero — so every reading of that diagnostic was
-ambiguous in exactly the place the answer lay.
+**A PRESS IS VISIBLE ON PRESS.** A phone gives no hover, and without it a button
+that takes two seconds to answer looks like one that did nothing — which is
+precisely what `Checking…` and `Reading…` exist to say, and they only say it
+after the press has already registered.
 
-**THE TICK LIST SAYS IT ON THE ROW**, before he ticks it. Ticking a dead calendar
-looked exactly like ticking a working one and then delivered nothing for ever.
+**A DRAWN CONTROL THAT DOES NOT WORK YET KEEPS ITS WIP TREATMENT** and loses the
+border. One treatment everywhere has been the rule since session 109, and a
+pressable-looking frame would have quietly overruled it on the one screen whose
+job includes listing what is not built.
 
-**`undefined` IS NOT `false`.** On an APK older than build 4 the field is absent
-and the screen says nothing rather than claiming a calendar works or does not. A
-diagnostic that invents an answer when it could not ask is worse than one that
-stays quiet, and this exists because the quiet version was read as a finding.
+**THE TAG IS THREE WORDS AND THE EXPLANATION SITS UNDER THE LIST.** A tag short
+enough for a row is too short to act on, and the person reading it is on somebody
+else's phone with no way to ask what it means. The sentence says it: Android
+keeps one calendar store every app shares; an account always puts its calendar
+NAMES there, while the EVENTS are a separate switch per calendar; with that
+switch off Google Calendar still shows them from its own private copy and no
+other app can; and the fix is Google Calendar, menu, Settings, the calendar's
+name, Sync on.
 
-The sentence under the list names the fix and its scope: Google Calendar can
-still show those events from its own copy, nothing else on the phone can read
-them — not this app and not any other calendar app — and the switch is `Sync`
-per calendar in Google Calendar's own settings.
-
-Calendar shell build 4. The APK must be rebuilt. All nine checks green.
+No migration. No Kotlin change, so the calendar build is unchanged from 157 and
+the APK rebuild owed there still covers this. All nine checks green.
 
 ## NEXT THREE JOBS
 
@@ -1074,3 +1079,8 @@ have landed. That is the price of the single table and it is accepted.
 - 9 Oct 2026 — THAT IS THE DIFFERENCE FIVE SESSIONS COULD NOT SEE. A calendar with nothing in the window and a calendar the phone keeps no events for produced the identical line — a count of zero — so every reading of that diagnostic was ambiguous in exactly the place the answer lay. The tick list now says `not stored on this phone` on the row itself, before he ticks it, because ticking one looked like ticking a working calendar and then delivered nothing for ever.
 - 9 Oct 2026 — `undefined` IS NOT `false`: on an APK older than build 4 the field is absent and the screen says nothing rather than claiming a calendar works or does not. A diagnostic that invents an answer when it could not ask is worse than one that stays quiet, and this one exists because the quiet version was read as a finding.
 - 9 Oct 2026 — The sentence under the list names the fix and its scope: Google Calendar can still show those events from its own copy, nothing else on the phone can read them — not this app and not any other calendar app — and the switch is `Sync` per calendar in Google Calendar's own settings.
+- 10 Oct 2026 — EVERY BUTTON ON THE ACCOUNT SCREEN LOOKS LIKE A BUTTON, his call that a person has to be able to tell what is clickable: `.act` is 10.5px uppercase quiet text with no border and no background, and on a LIST ROW that is right — session 104 settled that row actions are subordinate by weight, size, tracking and contrast because colour there means three states and only three — but on this screen it meant that `STOP READING THE CALENDAR`, `IMPORT NOW` and `LIST EVERY EVENT` were a heading, a switch and a diagnostic rendered in one typeface at one size, with nothing saying which could be pressed.
+- 10 Oct 2026 — SCOPED TO `[data-screen="account"]` AND NOWHERE ELSE, which is the whole reason it is safe to do at all: the list's pins, bins and push rungs are `.act` too and keep every bit of their subordinacy, so a rule written for one screen cannot reach the screen it was written against.
+- 10 Oct 2026 — A PRESS IS VISIBLE ON PRESS, because a phone gives no hover and without it a button that takes two seconds to answer looks like one that did nothing — which is precisely what `Checking…` and `Reading…` exist to say, and they only say it after the press has already registered.
+- 10 Oct 2026 — A DRAWN CONTROL THAT DOES NOT WORK YET KEEPS ITS WIP TREATMENT and loses the border: one treatment everywhere has been the rule since session 109, and a pressable-looking frame would have quietly overruled it on the one screen that lists what is not built.
+- 10 Oct 2026 — THE TAG IS THREE WORDS AND THE EXPLANATION SITS UNDER THE LIST: `NOT STORED ON THIS PHONE` is short enough for a row and too short to act on, and the person reading it is on somebody else's phone with no way to ask what it means — the sentence under the tick list says that Android keeps one calendar store every app shares, that an account always puts its calendar NAMES there while the EVENTS are a separate switch per calendar, that Google Calendar still shows them from its own private copy when that switch is off, and that the fix is Google Calendar, menu, Settings, the calendar's name, Sync on.

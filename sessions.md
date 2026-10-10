@@ -4251,3 +4251,50 @@ On an APK older than build 4 the field is absent, and the screen says nothing ra
 A diagnostic that invents an answer when it could not ask is worse than one that stays quiet. This exists because the quiet version was read as a finding.
 
 **Shell 73. Calendar shell build 4 — the APK must be rebuilt.** One Kotlin file, one new column, no new permissions. All nine checks green.
+
+---
+
+## Session 158 — 10 October 2026
+
+**His two things.** Buttons on the account screen need to look like buttons. And: explain what `NOT STORED ON THIS PHONE` means.
+
+### A button looks like a button
+
+`.act` is 10.5px uppercase quiet text, no border, no background.
+
+On a **list row** that is right. Session 104 settled it: row actions are subordinate by weight, size, tracking and contrast, because colour on that screen means three states and only three.
+
+On the **account screen** it meant these three were rendered identically:
+
+| What it is | What it looked like |
+|---|---|
+| `STOP READING THE CALENDAR` — a switch | a heading |
+| `IMPORT NOW` — an action | a heading |
+| `LIST EVERY EVENT` — a diagnostic | a heading |
+
+One typeface, one size, nothing saying which could be pressed.
+
+They are bordered pills now, 40px tall, in the signal colour.
+
+**Scoped to `[data-screen="account"]` and nowhere else**, which is the whole reason it is safe to change at all. The list's pins, bins and push rungs are `.act` too and keep every bit of their subordinacy.
+
+**A press is visible on press.** A phone gives no hover, so without it a button that takes two seconds to answer looks like one that did nothing — which is exactly what `Checking…` and `Reading…` exist to say, and they only say it after the press has already registered.
+
+**A drawn control that does not work yet keeps its WIP treatment** and loses the border. One treatment everywhere has been the rule since session 109, and a pressable-looking frame would have quietly overruled it on the one screen whose job includes listing what is not built.
+
+### What the tag means, in the app
+
+Android keeps **one calendar store that every app shares**.
+
+| Google Calendar's per-calendar `Sync` switch | The calendar's NAME is in the store | Its EVENTS are in the store |
+|---|---|---|
+| on | yes | yes |
+| off | yes | **no** |
+
+With it off, Google Calendar still shows those events from its own private copy. No other app on the phone can see them. Ticking such a calendar in Cascade will never bring anything in.
+
+The row tag is now three words, `no events here`, and a sentence under the tick list says all of the above and names the fix: Google Calendar → menu → Settings → tap the calendar's name → **Sync** on.
+
+A tag short enough to sit on a row is too short to act on, and the person reading it is on somebody else's phone with no way to ask what it means.
+
+**Shell 74. No migration, no Kotlin change.** The calendar build is unchanged from 157, so the APK rebuild already owed covers this too. All nine checks green.

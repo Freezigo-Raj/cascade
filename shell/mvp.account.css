@@ -21,8 +21,73 @@
   margin-bottom: calc(var(--step) * 2);
 }
 [data-screen="account"] .said { font-size: 13.5px; line-height: 1.6; color: var(--quiet); max-width: 52ch; }
-[data-screen="account"] .group > .act { display: block; }
-[data-screen="account"] .group > .act + .said { margin-top: var(--step); }
+/* A BUTTON ON THIS SCREEN LOOKS LIKE A BUTTON (session 158, his call: the
+   user has to be able to tell what is clickable).
+   
+   `.act` is 10.5px uppercase quiet text, and on a ROW that is right: session
+   104 settled that row actions are subordinate by weight, size, tracking and
+   contrast, because colour on that screen means three states and only three.
+   Here it was wrong. `IMPORT NOW` and `LIST EVERY EVENT` sat under a `STOP
+   READING THE CALENDAR` heading in the same 10.5px uppercase, so three things
+   that do three different jobs — a heading, a switch and a diagnostic — were
+   one typeface at one size, and nothing said which could be pressed.
+   
+   SCOPED TO THIS SCREEN ONLY, which is the whole reason it is safe: the list's
+   pins, bins and push rungs are `.act` too and keep every bit of their
+   subordinacy. */
+[data-screen="account"] .group > .act,
+[data-screen="account"] .bar > .act {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 calc(var(--step) * 4);
+  margin-top: calc(var(--step) * 2);
+  border: 1px solid var(--signal);
+  border-radius: var(--r-pill);
+  background: var(--sheet);
+  color: var(--signal-deep);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  /* A press target a thumb can hit without aiming, and a width that does not
+     stretch a two-word button across the screen. */
+  max-width: 100%;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 90ms ease, transform 90ms ease;
+}
+[data-screen="account"] .group > .act { display: flex; width: fit-content; }
+[data-screen="account"] .group > .act:hover,
+[data-screen="account"] .bar > .act:hover,
+[data-screen="account"] .group > .act:focus-visible,
+[data-screen="account"] .bar > .act:focus-visible {
+  background: var(--signal-wash);
+  color: var(--signal-deep);
+}
+/* PRESSED IS A THING YOU SEE. A phone gives no hover, so without this a press
+   that takes two seconds to answer looks like a press that did nothing — which
+   is what `Checking…` and `Reading…` exist to say, and they only say it after
+   the press has registered. */
+[data-screen="account"] .group > .act:active,
+[data-screen="account"] .bar > .act:active {
+  background: var(--sunk);
+  transform: translateY(1px);
+}
+/* A DRAWN CONTROL THAT DOES NOT WORK YET MUST NOT LOOK PRESSABLE. The WIP
+   treatment is one thing everywhere (session 109) and the border would have
+   quietly overruled it here. */
+[data-screen="account"] .group > .act.later {
+  border-color: var(--edge);
+  background: transparent;
+  color: var(--quiet);
+}
+[data-screen="account"] .group > .act + .said { margin-top: calc(var(--step) * 2); }
+@media (prefers-reduced-motion: reduce) {
+  [data-screen="account"] .group > .act,
+  [data-screen="account"] .bar > .act { transition: none; }
+  [data-screen="account"] .group > .act:active,
+  [data-screen="account"] .bar > .act:active { transform: none; }
+}
 
 .stat {
   display: flex;
@@ -125,10 +190,15 @@
    looked identical to a calendar that simply had nothing in the window. */
 .cal-dead {
   margin-left: auto;
-  font-size: 11px;
+  font-size: 10.5px;
   letter-spacing: .04em;
   text-transform: uppercase;
   color: var(--warn);
   text-align: right;
-  flex: 0 1 auto;
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
+/* The tick row has to hold a box, a calendar name of any length and the tag.
+   The NAME is what gives way, because the tag is three words and the box is a
+   press target. */
+.cal-tick > span:not(.cal-dead) { min-width: 0; overflow-wrap: anywhere; }

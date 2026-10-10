@@ -582,11 +582,28 @@ export function mountAccount(root, { onBack, onSignedOut } = {}) {
                 // APK is older than the build that can ask, and nothing is
                 // claimed in that case.
                 if (c.syncEvents === false) {
-                  row.appendChild(el("span", "cal-dead", "not stored on this phone"));
+                  row.appendChild(el("span", "cal-dead", "no events here"));
                 }
                 group.appendChild(row);
               }
               cal.appendChild(group);
+            }
+
+            // ONE SENTENCE, WHERE THE TAG IS (session 158). The tag has to be
+            // short enough to sit on a row, which makes it too short to act on
+            // — and the person reading it on the other phone is not the person
+            // who can ask me what it means.
+            const dead = (readable ?? []).filter((c) => c.syncEvents === false);
+            if (dead.length) {
+              const why = el("div", "said",
+                `${dead.length} calendar${dead.length === 1 ? "" : "s"} above say${dead.length === 1 ? "s" : ""} "no events here". ` +
+                "Android keeps one calendar store that every app shares. A Google account always puts its calendar NAMES in it, " +
+                "but whether the EVENTS are copied down is a separate switch, one per calendar. " +
+                "With that switch off, Google Calendar still shows the events from its own private copy, and no other app on the phone can see them. " +
+                "Ticking such a calendar here will never bring anything in. " +
+                "To fix it: open Google Calendar, menu, Settings, tap that calendar's name, and turn Sync on.");
+              why.dataset.cal = "read";
+              cal.appendChild(why);
             }
 
             const sw2 = button("act" + (importing ? " on" : ""),

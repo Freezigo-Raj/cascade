@@ -1,4 +1,4 @@
-CASCADE — sessions 137 to 157. READ THIS BEFORE COMMITTING.
+CASCADE — sessions 137 to 158. READ THIS BEFORE COMMITTING.
 
 Three things must happen by hand. Do them in this order: the migration, the
 deletions, then the APK.
@@ -100,7 +100,7 @@ AFTER DELETING THE SIX FILES, run this and it must say GATE 2: PASS —
 
   python3 gate2.py
 
-Header should read build 73.
+Header should read build 74.
 
 
 == THEN ON THE PHONE, ACCOUNT SCREEN ==
@@ -126,6 +126,30 @@ like working sync right up to the day you install the app somewhere else.
 
 "events", "holidays" and "birthdays" are each their own CALENDAR in Google, not
 a type of event, which is why the choice is a tick list rather than a switch.
+
+
+== WHAT CHANGED IN SESSION 158 ==
+
+BUTTONS ON THE ACCOUNT SCREEN NOW LOOK LIKE BUTTONS. They were 10.5px grey
+uppercase text with no border, identical to the headings above them, so
+"IMPORT NOW" and "LIST EVERY EVENT" read as titles rather than controls. They
+are bordered pills now, and they visibly depress when pressed.
+
+Only on the account screen. The task rows keep their quiet pins, bins and push
+buttons exactly as they were.
+
+THE CALENDAR TAG IS SHORTER AND EXPLAINS ITSELF. The row now reads
+"no events here", and a sentence under the tick list says what that means and
+how to fix it, so whoever is holding the phone does not have to ask you:
+
+  Android keeps one calendar store that every app shares. A Google account
+  always puts its calendar NAMES in it, but whether the EVENTS are copied down
+  is a separate switch, one per calendar. With that switch off, Google Calendar
+  still shows the events from its own private copy, and no other app on the
+  phone can see them. Ticking such a calendar here will never bring anything in.
+  Fix: Google Calendar, menu, Settings, tap that calendar's name, Sync on.
+
+No Kotlin change in this one. The APK rebuild owed from session 157 covers both.
 
 
 == WHAT CHANGED IN SESSION 157 — REBUILD THE APK ==
