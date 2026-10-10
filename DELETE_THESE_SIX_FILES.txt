@@ -1,4 +1,4 @@
-CASCADE — sessions 137 to 156. READ THIS BEFORE COMMITTING.
+CASCADE — sessions 137 to 157. READ THIS BEFORE COMMITTING.
 
 Three things must happen by hand. Do them in this order: the migration, the
 deletions, then the APK.
@@ -100,7 +100,7 @@ AFTER DELETING THE SIX FILES, run this and it must say GATE 2: PASS —
 
   python3 gate2.py
 
-Header should read build 72.
+Header should read build 73.
 
 
 == THEN ON THE PHONE, ACCOUNT SCREEN ==
@@ -126,6 +126,34 @@ like working sync right up to the day you install the app somewhere else.
 
 "events", "holidays" and "birthdays" are each their own CALENDAR in Google, not
 a type of event, which is why the choice is a tick list rather than a switch.
+
+
+== WHAT CHANGED IN SESSION 157 — REBUILD THE APK ==
+
+THE ANSWER TO THE OTHER PHONE, and it needed one field I had never read.
+
+Android records, per calendar, whether the phone STORES that calendar's events
+at all. The calendar ROW can be there while the EVENTS are not. When that is
+the case, Google Calendar still shows the events from its own copy, so the web
+and the Android app both look fine, and NOTHING ELSE ON THE PHONE CAN READ
+THEM. Not Cascade, not any other calendar app.
+
+Until now a calendar like that and a genuinely empty one both showed "0 events"
+in my diagnostic, which is why five sessions could not tell them apart.
+
+NOW THE TICK LIST SAYS IT, on the row, before you tick it:
+
+  [ ] khushbu.dhami7@gmail.com        NOT STORED ON THIS PHONE
+
+And under the event list it names the fix: turn Sync on for those calendars in
+Google Calendar's own settings (menu -> Settings -> tap the calendar -> Sync).
+
+THE APK MUST BE REBUILT for this. Calendar shell build 4, one Kotlin file,
+one extra column, no new permissions:
+
+  android\app\src\main\java\com\cascade\calendar\CascadeCalendarPlugin.kt
+
+On an older APK the app simply says nothing about storage rather than guessing.
 
 
 == WHAT CHANGED IN SESSION 156 ==

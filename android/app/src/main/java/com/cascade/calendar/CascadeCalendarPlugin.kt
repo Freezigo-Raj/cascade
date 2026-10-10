@@ -57,7 +57,7 @@ class CascadeCalendarPlugin : Plugin() {
          * open; this half only changes when the APK is rebuilt, so the two
          * drift by design and the app has to be able to see how far.
          */
-        const val CALENDAR_BUILD = 3
+        const val CALENDAR_BUILD = 4
 
         private const val PERM_REQUEST = 9101
 
@@ -172,7 +172,17 @@ class CascadeCalendarPlugin : Plugin() {
             CalendarContract.Calendars.ACCOUNT_TYPE,
             CalendarContract.Calendars.CALENDAR_ACCESS_LEVEL,
             CalendarContract.Calendars.IS_PRIMARY,
-            CalendarContract.Calendars.VISIBLE
+            CalendarContract.Calendars.VISIBLE,
+            // DOES THIS PHONE STORE THIS CALENDAR'S EVENTS AT ALL (build 4,
+            // session 157). It is the field that separates the two things that
+            // have looked identical for five sessions: a calendar the phone
+            // keeps events for, and a calendar the phone merely KNOWS ABOUT.
+            // The row exists either way, which is why `readable()` has always
+            // listed it; with `SYNC_EVENTS` at 0 the provider holds no events
+            // for it and never will, while the Google Calendar app can still
+            // show them from its own store. Nothing in this app could see that
+            // difference, so an empty calendar and a withheld one read the same.
+            CalendarContract.Calendars.SYNC_EVENTS
         )
         runCatching {
             context.contentResolver.query(
@@ -188,6 +198,7 @@ class CascadeCalendarPlugin : Plugin() {
                             .put("writable", c.getInt(4) >= CAN_WRITE)
                             .put("primary", c.getInt(5) == 1)
                             .put("visible", c.getInt(6) == 1)
+                            .put("syncEvents", c.getInt(7) == 1)
                     )
                 }
             }

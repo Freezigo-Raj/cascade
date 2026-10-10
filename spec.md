@@ -40,7 +40,7 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
   contract     59
   config       a.23
   answer_key   29
-  shell        72
+  shell        73
   gate1        signed on example 35
   gate2        signed on contract 32
   gate3        signed on shell 1
@@ -76,45 +76,37 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 
 ## THIS SESSION'S JOB
 
-Session 156: the diagnostic could not be read, and then it answered the question.
+Session 157: the field that separates an empty calendar from a withheld one.
 
-**IT SORTED ALPHABETICALLY ON A FORMATTED DATE.** His screenshots: `1 Nov, 10
-Oct, 11 Nov, 11 Oct, 12 Oct`. The field that printed the date was also the field
-it sorted on, so a 14 October entry fell between `13 Oct` and `15 Nov`. The
-instant is its own field now. A diagnostic that cannot be read is not a
-diagnostic, and this one exists because aggregate numbers were not enough.
+**HIS REPORT.** The other user's Google Calendar syncs to the web and to the
+Android app, and still nothing reaches Cascade. The diagnostic said every
+calendar there held zero events, on a phone whose calendar plainly works.
 
-**BOTH REPORTS CARRY THE TIME THEY WERE READ.** The text stays on screen after a
-press, so a `Read 13 events` from 17:21 was taken as evidence about an event
-created at 17:48.
+**A CALENDAR ROW AND ITS EVENTS ARE TWO DIFFERENT THINGS**, and only the row has
+ever been visible from here. `CalendarContract.Calendars.SYNC_EVENTS` says
+whether the phone STORES that calendar's events at all. At 0, the provider holds
+none and never will, while the Google Calendar app goes on showing them from its
+own copy. The row still lists, which is why `readable()` has always returned it.
 
-**EVENTS ARE LISTED ONLY FROM THE CALENDARS HE TICKED**, his ask, while every
-calendar keeps its count. A count is one line and is the whole answer to why
-nothing arrives from a calendar; the events behind it were sixty-eight lines,
-mostly three copies of each Indian holiday.
+**THAT IS THE DIFFERENCE FIVE SESSIONS COULD NOT SEE.** A calendar with nothing
+in the window and a calendar the phone keeps no events for produced the
+identical line, a count of zero — so every reading of that diagnostic was
+ambiguous in exactly the place the answer lay.
 
-**AND THEN THE TEST ANSWERED FIVE SESSIONS OF THIS.** He stopped that account's
-sync, created `Offline calendar check` on 14 October, and it is in neither the
-import nor the full event list — on a phone whose calendar is otherwise healthy,
-sixty-eight events read, fifteen Indian holidays among them. **An event created
-in Google Calendar while sync is off does not reach the phone's calendar
-database at all.** Google Calendar holds it in its own pending store until the
-adapter runs. The provider never sees it, so no app on that phone can, this one
-included.
+**THE TICK LIST SAYS IT ON THE ROW**, before he ticks it. Ticking a dead calendar
+looked exactly like ticking a working one and then delivered nothing for ever.
 
-**THAT EXPLAINS THE SECOND PHONE WITH NO MORE GUESSING.** Its account last synced
-in 2025, so every event made on it since has lived in that pending store. Which
-is why `Holidays in India` read zero, why the meeting he wanted was nowhere, and
-why no APK or import rule could ever have reached it.
+**`undefined` IS NOT `false`.** On an APK older than build 4 the field is absent
+and the screen says nothing rather than claiming a calendar works or does not. A
+diagnostic that invents an answer when it could not ask is worse than one that
+stays quiet, and this exists because the quiet version was read as a finding.
 
-**SESSION 153'S IMPORT OF UNSYNCED EVENTS IS NARROWER THAN IT LOOKED**, recorded
-rather than reverted. It is still right for an event another app writes straight
-into the provider, and `rowid` can still appear. It is not the route by which a
-Google Calendar event made offline arrives, because that event is not there to
-be read. The rule costs nothing; the reasoning behind it was wrong about the
-common case.
+The sentence under the list names the fix and its scope: Google Calendar can
+still show those events from its own copy, nothing else on the phone can read
+them — not this app and not any other calendar app — and the switch is `Sync`
+per calendar in Google Calendar's own settings.
 
-No migration, no APK. All nine checks green.
+Calendar shell build 4. The APK must be rebuilt. All nine checks green.
 
 ## NEXT THREE JOBS
 
@@ -1078,3 +1070,7 @@ have landed. That is the price of the single table and it is accepted.
 - 9 Oct 2026 — AN EVENT CREATED IN GOOGLE CALENDAR WHILE THAT ACCOUNT'S SYNC IS OFF DOES NOT REACH THE PHONE'S CALENDAR DATABASE AT ALL, which his own test establishes and which is the answer to five sessions of this: he stopped sync, added `Offline calendar check` on 14 October, and it is in neither the import nor the full event list on a phone whose calendar is otherwise healthy — sixty-eight events read, fifteen Indian holidays among them. Google Calendar holds such an event in its own pending store until the adapter runs; the provider never sees it, so no app on that phone can, this one included.
 - 9 Oct 2026 — THAT EXPLAINS THE SECOND PHONE WITHOUT ANY MORE GUESSING: its account last synced in 2025, so every event made on it since has lived in Google Calendar's pending store and never entered the provider — which is why `Holidays in India` read zero and why the meeting he wanted was nowhere, and why no APK or import rule could ever have reached it. The repair is to make that account sync, and nothing in this app is on the path.
 - 9 Oct 2026 — SESSION 153'S IMPORT OF UNSYNCED EVENTS IS NARROWER THAN IT LOOKED, recorded rather than reverted: it is still right for an event another app writes straight into the provider, and `rowid` can still appear, but it is NOT the route by which a Google Calendar event made offline arrives, because that event is not in the provider to be read. The rule costs nothing and the reasoning behind it was wrong about the common case.
+- 9 Oct 2026 — A CALENDAR ROW AND ITS EVENTS ARE TWO DIFFERENT THINGS, and only the row has ever been visible from here: `CalendarContract.Calendars.SYNC_EVENTS` says whether the phone STORES a calendar's events at all, and with it at 0 the provider holds none and never will while the Google Calendar app goes on showing them from its own copy — which is precisely his report, that the other user's calendar syncs to the web and to the Android app but reaches nothing in Cascade. Calendar shell build 4 reads it.
+- 9 Oct 2026 — THAT IS THE DIFFERENCE FIVE SESSIONS COULD NOT SEE. A calendar with nothing in the window and a calendar the phone keeps no events for produced the identical line — a count of zero — so every reading of that diagnostic was ambiguous in exactly the place the answer lay. The tick list now says `not stored on this phone` on the row itself, before he ticks it, because ticking one looked like ticking a working calendar and then delivered nothing for ever.
+- 9 Oct 2026 — `undefined` IS NOT `false`: on an APK older than build 4 the field is absent and the screen says nothing rather than claiming a calendar works or does not. A diagnostic that invents an answer when it could not ask is worse than one that stays quiet, and this one exists because the quiet version was read as a finding.
+- 9 Oct 2026 — The sentence under the list names the fix and its scope: Google Calendar can still show those events from its own copy, nothing else on the phone can read them — not this app and not any other calendar app — and the switch is `Sync` per calendar in Google Calendar's own settings.

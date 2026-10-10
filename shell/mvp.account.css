@@ -119,3 +119,16 @@
    `overscroll-behavior: contain` swallows the gesture rather than handing it
    to the page, so the list simply stops. The page scrolls perfectly well on
    its own and the whole point of this block is reading all of it. */
+
+/* A CALENDAR THE PHONE KEEPS NO EVENTS FOR (session 157). Ticking one can
+   never deliver anything, and until the Kotlin could read `SYNC_EVENTS` it
+   looked identical to a calendar that simply had nothing in the window. */
+.cal-dead {
+  margin-left: auto;
+  font-size: 11px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--warn);
+  text-align: right;
+  flex: 0 1 auto;
+}

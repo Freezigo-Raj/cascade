@@ -95,7 +95,16 @@ provider, on a calendar owned by a Google account, and Google's sync adapter
 carries it up. No Cloud project, no consent screen, no verification, no token
 to refresh, and it works with no signal.
 
-### Calendar build 3 (session 153) — the APK must be rebuilt
+### Calendar build 4 (session 157) — the APK must be rebuilt
+
+`readable()` returns `syncEvents`, which is `CalendarContract.Calendars.SYNC_EVENTS`.
+It is the field that separates a calendar the phone keeps events for from one it
+merely knows about: with it at 0 the provider holds no events and never will,
+while the Google Calendar app still shows them from its own store. Without it, an
+empty calendar and a withheld one are the same line. One column, no new
+permissions.
+
+### Calendar build 3 (session 153)
 
 `events()` returns `rowId`, the provider's own row id, on every event. One line.
 It is what lets a task imported from an event Google has never seen be relinked
@@ -104,7 +113,7 @@ re-added with the alarm lost. No new permissions.
 
 ### Calendar build 2 (session 148)
 
-`CascadeCalendarPlugin.kt` states `CALENDAR_BUILD = 3` and the account screen
+`CascadeCalendarPlugin.kt` states `CALENDAR_BUILD = 4` and the account screen
 prints what it found, so a web half expecting 2 against an APK carrying 1 is
 visible rather than silent. Three new methods, all read-only:
 

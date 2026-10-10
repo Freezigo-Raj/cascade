@@ -44,7 +44,7 @@ const nowIso = () => {
 };
 
 /** What `CascadeCalendarPlugin.kt` states as its own build. */
-export const CALENDAR_SHELL_EXPECTED = 3;
+export const CALENDAR_SHELL_EXPECTED = 4;
 
 const ON_KEY = "cascade:calendar-on";
 const CAL_KEY = "cascade:calendar-id";
@@ -529,6 +529,11 @@ export async function diagnoseCalendar() {
 
   const ticked = new Set(readCalendars().map(String));
   const nameOf = new Map(cals.map((c) => [String(c.id), String(c.name || c.account || c.id)]));
+  // WHETHER THE PHONE KEEPS THIS CALENDAR'S EVENTS AT ALL (session 157). A
+  // calendar can be listed, ticked and completely empty forever, because the
+  // row and the events are two different things and only the row was ever
+  // visible from here.
+  const storesOf = new Map(cals.map((c) => [String(c.id), c.syncEvents]));
   const everyId = cals.map((c) => String(c.id));
 
   const nowMs = Date.now();
@@ -584,6 +589,9 @@ export async function diagnoseCalendar() {
       name: nameOf.get(id) ?? `id ${id}`,
       ticked: ticked.has(id),
       events: perCal.get(id) ?? 0,
+      // UNDEFINED ON AN OLDER APK, and the screen says nothing then rather
+      // than guessing. `false` is a finding; "I could not ask" is not.
+      stores: storesOf.get(id),
     })),
     rows,
     from: dayOf(fromMs),

@@ -4202,3 +4202,52 @@ Recorded, not reverted. Importing events carried on a provider row id is still r
 The rule costs nothing. The reasoning behind it was wrong about the common case, which is worth writing down.
 
 **Shell 72. No migration, no APK.** All nine checks green.
+
+---
+
+## Session 157 — 9 October 2026
+
+**His report:** the other user's Google Calendar syncs to the web and to the Android app, and still nothing reaches Cascade.
+
+That is the contradiction I had been circling. The diagnostic said every calendar on that phone held zero events, on a phone whose calendar plainly works.
+
+### A calendar row and its events are two different things
+
+Only the row has ever been visible from here.
+
+`CalendarContract.Calendars.SYNC_EVENTS` says whether the phone **stores** that calendar's events at all. At 0 the provider holds none and never will, while the Google Calendar app goes on showing them from its own copy. The calendar row still lists, which is why `readable()` has always returned it.
+
+| What the phone has | What this app could see | What it means |
+|---|---|---|
+| calendar row, events stored | the events | normal |
+| calendar row, **no** events stored | a count of zero | nothing will ever arrive |
+| no calendar row | nothing at all | account not on the phone |
+
+The middle row and a genuinely empty calendar produced the **identical line**. Every reading of that diagnostic was ambiguous in exactly the place the answer lay.
+
+### What it says now
+
+In the tick list, on the row itself, before you tick it:
+
+```
+[ ] khushbu.dhami7@gmail.com        NOT STORED ON THIS PHONE
+```
+
+And under the event list:
+
+```
+6 calendars keep no events on this phone. Google Calendar can still show
+them from its own copy, but nothing else on the phone can read them — not
+this app and not any other calendar app. Turn Sync on for those calendars
+in Google Calendar's settings.
+```
+
+Ticking a dead calendar used to look exactly like ticking a working one, and then delivered nothing for ever.
+
+### `undefined` is not `false`
+
+On an APK older than build 4 the field is absent, and the screen says nothing rather than claiming a calendar works or does not.
+
+A diagnostic that invents an answer when it could not ask is worse than one that stays quiet. This exists because the quiet version was read as a finding.
+
+**Shell 73. Calendar shell build 4 — the APK must be rebuilt.** One Kotlin file, one new column, no new permissions. All nine checks green.

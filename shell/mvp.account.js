@@ -575,6 +575,15 @@ export function mountAccount(root, { onBack, onSignedOut } = {}) {
                 });
                 row.appendChild(box);
                 row.appendChild(el("span", "", c.name || "(unnamed)"));
+                // A CALENDAR THAT KEEPS NO EVENTS ON THIS PHONE SAYS SO BEFORE
+                // IT IS TICKED (session 157). Ticking one looked exactly like
+                // ticking a working calendar and then delivered nothing for
+                // ever, which is five sessions of this. `undefined` means the
+                // APK is older than the build that can ask, and nothing is
+                // claimed in that case.
+                if (c.syncEvents === false) {
+                  row.appendChild(el("span", "cal-dead", "not stored on this phone"));
+                }
                 group.appendChild(row);
               }
               cal.appendChild(group);
@@ -693,13 +702,27 @@ export function mountAccount(root, { onBack, onSignedOut } = {}) {
               // (session 156, his ask). A count is one line and answers "why
               // does nothing come from that one"; the events behind it were
               // sixty-eight lines, mostly triplicate Indian holidays.
+              // `stores: false` IS THE ANSWER TO FIVE SESSIONS OF THIS: the
+              // phone knows the calendar and keeps none of its events, which
+              // looked exactly like an empty calendar from here until the
+              // Kotlin started reading it.
+              const count = (c) => (c.stores === false
+                ? "NOT STORED ON THIS PHONE"
+                : `${c.events} event${c.events === 1 ? "" : "s"}`);
               for (const c of r.calendars) {
-                if (c.ticked) out.push(`[x] ${c.name} — ${c.events} event${c.events === 1 ? "" : "s"}`);
+                if (c.ticked) out.push(`[x] ${c.name} — ${count(c)}`);
               }
               const off = r.calendars.filter((c) => !c.ticked);
               if (off.length) {
                 out.push("", "Not ticked, so their events are not listed:");
-                for (const c of off) out.push(`[ ] ${c.name} — ${c.events}`);
+                for (const c of off) out.push(`[ ] ${c.name} — ${count(c)}`);
+              }
+              const dead = r.calendars.filter((c) => c.stores === false);
+              if (dead.length) {
+                out.push("",
+                  `${dead.length} calendar${dead.length === 1 ? " keeps" : "s keep"} no events on this phone. ` +
+                  "Google Calendar can still show them from its own copy, but nothing else on the phone can read them — " +
+                  "not this app and not any other calendar app. Turn Sync on for those calendars in Google Calendar's settings.");
               }
               out.push("", `${r.rows.length} event${r.rows.length === 1 ? "" : "s"} on the ticked calendars:`);
               // Each event on two lines, because a phone is narrow and a title
