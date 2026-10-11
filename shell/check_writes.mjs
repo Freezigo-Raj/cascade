@@ -28,6 +28,7 @@ import { catchUpRepeats } from "./catchup.js";
 import { readFileSync } from "node:fs";
 import { resolve, fromEvent } from "./resolve.js";
 import { TASK_COLUMNS, toRow } from "./store.row.js";
+import { fromOffer } from "./offer.js";
 
 let bad = 0;
 const say = (ok, what) => {
@@ -406,6 +407,11 @@ console.log("\nEVERY FIELD HAS A COLUMN — the record and the table, both ways.
     startMs: Date.parse("2026-11-08T00:00:00Z"), endMs: 0,
     selfStatus: 1, calendarId: "7", uidFrom: "uid2445",
   }, { id: "t3", now: NOW, config }));
+
+  audit("a task accepted from an offer", fromOffer(
+    { id: "o-1", payload: { title: "fix the chiller", due_at: NOW, has_time: false } },
+    { now: NOW, config },
+  ));
 
   // AND THE ROW ITSELF, which is what actually reaches Postgres.
   const row = toRow(fromEvent({

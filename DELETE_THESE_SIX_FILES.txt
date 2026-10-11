@@ -1,4 +1,4 @@
-CASCADE — sessions 137 to 158. READ THIS BEFORE COMMITTING.
+CASCADE — sessions 137 to 159. READ THIS BEFORE COMMITTING.
 
 Three things must happen by hand. Do them in this order: the migration, the
 deletions, then the APK.
@@ -100,7 +100,7 @@ AFTER DELETING THE SIX FILES, run this and it must say GATE 2: PASS —
 
   python3 gate2.py
 
-Header should read build 74.
+Header should read build 75.
 
 
 == THEN ON THE PHONE, ACCOUNT SCREEN ==
@@ -126,6 +126,38 @@ like working sync right up to the day you install the app somewhere else.
 
 "events", "holidays" and "birthdays" are each their own CALENDAR in Google, not
 a type of event, which is why the choice is a tick list rather than a switch.
+
+
+== WHAT CHANGED IN SESSION 159 — RUN A MIGRATION ==
+
+GIVING A TASK TO ANOTHER PERSON. This build is the database and the rules.
+THERE IS NOTHING TO PRESS YET: build 75 looks and behaves exactly like 74.
+The screens are session 160.
+
+RUN THIS IN THE SUPABASE SQL EDITOR:
+
+  migrate_offers.sql
+
+It adds one column to cascade_task (offer_id) and one new table
+(cascade_offer) with its policies and a guard trigger. Safe to run twice.
+
+WHY THE MIGRATION GOES FIRST AND THE SCREENS SECOND: the database part is the
+risky part and the part everything else depends on. The three screens this
+needs are in the one layer no automatic check can reach, which is your own
+rule, so they get a session with full attention rather than the end of a long
+one.
+
+HOW IT WILL WORK, so the table makes sense when you read it:
+
+  - you send a task to an email address. Your task stays, marked "Offered to"
+  - the other person sees it, can correct the title or date, then accepts or
+    declines with a reason
+  - on accept, they get a task of their own and yours is deleted
+  - on decline, yours stays and shows their reason
+  - what you gave away stays listed for you, and shows when they finish it
+
+Nobody can list who else uses the app. Each person can read only the offers
+they sent and the offers addressed to their own email address.
 
 
 == WHAT CHANGED IN SESSION 158 ==

@@ -195,6 +195,9 @@ export interface Task {
    * detach nothing.
    */
   calendar_detached: boolean;
+
+  /** Which offer this task came from. Empty on a task its owner typed. */
+  offer_id: string;
 }
 
 // UNDO IS GONE (session 137). One entry restoring a whole record with a fresh

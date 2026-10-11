@@ -136,6 +136,11 @@ create table if not exists cascade_task (
   calendar_uid       text not null default '',
   calendar_detached  boolean not null default false,
 
+  -- WHICH OFFER THIS TASK CAME FROM (session 159), empty on a task its owner
+  -- typed. It is what lets the row say `from vishal@…`, and what lets the
+  -- recipient's app tell the offer that the work is finished.
+  offer_id           text not null default '',
+
   created_at         timestamptz not null,
   created_at_offset  text not null,
   updated_at         timestamptz not null,
@@ -201,6 +206,46 @@ create policy "task update own" on cascade_task
 drop policy if exists "task delete own" on cascade_task;
 create policy "task delete own" on cascade_task
   for delete to authenticated using (auth.uid() = owner);
+
+create index if not exists cascade_task_offer
+  on cascade_task (owner, offer_id)
+  where offer_id <> '';
+
+-- ------------------------------------------------------------------ offers
+--
+-- HANDING A TASK TO ANOTHER PERSON (session 159). The full reasoning, the
+-- policies and the guard trigger are in `migrate_offers.sql`, which is the file
+-- that has to be run against a database that already exists; this is the same
+-- thing stated for a database being made from nothing.
+--
+-- THE ONE DECISION IT ALL RESTS ON: THE TASK NEVER MOVES. `cascade_task` is
+-- one owner and four policies, and the store, the outbox and the newest-wins
+-- trigger all assume it. A handover is a separate row that two people can see;
+-- on accept the recipient writes a task of his OWN and the sender's is deleted.
+
+create table if not exists cascade_offer (
+  id            uuid primary key,
+  from_owner    uuid not null references auth.users(id) on delete cascade,
+  from_email    text not null,
+  to_email      text not null,
+  to_owner      uuid,
+  task_id       uuid not null,
+  accepted_task_id uuid,
+  payload       jsonb not null,
+  edited        jsonb,
+  state         text not null default 'offered',
+  decline_reason text,
+  done_at       timestamptz,
+  done_at_offset text,
+  done_state    text,
+  created_at    timestamptz not null,
+  created_at_offset text not null,
+  updated_at    timestamptz not null,
+  updated_at_offset text not null,
+  constraint offer_state_known check (state in ('offered','accepted','declined','withdrawn')),
+  constraint offer_done_iff_accepted check (done_at is null or state = 'accepted'),
+  constraint offer_accepted_has_owner check (state <> 'accepted' or to_owner is not null)
+);
 
 -- ------------------------------------------------------------------- undo
 --

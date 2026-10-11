@@ -59,7 +59,7 @@ export const TASK_COLUMNS = [
   "reminder_fatigue",
   "blocked", "blocker_reason", "blocker_ref", "project_id",
   "push_count", "first_due_at", "first_due_at_offset", "spawned_from",
-  "calendar_uid", "calendar_detached",
+  "calendar_uid", "calendar_detached", "offer_id",
   "created_at", "created_at_offset", "updated_at", "updated_at_offset",
   "closed_at", "closed_at_offset",
 ];

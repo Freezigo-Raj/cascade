@@ -560,4 +560,30 @@ The third is a deliberate safety net: a locked-out app needing its data cleared 
 Nothing reloads the page by itself.
 
 
+## Giving a task to another person
+
+Session 159 built the rules and the table. The screens are session 160, so nothing is pressable yet.
+
+**The task never moves.** `cascade_task` is one owner with four policies, an outbox and a newest-wins trigger, all of which assume it. A handover is a separate row both people can see; on accept the recipient's app writes a task of its own and the sender's is deleted.
+
+| Event | Sender | Recipient |
+|---|---|---|
+| send | task stays, marked `Offered to raj@…` | the offer appears |
+| accept | task deleted, the offer becomes his `Given away` record | a task of his own |
+| decline | task stays, showing the reason | offer gone |
+| withdraw | task stays | offer gone |
+
+**Addressed by email, with no directory.** The offer carries the address as text and the policy compares it to the caller's own address from the JWT, so each person reads only what is addressed to them and nobody can list who else uses the app. An offer to somebody who has not installed Cascade waits for them.
+
+**The database enforces who may change what**, because RLS can say who may write a row and cannot say which columns, and the two people are allowed opposite things: the sender may only withdraw, the recipient may only answer and may never rewrite what was sent. The app states the same rule so nobody is shown a button that will fail.
+
+**An offer is not local-first**, unlike every other write here. It is a message to another person, and queueing one silently would hide for a day the fact that nobody got it. The offer is written before the task changes, so a refused offer never leaves a task already given away.
+
+**Everything about the work travels; nothing about the sender does.** Title, date, notes, alarm, repeat, pin, type, firmness, duration and significance go. `push_count`, `first_due_at`, `reminder_fatigue` and `alarm_unanswered_at` do not. `TRAVELS` is a written list rather than a spread of the record, which is the only reason those four are excluded.
+
+**The recipient may correct the title or date before accepting**, read by `resolve()` and anchored on the sender's clock so `friday` means the Friday after it was sent. What was sent is kept beside what came back.
+
+`migrate_offers.sql` must be run in Supabase. `check_offers.mjs` is the tenth check.
+
+
 **Arrived since this page was written**, and now on it: recurrence, sync, the duration control, notes, firmness. **Decided and deliberately still absent:** Cancel and Archive as row actions. A row carries Done, Pin, Delete and its push targets, and a Done row carries Undone. Cancel and Archive stay members of `row_action` with no control on any screen, which is stated here so the gap reads as a decision rather than an oversight.

@@ -13,7 +13,7 @@ Current stage: 5
 The six hand-signed gates were RETIRED in session 135. `gate2.py` and `gate4.mjs` keep their names because they are checks that run. Nothing in this file is waiting on a hand.
 Stage 4 is closed and signed. Stage 5 is open: the rules go in one at a time and the same command is read the other way round, so a case that still fails names a rule not yet written. `gate4.mjs` reads the stage out of the line above and inverts its own verdict on it. Every case in the key agrees with the engine. Section I taps a type, a significance and a bound task, which no case did before, and section B and H state what the card says. `gate4.mjs` reads Stage 5 and passes: 142 run, 142 green, 0 on invariants alone, 0 errored. Nine rules are written and every obligation the contract records is now met except the ranking, which is Stage 6's. Gate 5 is the hand that says Stage 5 is finished.
 
-Status: the contract is written in the protocol's three groups, with Name, Type, Required, Unit, Range, Example and From per item. 13 inputs, 13 working values, the 46-field `Task`, 39 rendered outputs, 13 cross-field invariants, and config at 40 objects populated. `tsc --strict` compiles clean and `gate2.py` passes. `resolve()` returns three keys, `task`, `list` and `capture`, and the contract names that shape. The answer key holds 144 key cases. `UndoEntry` left the contract in session 137 with the rest of undo, and the Stage 3 shell was deleted in the same session.
+Status: the contract is written in the protocol's three groups, with Name, Type, Required, Unit, Range, Example and From per item. 13 inputs, 13 working values, the 47-field `Task`, 39 rendered outputs, 13 cross-field invariants, and config at 40 objects populated. `tsc --strict` compiles clean and `gate2.py` passes. `resolve()` returns three keys, `task`, `list` and `capture`, and the contract names that shape. The answer key holds 144 key cases. `UndoEntry` left the contract in session 137 with the rest of undo, and the Stage 3 shell was deleted in the same session.
 
 D-1: **Typing the thought is the whole of the work.**
 
@@ -31,16 +31,16 @@ Last contract change: Session 20, 1 August 2026. Ranking tiers, `card_reason` co
 Run app:   py -m http.server 8000, then http://localhost:8000/  (the app, and the only
            address there is; the same one the phone installs. No build step,
            and shell/config.js is checked against config.ts by gate2.py)
-Run tests (install the two tools first: npm i -g typescript eslint): python3 gate2.py && python3 selftest.py && node gate4.mjs && node shell/check_loud.mjs && node shell/check_alarm.mjs && node shell/check_search.mjs && node shell/check_writes.mjs && node shell/check_calendar.mjs
+Run tests (install the two tools first: npm i -g typescript eslint): python3 gate2.py && python3 selftest.py && node gate4.mjs && node shell/check_loud.mjs && node shell/check_alarm.mjs && node shell/check_search.mjs && node shell/check_writes.mjs && node shell/check_calendar.mjs && node shell/check_offers.mjs
 Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section B for one section)
 
 ## VERSIONS
 
   example      47
-  contract     59
+  contract     60
   config       a.23
   answer_key   29
-  shell        74
+  shell        75
   gate1        signed on example 35
   gate2        signed on contract 32
   gate3        signed on shell 1
@@ -76,42 +76,60 @@ Run key:   node gate4.mjs   (--verbose for the engine's own log lines, --section
 
 ## THIS SESSION'S JOB
 
-Session 158: a button looks like a button, and the tag explains itself.
+Session 159: handing a task to another person — the rules and the table, not yet
+the screens.
 
-**HIS CALL: a person has to be able to tell what is clickable.** `.act` is
-10.5px uppercase quiet text with no border and no background. On a LIST ROW that
-is right — session 104 settled that row actions are subordinate by weight, size,
-tracking and contrast, because colour on that screen means three states and only
-three. On the account screen it meant `STOP READING THE CALENDAR`, `IMPORT NOW`
-and `LIST EVERY EVENT` were a heading, a switch and a diagnostic in one typeface
-at one size, with nothing saying which could be pressed.
+**THE TASK NEVER MOVES.** `cascade_task` is one owner, four policies, an outbox
+and a newest-wins trigger, and every one of those assumes it. So a handover is a
+SEPARATE row both people can see: the recipient's app writes a task of its OWN
+on accepting, and the sender's is deleted. Nothing about the single-owner store
+changes.
 
-**SCOPED TO `[data-screen="account"]` AND NOWHERE ELSE**, which is the whole
-reason it is safe: the list's pins, bins and push rungs are `.act` too and keep
-every bit of their subordinacy. A rule written for one screen cannot reach the
-screen it was written against.
+**ADDRESSED BY EMAIL, WITH NO DIRECTORY.** The obvious way to address a person
+is a table of everyone's account id and email, which would let any signed-in
+user list everybody using this app. Instead the offer carries the address as
+TEXT and the select policy compares it to the caller's own address out of the
+JWT. Each person reads only what is addressed to them and nobody can enumerate
+anyone. It also makes an offer to somebody who has never installed the app
+legal: it waits for them.
 
-**A PRESS IS VISIBLE ON PRESS.** A phone gives no hover, and without it a button
-that takes two seconds to answer looks like one that did nothing — which is
-precisely what `Checking…` and `Reading…` exist to say, and they only say it
-after the press has already registered.
+**RLS SAYS WHO MAY WRITE THE ROW AND CANNOT SAY WHICH COLUMNS.** The two people
+on an offer are allowed opposite things: the sender may withdraw and may never
+touch the answer; the recipient may answer and may never rewrite what was sent.
+`cascade_offer_guard` states that in the database. The newest-wins trigger is
+the precedent — a rule a client could get wrong by being written wrong belongs
+in Postgres. The app states it too, so nobody is shown a button that will fail,
+and each comment names the other as its other half.
 
-**A DRAWN CONTROL THAT DOES NOT WORK YET KEEPS ITS WIP TREATMENT** and loses the
-border. One treatment everywhere has been the rule since session 109, and a
-pressable-looking frame would have quietly overruled it on the one screen whose
-job includes listing what is not built.
+**AN OFFER IS NOT LOCAL-FIRST**, against the grain of everything else here. A
+task is a thought and a thought needs no network. An offer is a MESSAGE TO
+ANOTHER PERSON, and queueing one silently would mean pressing `Give to Raj`,
+watching it leave, and learning tomorrow that Raj never got it. **The offer is
+written before the task changes**, every time: the offer row is the contended
+thing, so the database's answer is the truth and the local change follows it.
 
-**THE TAG IS THREE WORDS AND THE EXPLANATION SITS UNDER THE LIST.** A tag short
-enough for a row is too short to act on, and the person reading it is on somebody
-else's phone with no way to ask what it means. The sentence says it: Android
-keeps one calendar store every app shares; an account always puts its calendar
-NAMES there, while the EVENTS are a separate switch per calendar; with that
-switch off Google Calendar still shows them from its own private copy and no
-other app can; and the fix is Google Calendar, menu, Settings, the calendar's
-name, Sync on.
+**EVERYTHING ABOUT THE WORK TRAVELS AND NOTHING ABOUT THE SENDER**, his answer
+2. `TRAVELS` is a written list and not a spread of the record, which is the only
+reason `push_count`, `first_due_at`, `reminder_fatigue` and
+`alarm_unanswered_at` are excluded — a spread would have carried every one.
 
-No migration. No Kotlin change, so the calendar build is unchanged from 157 and
-the APK rebuild owed there still covers this. All nine checks green.
+**`fromOffer` INVENTS THE REQUIRED FIELDS RATHER THAN TRUSTING WHAT ARRIVED.** A
+payload is whatever the sending client put in a jsonb column; a Task has NOT
+NULL columns and a duration the table checks is positive. The check hands it a
+payload holding only a title and asserts the result is a row Postgres will take.
+
+**THE CORRECTION GOES THROUGH `resolve()` AND NOTHING ELSE**, his answer 3,
+anchored on the SENDER'S clock so `friday` means the Friday after it was sent.
+What was sent is kept untouched beside what came back.
+
+**SHIPPED WITHOUT ITS SCREENS, ON PURPOSE.** The send control, the Received
+strip and the accept view are three new surfaces in the one layer no check can
+reach — his standing rule from session 137 — and building them blind at the end
+of a long session is how session 133 shipped a screen that threw at mount. The
+migration is the part that must run first and is the riskiest to get wrong.
+
+`migrate_offers.sql` must be run in Supabase. No Kotlin, no APK. Ten checks
+green.
 
 ## NEXT THREE JOBS
 
@@ -1084,3 +1102,16 @@ have landed. That is the price of the single table and it is accepted.
 - 10 Oct 2026 — A PRESS IS VISIBLE ON PRESS, because a phone gives no hover and without it a button that takes two seconds to answer looks like one that did nothing — which is precisely what `Checking…` and `Reading…` exist to say, and they only say it after the press has already registered.
 - 10 Oct 2026 — A DRAWN CONTROL THAT DOES NOT WORK YET KEEPS ITS WIP TREATMENT and loses the border: one treatment everywhere has been the rule since session 109, and a pressable-looking frame would have quietly overruled it on the one screen that lists what is not built.
 - 10 Oct 2026 — THE TAG IS THREE WORDS AND THE EXPLANATION SITS UNDER THE LIST: `NOT STORED ON THIS PHONE` is short enough for a row and too short to act on, and the person reading it is on somebody else's phone with no way to ask what it means — the sentence under the tick list says that Android keeps one calendar store every app shares, that an account always puts its calendar NAMES there while the EVENTS are a separate switch per calendar, that Google Calendar still shows them from its own private copy when that switch is off, and that the fix is Google Calendar, menu, Settings, the calendar's name, Sync on.
+- 11 Oct 2026 — A TASK CAN BE HANDED TO ANOTHER PERSON, his job, and the one decision the whole feature rests on is THAT THE TASK NEVER MOVES: `cascade_task` is one owner, four policies, an outbox and a newest-wins trigger, and every one of those assumes it — so a handover is a SEPARATE row both people can see, the recipient's app writes a task of its OWN on accepting, and the sender's is deleted. Nothing about the single-owner store changes.
+- 11 Oct 2026 — ADDRESSED BY EMAIL WITH NO DIRECTORY, which is the second decision and a privacy one: the obvious way to address a person is a table of everyone's account id and email, and that would let any signed-in user list everybody using this app — instead the offer carries the recipient's address as TEXT and the select policy compares it to the caller's own address out of the JWT, so each person reads only what is addressed to them and nobody can enumerate anyone. It also makes an offer to somebody who has never installed the app legal: it waits for them.
+- 11 Oct 2026 — ROW-LEVEL SECURITY SAYS WHO MAY WRITE THE ROW AND CANNOT SAY WHICH COLUMNS, and the two people on an offer are allowed opposite things — the sender may withdraw and may never touch the answer, the recipient may answer and may never rewrite what was sent — so `cascade_offer_guard` states that in the database, where a client that gets it wrong cannot write the row anyway. The newest-wins trigger is the precedent: a rule a client could get wrong by being written wrong belongs in Postgres.
+- 11 Oct 2026 — THE RULE IS STATED TWICE ON PURPOSE and that is not the duplication this project avoids: `canAnswer` and `canWithdraw` exist so a person is never shown a button that will fail, and the trigger exists so a wrong client cannot write the row — each comment names the other as its other half.
+- 11 Oct 2026 — AN OFFER IS NOT LOCAL-FIRST, deliberately and against the grain of everything else here: a task is a thought and a thought needs no network, but an offer is a MESSAGE TO ANOTHER PERSON, and queueing one silently would mean he presses `Give to Raj`, watches it leave, and learns tomorrow that Raj never got it — a failure invisible for a day is what makes it bad. Sending needs a connection and says so at the press.
+- 11 Oct 2026 — THE OFFER IS WRITTEN BEFORE THE TASK CHANGES, every time, because the offer row is the contended thing — two devices, a withdraw racing an accept — so whatever the database says about it is the truth and the local change is made only after it has agreed; the other order leaves a task already given away by an offer that was refused.
+- 11 Oct 2026 — EVERYTHING ABOUT THE WORK TRAVELS AND NOTHING ABOUT THE SENDER, his answer 2: title, date, notes, alarm, repeat, type, firmness, duration, significance and the pin go, while `push_count`, `first_due_at`, `reminder_fatigue` and `alarm_unanswered_at` do not, because each is a thing that happened to HIM. `TRAVELS` is a written list and not a spread of the record, which is the only reason those four are excluded — a spread would have carried every one of them.
+- 11 Oct 2026 — THE ACCEPTED TASK'S ID IS DERIVED FROM THE OFFER, the fourth use of that mechanism after `successorId`, `importedId` and the calendar relink, and for the same three reasons: accepting twice gives one task, two devices accepting at once compute the same id so newest-wins collapses them, and a recipient who clears his storage and syncs again gets the same row back.
+- 11 Oct 2026 — `fromOffer` INVENTS THE REQUIRED FIELDS RATHER THAN TRUSTING WHAT ARRIVED: a payload is whatever the sending client put in a jsonb column, a Task has columns that are NOT NULL and a duration the table checks is positive, and the gap between those two is where a malformed offer would otherwise become a malformed row. `check_offers.mjs` hands it a payload holding only a title and asserts the result is a row Postgres will take.
+- 11 Oct 2026 — THE RECIPIENT'S CORRECTION GOES THROUGH `resolve()` AND NOTHING ELSE, his answer 3, because a date he types has to be read by the rules that read a date anybody types or this app would have two date readers that disagree on the first Friday at the end of a month — and it is anchored on the SENDER'S clock, so `friday` means the Friday after the task was sent. What was sent is kept untouched beside what came back, so the sender sees both.
+- 11 Oct 2026 — WHETHER A TASK IS OUT WITH SOMEBODY IS ASKED OF THE OFFERS AND NOT OF A FLAG ON THE TASK: a flag would be a second record of one fact and the two would disagree the first time an offer was withdrawn on another device. `offer_id` on the task is the opposite case and is real — it is the RECIPIENT's link back, which is how the row says who asked and how the offer is told the work is finished.
+- 11 Oct 2026 — THE SENDER CANNOT SEE THE RECIPIENT'S TASK and does not need to: `done_at` on the offer is the only channel between them, carrying a date and a word and nothing else about the work. That is his answer 1 — he delegated it, he did not stop caring about it — built without widening what either person can read.
+- 11 Oct 2026 — SHIPPED WITHOUT ITS SCREENS, on purpose and stated rather than discovered: the send control, the Received strip and the accept view are three new surfaces in the one layer no check can reach, which is his own standing rule from session 137, and building them blind at the end of a long session is how session 133 shipped a screen that threw at mount. The migration is the part that has to be run first and is the riskiest to get wrong, so it goes now and the screens get a session of their own.

@@ -4298,3 +4298,82 @@ The row tag is now three words, `no events here`, and a sentence under the tick 
 A tag short enough to sit on a row is too short to act on, and the person reading it is on somebody else's phone with no way to ask what it means.
 
 **Shell 74. No migration, no Kotlin change.** The calendar build is unchanged from 157, so the APK rebuild already owed covers this too. All nine checks green.
+
+---
+
+## Session 159 — 11 October 2026
+
+**His job:** hand a task to another Cascade user. They accept or decline. Accepted, it leaves his list; declined, it stays. His four answers: he keeps a record of what he gave away and whether it is done; everything travels; the recipient may edit before accepting and he sees what changed; a decline carries a reason.
+
+**This build is the rules and the table. Not the screens.** Reason at the end.
+
+### The one decision it all rests on
+
+`cascade_task` is one owner, four policies, an outbox and a newest-wins trigger. Every one of those assumes it. Letting a second person read or own a row reaches into all of them.
+
+So the task never moves. A handover is a separate row:
+
+| | Sender | Recipient |
+|---|---|---|
+| send | task untouched, row shows `Offered to raj@…` | offer appears |
+| accept | task deleted | writes a task of **his own** |
+| decline | task stays, with the reason | offer gone |
+| withdraw | task stays | offer gone |
+
+### Addressed by email, with no directory
+
+The obvious design is a table of everyone's account id and email. That would let any signed-in user list everybody using Cascade.
+
+Not needed. The offer carries the address as text, and the policy is `lower(to_email) = lower(auth.jwt()->>'email')`. Each person reads only what is addressed to them. Nobody can enumerate anyone.
+
+Side effect worth having: you can send to someone who has not installed the app. The offer waits.
+
+### What the database enforces, and why it has to
+
+RLS can say **who** may write a row. It cannot say which **columns**. And the two people on an offer are allowed opposite things:
+
+| | May | May not |
+|---|---|---|
+| sender | withdraw | touch the answer, or readdress it |
+| recipient | accept, decline, report it done | rewrite what was sent |
+
+`cascade_offer_guard` states that in Postgres. The app states it too — `canAnswer`, `canWithdraw` — so nobody is shown a button that will fail. That is two statements of one rule on purpose, and each comment names the other as its other half: the app's copy stops a bad press, the database's copy stops a bad client.
+
+### An offer is not local-first, deliberately
+
+Everything else here writes to the cache first. A task is a thought, and a thought needs no network.
+
+An offer is a **message to another person**. Queueing one silently would mean pressing `Give to Raj`, watching it leave your list, and finding out tomorrow that Raj never got it. A failure invisible for a day is what makes it bad. So sending needs a connection and says so at the press.
+
+**And the offer is written before the task changes, every time.** The offer row is the contended thing — two devices, a withdraw racing an accept — so the database's answer is the truth and the local change follows it. The other order leaves a task already given away by an offer that was refused.
+
+### What travels
+
+| Travels | Does not |
+|---|---|
+| title, date, notes | `push_count` |
+| alarm, repeat, pin | `first_due_at` |
+| type, firmness, duration, significance | `reminder_fatigue` |
+| | `alarm_unanswered_at` |
+
+`TRAVELS` is a **written list**, not a spread of the record. That is the only reason the right-hand column is excluded: a spread would have carried every one of them, and each is a thing that happened to the sender, not to the work.
+
+The accepted task's id is derived from the offer — the fourth use of that mechanism after repeats, calendar imports and the calendar relink. Accepting twice gives one task.
+
+**`fromOffer` invents the required fields rather than trusting what arrived.** A payload is whatever the sending client put in a jsonb column; a Task has NOT NULL columns and a duration the table checks is positive. The check hands it a payload holding only a title and asserts the result is a row Postgres will accept.
+
+### The correction
+
+Goes through `resolve()` and nothing else. A date the recipient types must be read by the rules that read a date anybody types, or this app would have two date readers that disagree on the first Friday at the end of a month.
+
+It is anchored on the **sender's** clock, so `friday` means the Friday after it was sent. What was sent is kept untouched beside what came back, so you see both.
+
+### Why no screens
+
+The send control, the Received strip and the accept view are three new surfaces in `shell/mvp*.js` — the one layer no check can reach, your standing rule from session 137. Building them blind at the end of a long session is how session 133 shipped a screen that threw at mount and made every tab look empty over an intact store.
+
+The migration is the part that has to run first and is the riskiest to get wrong, so it goes now. The screens get session 160.
+
+**Nothing is pressable yet.** Build 75 behaves exactly like 74.
+
+**Shell 75. `migrate_offers.sql` must be run in Supabase. No Kotlin, no APK.** Ten checks green — `check_offers.mjs` is the tenth.

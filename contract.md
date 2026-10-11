@@ -1,6 +1,6 @@
 # Cascade Part A — Contract
 
-Stage 2 deliverable, version 59. Companion to `spec/example.md`; see VERSIONS in spec.md.
+Stage 2 deliverable, version 60. Companion to `spec/example.md`; see VERSIONS in spec.md.
 
 This file says what every piece of information **is**. `spec/example.md` says what one session **was**. Where they disagree, one of them is wrong and the disagreement is a defect.
 
@@ -196,6 +196,7 @@ Typed now so the record shape is fixed, as Part 3 Stage 2 requires. Part A write
 | `spawned_from` | text | optional | — | The completion that produced this occurrence. Empty on a task nobody repeated into. | *(none)* | `row_action` `done` |
 | `calendar_uid` | text | optional | — | The calendar event this task came from. Empty on a typed task. Non-empty also means this task is never pushed back to the calendar. | *(none)* | the calendar import |
 | `calendar_detached` | true/false | yes | — | False while Google owns the title and the date. The first edit to either sets it true. | `false` | the editor |
+| `offer_id` | text | optional | — | Which offer this task came from, when somebody else handed it over. Empty on a task its owner typed. Non-empty is what lets the row say who asked, and what tells the offer when the work is finished. | *(none)* | accepting an offer |
 
 ### Values with no instance in the example
 
@@ -213,6 +214,7 @@ Part 4 forbids an unused contract item without a written reason. These are reach
 | `row_action` `delete` `push` `undone` | All three arrived with the MVP screens and none is drawn in the example, which predates them |
 | `recurrence`, `spawned_from` | Nothing in the example repeats; the advanced panel arrived after it was written |
 | `calendar_uid`, `calendar_detached` | Nothing in the example came from a calendar; the import arrived long after it was written |
+| `offer_id` | Nothing in the example was handed over by anybody; the example is one person at one box |
 | `duration_tap`, `firmness_tap`, `notes_text` | All three are set in the advanced panel, which arrived after the example was written. Every one of them is a Stage 4 golden case instead |
 | `notes` with any text | The panel is the only way in and the example draws no panel |
 | `push_options` | Nothing in the example is pushed; the example predates the control |
