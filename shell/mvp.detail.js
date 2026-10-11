@@ -17,6 +17,7 @@
 const v = new URL(import.meta.url).search;
 const { partAConfig } = await import(`./config.js${v}`);
 const { el, button } = await import(`./mvp.paint.js${v}`);
+const { sentenceFor } = await import(`./repeat.js${v}`);
 
 const WIP = {
   Project: "Projects are decided and no column is written yet. Part C.",
@@ -117,7 +118,12 @@ export function mountDetail(root, on) {
     if (task.reminder_fatigue) {
       fact("Alarms unanswered", `${task.reminder_fatigue}${task.alarm_unanswered_at ? " (still)" : ""}`);
     }
-    fact("Repeats", task.recurrence ? `every ${task.recurrence.every} ${task.recurrence.unit}` : "never");
+    // THE SAME SENTENCE THE PANEL SHOWS, from the same function (session 160).
+    // This line used to build its own: `every ${every} ${unit}`, which read
+    // `every 2 day` with no plural and said nothing about the anchor, so the
+    // screen that explains a task disagreed with the screen that set it. A
+    // second copy of a sentence is a second wording of a rule.
+    fact("Repeats", sentenceFor(task.recurrence, task.due_at, task.has_time) ?? "never");
     if (task.push_count) fact("Pushed", `${task.push_count} time${task.push_count === 1 ? "" : "s"}`);
     root.appendChild(row("What it carries", facts));
 

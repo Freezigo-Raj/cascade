@@ -339,7 +339,9 @@ export const partAConfig: Config = {
   // asked for and derives when, which is why there is still no scheduler here.
   // Two members. `repeat` is gone: every alarm auto-snoozes on its own now, so
   // "ring again" was a second way to say what the alarm already does, and a
-  // task that should come back another day has `recurrence`.
+  // task that should come back has `recurrence` — which since session 160
+  // can be an interval in minutes, and is still a SCHEDULE rather than a nag:
+  // every occurrence is its own row. The contract states the difference.
   alarm_types: ["none", "on"],
 
   // Defaults for a task that asks for an alarm without saying more, and the

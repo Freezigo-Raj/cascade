@@ -140,8 +140,12 @@ export interface Task {
   duration_source: DurationSource;
 
   // Deferred: Part B
-  /** `{every, unit}` while the task repeats, empty when it does not. */
-  recurrence: { every: number; unit: "day" | "week" | "month" | "year" } | null;
+  /** `{every, unit}` while the task repeats, empty when it does not.
+   * `minute` and `hour` joined the four longer units in session 160. */
+  recurrence: {
+    every: number;
+    unit: "minute" | "hour" | "day" | "week" | "month" | "year";
+  } | null;
   /** What the person asked for. The shell is what fires it. */
   alarm_type: AlarmType;
   /** Minutes before `due_at`. Empty when there is no alarm. */

@@ -51,12 +51,16 @@
 // Session 126 wrote it as a plain `import ... from "./repeat.js"` — no `?v=` —
 // which is the one thing the whole cache-busting scheme forbids: the browser
 // answers that URL from whatever it already had, so a page on build 44 could be
-// running a `repeat.js` from build 40, and if that copy has no `step` export the
-// module fails to link and everything importing `alarm.js` — the list, the
-// editor, the bridge — fails with it. `gate2.py` now refuses a relative import
-// in `shell/` that does not carry the version.
+// running a `repeat.js` from build 40, and if that copy has no `advanceTo`
+// export the module fails to link and everything importing `alarm.js` — the
+// list, the editor, the bridge — fails with it. `gate2.py` now refuses a
+// relative import in `shell/` that does not carry the version.
+//
+// It was `step` until session 160. The reason for the swap is written on
+// `nextRing` and it is the same reason in one line: walking a schedule one step
+// at a time is only safe while a step is large.
 const v = new URL(import.meta.url).search;
-const { step } = await import(`./repeat.js${v}`);
+const { advanceTo } = await import(`./repeat.js${v}`);
 
 const MIN = 60 * 1000;
 
@@ -127,16 +131,18 @@ export function nextRing(task, config, now) {
   if (!rule || !rule.unit || !task.due_at) return null;
   const offset = offsetOf(task.due_at);
   const lead = at(task.due_at) - at(derived);
-  let due = at(task.due_at);
-  // A guard on the count rather than on the clock: a rule of `every 0` would
-  // step nowhere and spin here for ever, and a malformed one is a bug to
-  // survive rather than a case to serve.
-  for (let i = 0; i < 5000; i++) {
-    // `step` takes and returns milliseconds, not a Date.
-    due = step(due, rule);
-    if (due - lead > at(now)) return write(due - lead, offset);
-  }
-  return null;
+  // A WALK CAPPED AT 5000 STEPS WAS A GUARD ON THE COUNT WHERE THE THING BEING
+  // GUARDED IS A DURATION (session 160, when `minute` became a unit). 5000 days
+  // is fourteen years and no repeat outlives it; 5000 steps of `every 1 minute`
+  // is three and a half days, and past the cap this returned `null` — the
+  // alarms screen saying nothing is scheduled for a repeat that rings every
+  // minute, which is the exact defect the paragraph above says this function
+  // exists to prevent, reintroduced by a new unit rather than by new code.
+  //
+  // `advanceTo` lands on the answer. The limit is `now + lead` because what has
+  // to clear the clock is the RING, and the ring is the due date less the lead.
+  const due = advanceTo(at(task.due_at), rule, at(now) + lead);
+  return due == null ? null : write(due - lead, offset);
 }
 
 /**

@@ -10,11 +10,11 @@
  * that reason and for no other.
  */
 
-@import url("./mvp.css?v=75");
-@import url("./mvp.account.css?v=75");
-@import url("./mvp.wide.css?v=75");
-@import url("./mvp.chrome.css?v=75");
-@import url("./mvp.web.css?v=75");
+@import url("./mvp.css?v=76");
+@import url("./mvp.account.css?v=76");
+@import url("./mvp.wide.css?v=76");
+@import url("./mvp.chrome.css?v=76");
+@import url("./mvp.web.css?v=76");
 
 /* ------------------------------------------------------------ screen 2
  *
@@ -410,8 +410,8 @@ input[type="range"].lead, input[type="range"].dur {
 .dur-read { font-size: 13px; color: var(--signal-deep); font-weight: 600; white-space: nowrap; min-width: 6ch; }
 
 /* The repeat group (session 124): the Never button lives beside the label and
-   wears the sentence once a repeat is set; the number and four units fit one
-   line. */
+   wears the sentence once a repeat is set; the number and the units sit below
+   it. */
 .group-head { display: flex; align-items: center; gap: calc(var(--step) * 3); margin-bottom: calc(var(--step) * 2); }
 .group-head .label { margin-bottom: 0; }
 /* NOT CUT SHORT (session 125, his slide "not showing full text"): the chip was
@@ -426,7 +426,15 @@ input[type="range"].lead, input[type="range"].dur {
   border-radius: 14px;
 }
 .group-head { flex-wrap: wrap; }
-.taps.rep-line { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
-.taps.rep-line::-webkit-scrollbar { display: none; }
+/* SIX UNITS WRAP; FOUR DID NOT (session 160, when `min` and `hr` arrived).
+   This row was `nowrap` with `overflow-x: auto` and a HIDDEN scrollbar, which
+   held four chips on a 320px phone with nothing to spare. Six come to roughly
+   400px of chips and field against 288px of row, so two of them would have sat
+   off the right edge with no scrollbar and no shadow to say they were there —
+   `month` and `year` simply missing, on the screen whose job is to show what
+   the choices are.
+   His sizing instruction in session 124 said one line, and it was given about
+   four units. Two short lines show all six; one line hides two of them. */
+.taps.rep-line { flex-wrap: wrap; }
 .taps.rep-line .num { width: 48px; flex-shrink: 0; }
 .taps.rep-line .chip { padding-left: 10px; padding-right: 10px; flex-shrink: 0; }

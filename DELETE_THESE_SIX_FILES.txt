@@ -1,4 +1,39 @@
-CASCADE — sessions 137 to 159. READ THIS BEFORE COMMITTING.
+CASCADE — SESSION 160. THE MIGRATION, AND A CORRECTION FIRST.
+
+I TOLD YOU THE MISSING MIGRATION WAS BREAKING EVERY WRITE. IT IS NOT.
+
+I said `offer_id` and `cascade_offer` being absent would make PostgREST refuse
+every row and jam the outbox behind the first failure, the way session 152 did.
+I checked the code rather than my memory of it, and that is wrong.
+
+  - `toRow` builds a row from THE KEYS THE RECORD ACTUALLY CARRIES, filtered
+    against the column list. It does not emit a column the record has no field
+    for. So an ordinary task is sent without `offer_id` and Postgres is never
+    shown a name it does not know.
+  - `offer_id` is written by exactly one function, `fromOffer`, which runs when
+    somebody ACCEPTS an offer. Nothing can send or accept one yet.
+  - `initOffers()` is the only thing that reads `cascade_offer`, and nothing
+    calls it. No screen imports the offer files; the service worker pre-caches
+    them and that is all.
+
+So build 75 and 76 never touch either object. Your sync pill was never at risk,
+and if it is showing a number the cause is something else — tell me and I will
+look at that instead.
+
+STILL RUN IT, BEFORE THE SCREENS ARRIVE:
+
+  Supabase -> SQL Editor -> paste the whole of cascade\migrate_offers.sql -> Run
+
+It is in this zip. Safe to run twice. One column (offer_id on cascade_task) and
+one table (cascade_offer) with its policies and guard trigger. The session with
+the screens in it is the first build that needs them, and that migration is the
+part of the feature it is least pleasant to discover late.
+
+Nothing else in session 160 needs a migration, a Kotlin change or a new APK.
+
+===========================================================================
+
+CASCADE — sessions 137 to 160. READ THIS BEFORE COMMITTING.
 
 Three things must happen by hand. Do them in this order: the migration, the
 deletions, then the APK.
@@ -58,9 +93,13 @@ shell\version.js, which holds nothing else. That file IS in this zip.
 
 NOTHING NEW IN SESSION 149. If you already built and installed the build-64 APK,
 SKIP THIS WHOLE SECTION. Session 149 is three web-half files and the APK you
-have carries everything they need. Calendar shell is still build 2.
+have carries everything they need.
 
-Calendar shell build 2. Session 145 added the calendar plugin and session 148
+CALENDAR SHELL IS BUILD 4 as of session 157, and session 160 does not touch it.
+If your account screen already says 4, the APK is current and you can skip the
+whole of this section.
+
+Calendar shell build 4. Session 145 added the calendar plugin and session 148
 added three read methods to it, so an APK built from the session-147 zip will
 report calendar build 1 and the import will not run.
 
@@ -100,7 +139,7 @@ AFTER DELETING THE SIX FILES, run this and it must say GATE 2: PASS —
 
   python3 gate2.py
 
-Header should read build 75.
+Header should read build 76.
 
 
 == THEN ON THE PHONE, ACCOUNT SCREEN ==
@@ -452,3 +491,45 @@ answer is a different one.
 Any "row:" tasks build 64 already imported are left alone, not deleted. When
 Google gives the event a real id, the proper task is added and the row: one goes
 in the same pass, so you will not see a duplicate.
+
+
+== WHAT CHANGED IN SESSION 160 — REPEAT IN MINUTES ==
+
+`Repeat every` now offers six units, smallest first:
+
+  min   hr   day   week   month   year
+
+WHERE: screen 2, open the advanced panel, the `Repeat every` row. The number
+field is on the left and the six chips sit beside and below it, on two short
+lines rather than one. Two lines because six chips and the field come to about
+400 pixels against 288 pixels of row on a narrow phone, and the row used to
+scroll sideways with the scrollbar hidden — `month` and `year` would have been
+off the edge with nothing on screen to say they were there.
+
+WHAT TO TRY, and it takes one minute:
+
+  1. New task, give it a time, open the panel.
+  2. Press `min`, set the number to 20.
+  3. The chip beside `Repeat every` should now read, in full:
+
+       every 20 minutes from 5pm
+
+     Not `at 5pm`. `at` names the only time a thing happens, which is true of
+     a week and false of anything shorter than a day. The anchor is where the
+     chain starts, so it says `from`.
+  4. Save it, tap the row, and the detail panel should say the SAME sentence.
+     It used to write its own worse version — `every 2 day`, no plural.
+
+WHAT A SHORT REPEAT IS NOT. It is not an alarm nagging you.
+
+  auto-snooze          one occurrence, rung again, stops after auto_max
+  every 10 minutes     a schedule; each one closes and the next is a new row
+
+ONE HONEST LIMIT. A sub-day repeat arms ONE ring at a time, because there is
+only ever one open occurrence. If you do not answer it, that occurrence keeps
+nagging on its own auto-snooze — but the NEXT occurrence does not arm until the
+app runs or an outcome lands. At daily intervals you open the app in between.
+At five-minute intervals you do not. That is unchanged design, newly visible,
+and fixing it is a Kotlin re-arm chain and a new policy, so it is not here.
+
+NO MIGRATION, NO KOTLIN, NO APK for this session. Shell 76, contract 61.

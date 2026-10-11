@@ -19,8 +19,41 @@
 //
 // **A push moves one occurrence and leaves the series alone.** Otherwise one
 // busy month shifts the rent reminder permanently.
+//
+// MINUTES AND HOURS ARE UNITS TOO (session 160, his words: "I need repeat in
+// minutes as well instead of just days, weeks, etc."). Two words in a list, and
+// one real consequence: every walk through this schedule was written while the
+// smallest step was a day, and a count guard was allowed to stand in for a
+// clock guard because 500 days is longer than anything anybody would leave a
+// task open. At five-minute steps that guard is 42 hours, and both walks —
+// `nextDue` here and `nextRing` in `alarm.js` — returned NOTHING past it: a
+// series that stopped producing occurrences and an alarm that stopped saying
+// when it would ring, from a repeat left alone over a weekend. `advanceTo`
+// below lands on the answer instead of walking to it, so there is no count to
+// outlive.
 
-const DAY = 24 * 60 * 60 * 1000;
+const MINUTE = 60 * 1000;
+const HOUR = 60 * MINUTE;
+const DAY = 24 * HOUR;
+
+/**
+ * THE UNITS THAT ARE A FIXED NUMBER OF MILLISECONDS, and the reason the two
+ * kinds are kept apart. A week is always 7 days; a month is 28, 29, 30 or 31
+ * and a year is 365 or 366, so those two have to be stepped through the
+ * calendar one at a time and cannot be multiplied.
+ *
+ * `week` was already arithmetic in `step`. Naming the set is what lets
+ * `advanceTo` know which half it is in.
+ */
+const FIXED = { minute: MINUTE, hour: HOUR, day: DAY, week: 7 * DAY };
+
+// For the sentence at the bottom of this file. Spelt out rather than taken from
+// `toLocaleString`, which would make what the app says depend on the phone's
+// language setting while every other word in it is English.
+const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const MONTHS = ["January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"];
+const nth = (n) => n + (n % 10 === 1 && n !== 11 ? "st" : n % 10 === 2 && n !== 12 ? "nd" : n % 10 === 3 && n !== 13 ? "rd" : "th");
 
 const parse = (iso) => Date.parse(iso.slice(0, 19) + "Z");
 const offsetOf = (iso) => iso.slice(-6);
@@ -36,17 +69,112 @@ function write(t, offset) {
 
 /** One step of the interval, from an instant. Months keep the day of the
  * month; years keep the date (session 123 added `year` — 29 Feb steps to
- * 1 Mar by the same Date.UTC rollover months already rely on). */
+ * 1 Mar by the same Date.UTC rollover months already rely on).
+ *
+ * `minute` and `hour` joined `day` and `week` in session 160 by joining
+ * `FIXED`, and this function did not otherwise change: the arithmetic for an
+ * interval of fixed length was already one multiplication. */
 export function step(at, rule) {
   const n = rule.every ?? 1;
-  if (rule.unit === "day") return at + n * DAY;
-  if (rule.unit === "week") return at + n * 7 * DAY;
+  const fixed = FIXED[rule.unit];
+  if (fixed) return at + n * fixed;
   const d = new Date(at);
   const months = rule.unit === "year" ? n * 12 : n;
   return Date.UTC(
     d.getUTCFullYear(), d.getUTCMonth() + months, d.getUTCDate(),
     d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds()
   );
+}
+
+/**
+ * THE FIRST INSTANT OF THE SCHEDULE THAT IS PAST `limit`, AND AT LEAST ONE STEP
+ * ON FROM `start`. The one piece of arithmetic both walks now share.
+ *
+ * WHAT IT REPLACES, and why the shape of the old code was the defect rather
+ * than any value in it. `nextDue` and `alarm.js`'s `nextRing` each held a loop
+ * that took one step at a time until the date was ahead of the clock, capped at
+ * 500 and 5000 steps. Each cap was written as a guard against a malformed rule
+ * — `every 0 months` would step nowhere and spin — and each was a count where
+ * the thing being guarded is a duration. While the smallest unit was a day that
+ * distinction cost nothing. `every 5 minutes` makes 500 steps 42 hours, and
+ * past the cap both functions returned `null`: no next occurrence, and no next
+ * ring, for a repeat nobody had touched since Friday.
+ *
+ * So the number of steps is computed rather than counted. For a unit of fixed
+ * length it is one division: the first multiple of the interval that clears the
+ * limit. A month and a year have no fixed length, so those are still walked —
+ * but a walk through months cannot be outlived by a clock, because the cap of
+ * 1200 is a hundred years.
+ *
+ * AT LEAST ONE STEP, ALWAYS, which is the rule the comment on `nextDue` below
+ * explains and the reason this takes `start` and `limit` rather than asking
+ * which is larger. A monthly rent paid on the 28th and due the 1st must step to
+ * next month, not stay where it is.
+ *
+ * @returns {number|null} milliseconds, or null if the rule cannot move.
+ */
+export function advanceTo(start, rule, limit) {
+  if (!rule || !rule.unit) return null;
+  const n = rule.every ?? 1;
+  const fixed = FIXED[rule.unit];
+  if (fixed) {
+    const size = n * fixed;
+    // `!(size > 0)` and not `size <= 0`: it also refuses NaN, which is what
+    // `every: "soon"` out of a jsonb column arrives as.
+    if (!(size > 0)) return null;
+    // Minimal, and provably so: `floor(d / size)` steps leave the date at or
+    // before the limit and one more clears it. When `start` is already past
+    // the limit the quotient is negative and the `max` makes it the one step
+    // the rule above demands.
+    const steps = Math.max(1, Math.floor((limit - start) / size) + 1);
+    return start + steps * size;
+  }
+  let at = start;
+  for (let i = 0; i < 1200; i++) {
+    at = step(at, rule);
+    if (at > limit) return at;
+  }
+  return null;
+}
+
+/**
+ * THE REPEAT AS ONE SENTENCE — `every week on Tuesday at 3pm` (session 123, his
+ * slide) — and it lives here rather than on the screen that shows it.
+ *
+ * It was `repeatSentence` inside `mvp.panel.js` until session 160, which is the
+ * one layer no check can reach. Two things made moving it the cheaper option:
+ * the detail panel was writing its own second version, `every 2 day`, with no
+ * plural and no reading of the anchor; and minutes made the wording a decision
+ * rather than a formatting job. The rule for READING a recurrence belongs
+ * beside the rule for STEPPING one, and this file imports nothing, so a check
+ * can now assert the words.
+ *
+ * `at 3pm` NAMES THE ONLY TIME IT HAPPENS, which is true of a week, a month and
+ * a year and false of anything shorter than a day. `every 30 minutes at 3pm`
+ * would read as a single daily event. The anchor is where the chain starts, so
+ * it says `from`.
+ *
+ * `dueAt` is read as the wall clock it is written as, with no offset applied —
+ * the same reading the rest of the app gives a stored instant.
+ */
+export function sentenceFor(rule, dueAt, hasTime) {
+  if (!rule || !rule.unit) return null;
+  const n = rule.every ?? 1;
+  const base = n === 1 ? `every ${rule.unit}` : `every ${n} ${rule.unit}s`;
+  // A repeat set before a date is the panel's own order of events: the chip
+  // that wears this sentence would otherwise be blank, which is the one state
+  // a control explaining itself must not have.
+  if (!dueAt) return base;
+  const d = new Date(dueAt.slice(0, 19));
+  let when = "";
+  if (rule.unit === "week") when = ` on ${WEEKDAYS[d.getDay()]}`;
+  if (rule.unit === "month") when = ` on the ${nth(d.getDate())}`;
+  if (rule.unit === "year") when = ` on ${d.getDate()} ${MONTHS[d.getMonth()]}`;
+  const clock = hasTime
+    ? `${((d.getHours() + 11) % 12) + 1}${d.getMinutes() ? ":" + String(d.getMinutes()).padStart(2, "0") : ""}${d.getHours() < 12 ? "am" : "pm"}`
+    : "";
+  const within = rule.unit === "minute" || rule.unit === "hour";
+  return base + when + (clock ? `${within ? " from " : " at "}${clock}` : "");
 }
 
 /**
@@ -73,14 +201,12 @@ export function nextDue(task, now) {
   // it, so it is the schedule's own date and needs no new field.
   const anchor = task.first_due_at || task.due_at;
   const offset = offsetOf(anchor);
-  let at = parse(anchor);
-  const limit = parse(now);
-  // A guard, not a rule: a malformed interval must not spin here.
-  for (let i = 0; i < 500; i++) {
-    at = step(at, rule);
-    if (at > limit) break;
-  }
-  return at > limit ? write(at, offset) : null;
+  // THE WALK IS GONE (session 160). It was a 500-step loop, which is 500 days
+  // at the smallest unit this file had and 42 hours at the smallest it has now.
+  // `advanceTo` computes the landing point and carries the at-least-one-step
+  // rule the paragraph above is about.
+  const at = advanceTo(parse(anchor), rule, parse(now));
+  return at == null ? null : write(at, offset);
 }
 
 /**

@@ -4377,3 +4377,82 @@ The migration is the part that has to run first and is the riskiest to get wrong
 **Nothing is pressable yet.** Build 75 behaves exactly like 74.
 
 **Shell 75. `migrate_offers.sql` must be run in Supabase. No Kotlin, no APK.** Ten checks green — `check_offers.mjs` is the tenth.
+
+---
+
+## Session 160 — 11 October 2026
+
+**His job:** "I need repeat in minutes as well instead of just days, weeks, etc."
+
+Two words added to a list. The work was underneath them.
+
+### What was actually broken
+
+Every walk through a repeat schedule was capped by a **count**, where the thing it guards is a **duration**.
+
+| Function | Cap | 500/5000 steps of a day | of 5 minutes | of 1 minute |
+|---|---|---|---|---|
+| `nextDue` (the next occurrence) | 500 steps | 16 months | **42 hours** | 8 hours |
+| `nextRing` (the next alarm) | 5000 steps | 14 years | 17 days | **3.5 days** |
+
+Each cap was written against `every 0`, which steps nowhere and would otherwise spin. Each was fine while the smallest unit was a day.
+
+Past the cap both functions returned nothing: **a series that stops producing occurrences, and an alarms screen that says nothing is scheduled** — from a repeat left alone over a weekend. Shipping `minute` without this would have shipped that.
+
+`advanceTo` lands on the answer rather than walking to it: one division for a unit of fixed length (minute, hour, day, week), and a walk kept only for month and year, which have no fixed length. Its cap is 1200 months, a hundred years.
+
+### What a short interval means
+
+| | Auto-snooze | `{every: 10, unit: "minute"}` |
+|---|---|---|
+| what it is | one occurrence, rung again | a schedule |
+| the row | the same row | a new row each time, own history |
+| counted in | `reminder_fatigue` | nothing |
+| stops | after `auto_max` | never |
+
+Ten minutes is the interval in both and nothing else matches. The contract states it, because they were not confusable before this session and are now.
+
+### The sentence left the screen
+
+`every week on Tuesday at 3pm` was built inside `mvp.panel.js`, the one layer no check can reach. Meanwhile the detail panel had written its own second copy: `every 2 day`. No plural, no anchor.
+
+It lives in `repeat.js` now, beside the rule that steps the schedule. That file imports nothing, so `check_writes.mjs` asserts the words.
+
+**`at 3pm` names the only time a thing happens.** True of a week, a month, a year. False of anything shorter than a day — `every 30 minutes at 3pm` reads as one daily event. So minutes and hours say **`from 3pm`**: the anchor is where the chain starts.
+
+### The chips
+
+Six where there were four. The row was one line, `nowrap`, with the scrollbar hidden.
+
+Six chips and the number field come to roughly 400px against 288px of row on a 320px phone. `month` and `year` would have sat off the right edge with nothing on screen to say they were there, on the screen whose job is to show what the choices are.
+
+They wrap to two short lines. Your sizing note in session 124 said one line and was given about four units.
+
+Chip text is `min` and `hr`; the store keeps `minute` and `hour`, because the sentence has to read `every 30 minutes` and what a chip has to do is be hit.
+
+### Two of my own assertions were wrong before the code was
+
+Both corrected to what the engine does, because in both cases the engine was right.
+
+- A 20-minute repeat closed five and a half hours after its anchor spawns at **22:40**, not 17:20. The next occurrence is the next point on the **anchor's grid** past the clock, not one interval after the close. Stepping from the close would move the grid every time you were late, which is the drift the schedule rule exists to prevent.
+- A 15-minute repeat with a 10-minute lead, asked at 9:07, rings at **9:20** for the 9:30 occurrence. Not 9:05 — that had gone. A lead longer than the interval is where reading a schedule stops being obvious.
+
+### One honest limit
+
+A sub-day repeat arms **one** ring at a time, because there is only ever one open occurrence. If nobody answers, the occurrence keeps nagging on `auto_snooze_min` up to `auto_max`, but the **next** occurrence does not arm until the app runs or an outcome lands.
+
+At daily intervals the app is opened in between. At five-minute intervals it is not. Unchanged design, newly visible. Fixing it is a Kotlin re-arm chain and a new policy, so it is not in this build.
+
+### A correction I owe from the start of this session
+
+I told him the missing migration was refusing every write and jamming the outbox, the way session 152 did. I read the code instead of my memory of it, and it is wrong.
+
+- `toRow` builds a row from **the keys the record actually carries**, filtered against the column list. It never emits a column the record has no field for, so an ordinary task is sent without `offer_id`.
+- `offer_id` is written by one function, `fromOffer`, which runs on **accept**. Nothing can accept yet.
+- `initOffers()` is the only reader of `cascade_offer`, and **nothing calls it**. No screen imports the offer files. The service worker pre-caches them; that is all.
+
+Build 75 and 76 never touch either object. The migration is still owed before the screens land, and its absence breaks nothing today.
+
+The shape of the error is worth naming: I reasoned from the *design* of the offers feature — a column on every task, written on every row — rather than from the function that builds the row. Session 152's defect was real and this is its false positive.
+
+**Shell 76. No migration for this session, no Kotlin, no APK.** Contract 61. Ten checks green.

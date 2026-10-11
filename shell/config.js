@@ -104,16 +104,15 @@ export const partAConfig = {
     // to the quiet-field rule, after the slot totals, and it is his to make.
     // HOW OFTEN THE APP LOOKS FOR A NEWER BUILD OF ITSELF (session 155, his
     // call). It used to look on every open. The cost of a week is that a fix
-    // ships today and arrives next Friday unless he presses the button, which
-    // is why there is a button.
+    // ships today and arrives next Friday unless he presses the button, which is
+    // why there is a button.
     update: {
         check_days: 7,
     },
     calendar: {
         block_min: 30,
-        // THE IMPORT WINDOW, his numbers. Reading a whole calendar on every
-        // sync is slow and reading a year of it is pointless: a commitment
-        // eleven months out is not something the Today list can help with.
+        // THE IMPORT WINDOW, his numbers. Reading a whole calendar on every sync is
+        // slow and reading a year of it is pointless.
         import_days_back: 10,
         import_days_ahead: 60,
     },
@@ -306,7 +305,9 @@ export const partAConfig = {
     // asked for and derives when, which is why there is still no scheduler here.
     // Two members. `repeat` is gone: every alarm auto-snoozes on its own now, so
     // "ring again" was a second way to say what the alarm already does, and a
-    // task that should come back another day has `recurrence`.
+    // task that should come back has `recurrence` — which since session 160
+    // can be an interval in minutes, and is still a SCHEDULE rather than a nag:
+    // every occurrence is its own row. The contract states the difference.
     alarm_types: ["none", "on"],
     // Defaults for a task that asks for an alarm without saying more, and the
     // floor and ceiling a lead time may take.

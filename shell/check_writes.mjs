@@ -23,7 +23,7 @@
 
 import { partAConfig as config } from "./config.js";
 import { applyOutcome } from "./alarm.apply.js";
-import { successorId } from "./repeat.js";
+import { successorId, step, advanceTo, sentenceFor } from "./repeat.js";
 import { catchUpRepeats } from "./catchup.js";
 import { readFileSync } from "node:fs";
 import { resolve, fromEvent } from "./resolve.js";
@@ -429,6 +429,84 @@ console.log("\nEVERY FIELD HAS A COLUMN — the record and the table, both ways.
   const stray = toRow({ id: "x", title: "t", due_phrase: "Due at five" }, "o");
   say(!("due_phrase" in stray),
       "a record from an older build carrying a working value is sent without it, so a queue stuck behind one drains");
+}
+
+// --------------------------------------- session 160, an interval in minutes
+//
+// His words: "I need repeat in minutes as well instead of just days, weeks,
+// etc." Two words added to a list, and the reason this block is long is that
+// the words were not the work.
+//
+// EVERY WALK THROUGH THIS SCHEDULE WAS CAPPED BY A COUNT. `nextDue` stepped up
+// to 500 times and `nextRing` up to 5000, each guarding against `every 0`,
+// which steps nowhere. A count is a safe stand-in for a duration only while
+// one step is large: 500 days is longer than anything a person leaves open,
+// and 500 steps of five minutes is 42 hours. Past the cap both returned
+// `null` — a series that produces no next occurrence and an alarm screen that
+// says nothing is scheduled, from a repeat left alone over a weekend.
+//
+// The assertion that matters here is the LONG GAP one. The wording and the
+// chip labels are pleasant to get right; a schedule that stops is the defect
+// adding a unit would have shipped.
+{
+  const DAY_MS = 86400000;
+  // One step, per unit, straight off the rule.
+  say(step(0, { every: 30, unit: "minute" }) === 30 * 60000, "a minute step is 30 minutes of milliseconds");
+  say(step(0, { every: 2, unit: "hour" }) === 7200000, "an hour step is two hours");
+  say(step(0, { every: 1, unit: "week" }) === 7 * DAY_MS, "and a week is still seven days");
+
+  // THE LONG GAP. A five-minute repeat anchored eight days back: 2304 steps,
+  // which the old 500-step loop could not reach.
+  const eightDays = 8 * DAY_MS;
+  const landed = advanceTo(0, { every: 5, unit: "minute" }, eightDays);
+  say(landed !== null, "a 5-minute repeat eight days stale still has a next occurrence");
+  say(landed === eightDays + 5 * 60000,
+      "and it is the first five-minute mark past the clock, not the 500th step from the anchor");
+
+  // MINIMAL, AND AT LEAST ONE STEP. Both halves of the rule, on the boundary.
+  say(advanceTo(0, { every: 10, unit: "minute" }, 600000) === 1200000,
+      "an instant landing exactly on the limit takes one more step");
+  say(advanceTo(600000, { every: 10, unit: "minute" }, 0) === 1200000,
+      "an anchor already ahead of the clock still steps once — a repeat closed early must not spawn on its own date");
+  say(advanceTo(0, { every: 0, unit: "minute" }, 1000) === null, "`every 0` cannot move and says so");
+  say(advanceTo(0, { every: 1, unit: "month" }, Date.parse("2030-01-01")) !== null,
+      "months are still walked, and a hundred years of them is the cap");
+
+  // THE RECORD. One occurrence spawns the next, as it does for a week.
+  const store = fakeStore([task({
+    due_at: "2026-08-20T17:00:00+05:30",
+    recurrence: { every: 20, unit: "minute" },
+  })]);
+  await applyOutcome(store, "t1", "DONE", NOW_MS, successorId(task()));
+  const next = adds(store)[0] && adds(store)[0][1];
+  say(Boolean(next), "a 20-minute repeat spawns on done");
+  // NOT 17:20. `NOW_MS` is 17:00Z, which is 22:30 on this task's own clock, so
+  // the anchor is five and a half hours behind the moment it was closed and the
+  // next occurrence is the next 20-minute mark ON THE ANCHOR'S GRID past that:
+  // 17 steps, not one. Stepping from the close instead would have given 22:50
+  // and moved the grid, which is the drift `nextDue` exists to prevent — and
+  // the value this assertion first claimed was 17:20, which is the mistake of
+  // reading "the next occurrence" as "one interval later".
+  say(next && next.due_at === "2026-08-20T22:40:00+05:30",
+      "and it lands on the anchor's own 20-minute grid past the clock, with the offset kept");
+  say(next && next.push_count === 0 && next.reminder_fatigue === 0,
+      "and it inherits the schedule and none of the history");
+
+  // THE WORDS. `at 3pm` names the only time a thing happens, which is true of
+  // a week and false of anything shorter than a day.
+  say(sentenceFor({ every: 30, unit: "minute" }, "2026-08-20T15:00:00+05:30", true) === "every 30 minutes from 3pm",
+      "the sentence reads `every 30 minutes from 3pm`, naming the anchor rather than claiming one time");
+  say(sentenceFor({ every: 1, unit: "minute" }, "2026-08-20T15:00:00+05:30", true) === "every minute from 3pm",
+      "and one of them drops the number");
+  say(sentenceFor({ every: 1, unit: "week" }, "2026-08-20T15:00:00+05:30", true) === "every week on Thursday at 3pm",
+      "a week still says `on Thursday at 3pm`");
+  say(sentenceFor({ every: 2, unit: "day" }, "2026-08-20T15:00:00+05:30", true) === "every 2 days at 3pm",
+      "and `every 2 days` is plural — the detail panel said `every 2 day` until this sentence moved out of the screen");
+  say(sentenceFor({ every: 3, unit: "hour" }, null, false) === "every 3 hours",
+      "a repeat set before a date reads as the interval alone rather than as nothing");
+
+  // The ring's own cap had the same defect and is asserted where `nextRing`
+  // lives, in `check_alarm.mjs`. This file does not import `alarm.js`.
 }
 
 console.log(`\n${bad === 0 ? "CHECK WRITES: PASS" : `CHECK WRITES: ${bad} FAILED`}\n`);

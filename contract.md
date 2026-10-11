@@ -1,6 +1,6 @@
 # Cascade Part A — Contract
 
-Stage 2 deliverable, version 60. Companion to `spec/example.md`; see VERSIONS in spec.md.
+Stage 2 deliverable, version 61. Companion to `spec/example.md`; see VERSIONS in spec.md.
 
 This file says what every piece of information **is**. `spec/example.md` says what one session **was**. Where they disagree, one of them is wrong and the disagreement is a defect.
 
@@ -169,7 +169,7 @@ Typed now so the record shape is fixed, as Part 3 Stage 2 requires. Part A write
 
 | Name | Type | Required | Unit | Range | Part A writes | Part |
 |---|---|---|---|---|---|---|
-| `recurrence` | object | optional | — | `{every, unit}` with `unit` one of `day` `week` `month` `year` (`year` added session 123). Empty when the task does not repeat. | *(none)* | the advanced panel |
+| `recurrence` | object | optional | — | `{every, unit}` with `unit` one of `minute` `hour` `day` `week` `month` `year` (`year` added session 123; `minute` and `hour` session 160). Empty when the task does not repeat. | *(none)* | the advanced panel |
 | `alarm_type` | one-of-a-fixed-set | yes | — | an `alarm_types` member. `none` on capture unless the line asks. Set only while `has_time`. | `none` | the line, or the capture row |
 | `alarm_lead_min` | whole number | optional | minutes | Before `due_at`, up to `alarm_defaults.max_lead_min`. Empty when `alarm_type` is `none`. | *(none)* | the advanced panel |
 | `alarm_snoozed_until` | instant | optional | — | When it rings instead of `alarm_at`. Empty until a snooze. May sit past `due_at`. | *(none)* | the alarm shell |
@@ -383,7 +383,9 @@ Every rendered string, with its template. Part 4 applies here too: these spellin
 
 **An alarm needs a stated time, and the toggle is drawn only when there is one.** A task due "Friday" resolves to 23:59:59, so a lead from that instant rings at a quarter to midnight, which is not a reminder about Friday. The alternative was a second rule inventing a time of day the person never gave. So the row appears with a time and disappears with it: a control that cannot work is not drawn.
 
-**`alarm_type` is `none` or `on`. There is no `repeat`.** Every alarm rings for `ring_sec`, snoozes itself for `auto_snooze_min` and does that up to `auto_max` times, so "ring again every" was a second way of asking for what an alarm already does. A task that should come back another day has `recurrence`.
+**`alarm_type` is `none` or `on`. There is no `repeat`.** Every alarm rings for `ring_sec`, snoozes itself for `auto_snooze_min` and does that up to `auto_max` times, so "ring again every" was a second way of asking for what an alarm already does. A task that should come back has `recurrence`.
+
+**An alarm's auto-snooze and a short `recurrence` are not the same thing, and session 160 made it possible to confuse them.** Auto-snooze nags about **one** occurrence: the same row, rung again, counted in `reminder_fatigue`, and it stops after `auto_max`. `{every: 10, unit: "minute"}` is a **schedule**: each occurrence is closed and the next is a new row with its own history, and it does not stop. Ten minutes is the interval in both cases and nothing else about them matches.
 
 **The web app still fires nothing, and the Android shell does.** `alarm_at` stays derived and unstored. What the shell arms is `alarm_snoozed_until` when that is still ahead of the clock and `alarm_at` otherwise.
 

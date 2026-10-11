@@ -30,32 +30,25 @@
 
 const v = new URL(import.meta.url).search;
 const { el, button } = await import(`./mvp.paint.js${v}`);
+// The sentence this panel's Never chip wears used to be written here. It is in
+// `repeat.js` now (session 160): the detail panel was writing a second, worse
+// version of it, and a sentence sitting in a screen file is a sentence no check
+// can read.
+const { sentenceFor } = await import(`./repeat.js${v}`);
 
-const REPEAT_UNITS = ["day", "week", "month", "year"];
+// SIX NOW, SMALLEST FIRST (session 160, his words: "I need repeat in minutes as
+// well instead of just days, weeks, etc."). Smallest first because the order a
+// person scans is the order the numbers run in, and because the two new ones
+// are the ones being looked for.
+const REPEAT_UNITS = ["minute", "hour", "day", "week", "month", "year"];
 
-const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-const MONTHS = ["January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"];
-const nth = (n) => n + (n % 10 === 1 && n !== 11 ? "st" : n % 10 === 2 && n !== 12 ? "nd" : n % 10 === 3 && n !== 13 ? "rd" : "th");
-
-/** The app's reading of the repeat, as one sentence, derived from the due
- * date the schedule anchors on (session 123, his slide): `every week on
- * Tuesday at 3pm`. Spawn-on-done semantics mean the sentence describes the
- * schedule, not a promise about when the next row appears. */
-function repeatSentence(repeat, dueAt, hasTime) {
-  if (!repeat || !dueAt) return null;
-  const n = repeat.every ?? 1;
-  const base = n === 1 ? `every ${repeat.unit}` : `every ${n} ${repeat.unit}s`;
-  const d = new Date(dueAt.slice(0, 19));
-  let when = "";
-  if (repeat.unit === "week") when = ` on ${WEEKDAYS[d.getDay()]}`;
-  if (repeat.unit === "month") when = ` on the ${nth(d.getDate())}`;
-  if (repeat.unit === "year") when = ` on ${d.getDate()} ${MONTHS[d.getMonth()]}`;
-  const clock = hasTime
-    ? ` at ${((d.getHours() + 11) % 12) + 1}${d.getMinutes() ? ":" + String(d.getMinutes()).padStart(2, "0") : ""}${d.getHours() < 12 ? "am" : "pm"}`
-    : "";
-  return base + when + clock;
-}
+// THE CHIP TEXT IS NOT THE STORED VALUE. The chips read `u + "s"` while there
+// were four, which gave `minutes` and `hours` for free and six plural words on
+// one line — 41 characters of label before any padding, on a 320-pixel phone
+// whose font sizes session 139 had just been spent reducing. The store keeps
+// the whole word, because `every 30 minutes` is what the sentence has to say;
+// the chip carries the short one, because what a chip has to do is be hit.
+const REPEAT_CHIP = { minute: "min", hour: "hr", day: "day", week: "week", month: "month", year: "year" };
 
 /** `min` `hour` `day` in descending size, so a duration reads in its largest whole unit. */
 const unitsBySize = (config) =>
@@ -132,11 +125,12 @@ export function drawPanel(panel, config, state, on) {
   // his slide): beside `Repeat every`, saying `Never` until a repeat is set,
   // then the app's own sentence — `every Wednesday at 5pm` — because a control
   // that echoes its meaning back cannot be silently misread. Tapping it is
-  // always the way back to never. The number and the four units sit in ONE
-  // line below (his sizing).
+  // always the way back to never. The number and the units sit below it, on as
+  // few lines as they fit on — one while there were four of them, two now there
+  // are six (session 160; the reason is on `.taps.rep-line` in the stylesheet).
   const repHead = el("div", "group-head");
   repHead.appendChild(el("div", "label", "Repeat every"));
-  const sentence = repeatSentence(repeat, dueAt, hasTime);
+  const sentence = sentenceFor(repeat, dueAt, hasTime);
   // The chip wears the whole sentence (session 125, his slide: "not showing
   // full text"). It was capped at 62% of the row with an ellipsis, so
   // `every month on the 23rd at 3:30pm` — the one thing on the screen that
@@ -162,7 +156,7 @@ export function drawPanel(panel, config, state, on) {
   rep.appendChild(every);
   for (const u of REPEAT_UNITS) {
     const on_ = repeat?.unit === u;
-    rep.appendChild(button("chip" + (on_ ? " on" : ""), u + "s", () =>
+    rep.appendChild(button("chip" + (on_ ? " on" : ""), REPEAT_CHIP[u], () =>
       on.setRepeat({ every: Math.max(1, Number(every.value) || 1), unit: u })));
   }
   const repWrap = el("div", "group");

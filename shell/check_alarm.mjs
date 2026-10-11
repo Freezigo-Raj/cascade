@@ -279,6 +279,33 @@ console.log("\na length of time, spaced either way");
 
   // The record is not touched by any of it.
   say(daily.due_at === "2026-08-17T17:00:00+05:30", "and the task's own date is left exactly where it was");
+
+  // AN INTERVAL IN MINUTES, AND THE CAP THAT USED TO BE HERE (session 160).
+  // This function walked the schedule one step at a time, capped at 5000 steps
+  // against `every 0`. 5000 days is fourteen years; 5000 steps of `every 1
+  // minute` is three and a half days, and past the cap it returned `null` —
+  // the alarms screen reporting nothing scheduled for the repeat that rings
+  // most often. The cap was a count where the thing guarded is a duration.
+  const minutely = task({
+    due_at: "2026-08-16T17:00:00+05:30", alarm_lead_min: 0,
+    recurrence: { every: 1, unit: "minute" },
+  });
+  const ring = nextRing(minutely, config, "2026-08-20T17:00:30+05:30");
+  say(ring === "2026-08-20T17:01:00+05:30",
+      "an every-minute repeat four days stale reports the next minute — 5760 steps, where the walk gave up at 5000");
+  // And the lead is still taken off the DUE date rather than the ring, which is
+  // what makes `now + lead` the right limit to clear.
+  const quarterly = task({
+    due_at: "2026-08-16T17:00:00+05:30", alarm_lead_min: 10,
+    recurrence: { every: 15, unit: "minute" },
+  });
+  // The occurrences sit on :00 :15 :30 :45 and the rings ten minutes before
+  // each, on :50 :05 :20 :35. At 9:07 the 9:05 ring has gone, so the answer is
+  // 9:20 — which rings for the 9:30 occurrence, not the 9:15 one. Both of those
+  // numbers were wrong when this assertion was first written, which is what a
+  // lead does to an interval shorter than itself.
+  say(nextRing(quarterly, config, "2026-08-20T09:07:00+05:30") === "2026-08-20T09:20:00+05:30",
+      "a 15-minute repeat with a 10-minute lead rings at 9:20 for the 9:30 occurrence");
 }
 
 // ------------------------------- sessions 132 and 136, `Later today` in bands
