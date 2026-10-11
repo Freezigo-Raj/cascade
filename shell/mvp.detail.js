@@ -127,6 +127,33 @@ export function mountDetail(root, on) {
     if (task.push_count) fact("Pushed", `${task.push_count} time${task.push_count === 1 ? "" : "s"}`);
     root.appendChild(row("What it carries", facts));
 
+    // ------------------------------------------------------- the hand-off
+    //
+    // WHY IT IS ON THIS PANEL AND NOT ON THE ROW. A row carries a tick, a pin,
+    // a bin and up to four push chips on a 320px phone, and session 139 was
+    // spent taking width off that row rather than adding to it. Giving work
+    // away is also not a thing anybody does in passing: the panel is where a
+    // task is read, and it is where a decision about who should do it belongs.
+    //
+    // THE BUTTON IS DRAWN FOR EVERY TASK AND SAYS WHY WHEN IT CANNOT. A
+    // control that disappears reads as a feature that is missing; one that is
+    // dim reads as an app that is broken. `canSend` holds the three reasons
+    // and each has a sentence.
+    if (on.send) {
+      const hand = el("div", "d-hand");
+      const state = on.sendState ? on.sendState(task) : "none";
+      if (state === "queued") {
+        hand.appendChild(el("div", "d-said", on.sendLabel(task)));
+        hand.appendChild(button("act", "Cancel the send", () => on.cancelSend(task)));
+      } else if (state === "offered") {
+        hand.appendChild(el("div", "d-said", on.sendLabel(task)));
+        hand.appendChild(button("act", "Withdraw", () => on.withdraw(task)));
+      } else {
+        hand.appendChild(button("act", "Give to someone\u2026", () => on.send(task)));
+      }
+      root.appendChild(row("Hand it over", hand));
+    }
+
     root.appendChild(wipRow("Activity"));
   }
 

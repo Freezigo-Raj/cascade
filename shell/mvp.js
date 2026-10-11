@@ -20,6 +20,8 @@ const v = new URL(import.meta.url).search;
 const { configured } = await import(`./env.js${v}`);
 const { account, recoveryInUrl } = await import(`./auth.js${v}`);
 const { mountGate } = await import(`./gate.js${v}`);
+// Handed to the hand-off screen, whose correction goes through `resolve()`.
+const { partAConfig } = await import(`./config.js${v}`);
 
 const app = document.getElementById("app");
 const rail = document.getElementById("rail");
@@ -96,6 +98,14 @@ window.addEventListener("popstate", (e) => {
   const name = e.state?.screen ?? "list";
   if (name === "account") { showAccount(false); return; }
   if (name === "alarms") { showAlarms(false); return; }
+  if (name === "received") { showReceived(false); return; }
+  if (name === "given") { showGiven(false); return; }
+  // NOT `offer`. That screen is mounted around ONE offer handed to it, and the
+  // history entry carries only a name — there is nothing in it to find the
+  // offer again with, and an offer that has since been answered is not there
+  // to find. A back onto it lands on the list of them instead, which is the
+  // screen it was opened from and the one that can still say something true.
+  if (name === "offer") { showReceived(false); return; }
   showList();
 });
 
@@ -164,6 +174,7 @@ async function showList() {
     openEdit: openTask,
     openAccount: () => showAccount(),
     openAlarms: () => showAlarms(),
+    openReceived: () => showReceived(),
     onTasks: (tasks) => { bar?.setTasks(tasks); detail?.draw(); },
     onGo: null,
   });
@@ -279,6 +290,88 @@ async function showAlarms(push = true) {
   });
 }
 
+/**
+ * SCREEN 5 AND SCREEN 6: what has been sent to him, and one offer in full
+ * (session 161).
+ *
+ * Whole-window, like the alarms and the account, and for the same reason: a
+ * place you go to settle something rather than a thing you work beside. Every
+ * press on them changes which list a task is on.
+ *
+ * `labelFor` is handed in rather than looked up inside the screens, so his word
+ * for an address is read in one place. `contact.js` owns the rule; these are
+ * given its answer.
+ */
+async function offerScreens() {
+  return await load("mvp.offers.js", "The hand-off screens");
+}
+
+/** His word for an address, or the address. Kept warm here. */
+let nameCards = [];
+const labelForEmail = (email) => {
+  const at = String(email ?? "").trim().toLowerCase();
+  const c = nameCards.find((x) => String(x?.email ?? "").trim().toLowerCase() === at);
+  return String(c?.name ?? "").trim() || at;
+};
+async function warmCards() {
+  try {
+    const { contacts } = await import(`./people.bridge.js${v}`);
+    nameCards = await contacts();
+  } catch { /* no names is the normal state on a new phone. */ }
+}
+
+async function showReceived(push = true) {
+  const m = await offerScreens();
+  if (!m) return;
+  await warmCards();
+  route = "received";
+  mark("received", push);
+  closeWide();
+  await put(screen, m.mountReceived, "received", {
+    close: () => history.back(),
+    labelFor: labelForEmail,
+    open: (offer) => showOffer(offer),
+  });
+}
+
+async function showOffer(offer, push = true) {
+  const m = await offerScreens();
+  if (!m) return;
+  await warmCards();
+  // HELD RATHER THAN LOOKED UP BY ID, for the reason `mvp.edit.js` holds the
+  // task it is editing: accepting deletes nothing but declining settles the
+  // row, and a screen that re-read its subject from a list would redraw itself
+  // empty at the moment it reported success.
+  let held = offer;
+  route = "offer";
+  mark("offer", push);
+  closeWide();
+  await put(screen, m.mountOffer, "offer", {
+    offer: () => held,
+    config: partAConfig,
+    labelFor: labelForEmail,
+    say: (text) => { pending = text; },
+    close: () => { held = null; history.back(); },
+  });
+}
+
+async function showGiven(push = true) {
+  const m = await offerScreens();
+  if (!m) return;
+  await warmCards();
+  route = "given";
+  mark("given", push);
+  closeWide();
+  const { account } = await import(`./auth.js${v}`);
+  const who = await account.current().catch(() => null);
+  await put(screen, m.mountGiven, "given", {
+    owner: () => who?.id ?? null,
+    labelFor: labelForEmail,
+    say: (text) => { pending = text; },
+    close: () => history.back(),
+  });
+}
+
 async function showAccount(push = true) {
   const m = await load("mvp.account.js", "The account screen");
   if (!m) return;
@@ -290,6 +383,7 @@ async function showAccount(push = true) {
   // to a Sign out button offers to type into an account you are leaving.
   closeWide();
   await put(screen, mountAccount, "account", {
+    openGiven: () => showGiven(),
     onBack: () => history.back(),
     onSignedOut: () => { started = false; gate(); },
   });
@@ -402,6 +496,19 @@ async function start() {
     await initCalendar();
   } catch (e) {
     console.warn("calendar: not started —", e?.message ?? e);
+  }
+  // HAND-OFFS (session 161, the first build in which anything presses them).
+  // NOT AWAITED, and that is the whole of the care this needs: `initOffers`
+  // reads the offer table, pulls the block list and drains whatever is queued,
+  // which is three network calls, and session 141 is what three awaits on this
+  // path cost — twenty-six seconds of blank screen and then the sign-in page,
+  // with no alarm armed. It also re-runs itself on `online`, so a boot with no
+  // signal loses nothing by this returning immediately.
+  try {
+    const { initOffers } = await import(`./offer.bridge.js${v}`);
+    initOffers();
+  } catch (e) {
+    console.warn("offers: not started —", e?.message ?? e);
   }
   // THE WEEKLY LOOK FOR A NEWER BUILD (session 155, his call). Last, and NOT
   // awaited: session 141 is why, three awaits on the boot path turned an

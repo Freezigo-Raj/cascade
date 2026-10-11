@@ -21,6 +21,12 @@ const { tasks } = await import(`./store.select.js${v}`);
 const { nowLocal } = await import(`./mvp.clock.js${v}`);
 const { ask } = await import(`./mvp.dialog.js${v}`);
 const { drawPanel } = await import(`./mvp.panel.js${v}`);
+// The hand-off rules, and the calls behind them. Both are needed here because
+// the advanced panel is the one surface that shows one existing task at every
+// width; `mvp.offers.js` holds the sheet and is imported only on the press.
+const OFFER = await import(`./offer.js${v}`);
+const OFFERS = await import(`./offer.bridge.js${v}`);
+const PEOPLE = await import(`./people.bridge.js${v}`);
 const { removeSpans } = await import(`./mvp.words.js${v}`);
 const { el, button } = await import(`./mvp.paint.js${v}`);
 const { makeDates, storedWhen, when } = await import(`./mvp.chips.js${v}`);
@@ -54,6 +60,20 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
   let heldTask = null;
   let toast = null;
   let toastTimer = 0;
+  // Offers this device last saw, so the hand-off row can draw with no signal.
+  // Refreshed on the one event that changes them.
+  let offers = [];
+  let contactCards = [];
+  let myAddress = "";
+  // Read once per mount and refreshed on the two events that change them. Not
+  // awaited anywhere near the first paint: a screen that waited on the network
+  // to draw a box is what session 141 was about.
+  const loadPeople = () => {
+    OFFERS.known().then((list) => { offers = list; paint(); }).catch(() => {});
+    PEOPLE.contacts().then((list) => { contactCards = list; }).catch(() => {});
+    myAddress = OFFERS.myEmail();
+  };
+  const onOffers = () => loadPeople();
 
   // ------------------------------------------------------------- the skeleton
 
@@ -483,6 +503,69 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
     return "rings " + fmtClock(ringMs) + when + (rep ? " \u00b7 repeats" : "");
   }
 
+  /**
+   * WHAT THE HAND-OFF ROW SHOWS, assembled from the rules and nothing else.
+   *
+   * `sendState` says where a hand-off has got to, `canSend` says whether one
+   * is possible, and `offerLabel` writes the sentence. This function picks
+   * which of those to ask and does not decide any of it — a screen that
+   * computed "already offered" would be a second record of a fact the offer
+   * table owns, which is the thing `canSend`'s comment refuses.
+   */
+  function handOff() {
+    const task = heldTask ?? all.find((t) => t.id === boundId);
+    if (!task) return null;
+    const where = OFFER.sendState(task, offers);
+    const label = OFFER.offerLabel(task, offers, contactCards);
+    const after = async (out, said) => {
+      if (!out?.ok) { say(out?.why ?? "That did not work."); return; }
+      say(said);
+      offers = await OFFERS.known();
+      paint();
+    };
+    if (where !== "none") {
+      const live = OFFER.offeredOn(task.id, offers);
+      return {
+        state: where,
+        label,
+        cancel: async () => after(await OFFERS.cancelSend(live), "Called off. The task is still yours."),
+        withdraw: async () => after(await OFFERS.withdraw(live), "Taken back. It is yours again."),
+      };
+    }
+    // THE THREE REASONS `canSend` REFUSES, each with its own sentence. A dim
+    // button would say none of them.
+    if (task.task_state !== "ready" || task.archived) {
+      return { state: "none", why: "Finished work is not a thing to ask somebody else to do." };
+    }
+    if (task.calendar_uid) {
+      return {
+        state: "none",
+        why: "This came from Google Calendar, so the event is not this app's to give away. "
+           + "Edit it here first and it detaches.",
+      };
+    }
+    return {
+      state: "none",
+      send: async () => {
+        const mod = await import(`./mvp.offers.js${v}`).catch(() => null);
+        if (!mod) { say("The hand-off sheet is not on this phone yet. Open it once with signal."); return; }
+        const picked = await mod.sendSheet(task, offers, myAddress);
+        if (!picked) return;
+        const out = await OFFERS.send(task, picked.to, picked.name);
+        if (!out.ok) { say(out.why); return; }
+        offers = await OFFERS.known();
+        paint();
+        // TWO DIFFERENT TRUE SENTENCES, and which one is said is the whole of
+        // what his instruction bought: a queued hand-off has told nobody
+        // anything, and saying "sent" there is the invisible failure session
+        // 159 refused queueing over.
+        say(out.queued
+          ? `Waiting for a signal. It goes to ${picked.name || picked.to} when there is one, and the task is still yours.`
+          : `Given to ${picked.name || picked.to}. It leaves your list when they take it.`);
+      },
+    };
+  }
+
   function drawTypes(out) {
     typeRow.innerHTML = "";
     panel.innerHTML = "";
@@ -610,6 +693,9 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
         durationTapped: durTap !== null,
         firmness: firmTap,
         notes: notesText,
+        // ABSENT ON A CAPTURE, on purpose: `boundId` is null until a row has
+        // been opened, and a task that does not exist cannot be given away.
+        handOff: boundId ? handOff() : null,
       }, {
         setRepeat: (r) => { repeat = r; paint(); },
         setDuration: (n) => { durTap = n; paint(); },
@@ -685,6 +771,9 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
   // one sync event meant four repaints on the fourth visit.
   const onStore = () => { reload(); };
   window.addEventListener("cascade:store-changed", onStore);
+  window.addEventListener("cascade:offers-changed", onOffers);
+  window.addEventListener("cascade:people-changed", onOffers);
+  loadPeople();
 
   reload().then(() => {
     if (taskId) load(taskId);
@@ -700,6 +789,8 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
     },
     unmount() {
       window.removeEventListener("cascade:store-changed", onStore);
+      window.removeEventListener("cascade:offers-changed", onOffers);
+      window.removeEventListener("cascade:people-changed", onOffers);
       clearTimeout(toastTimer);
     },
   };

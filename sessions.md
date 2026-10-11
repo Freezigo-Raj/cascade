@@ -4437,11 +4437,24 @@ Both corrected to what the engine does, because in both cases the engine was rig
 - A 20-minute repeat closed five and a half hours after its anchor spawns at **22:40**, not 17:20. The next occurrence is the next point on the **anchor's grid** past the clock, not one interval after the close. Stepping from the close would move the grid every time you were late, which is the drift the schedule rule exists to prevent.
 - A 15-minute repeat with a 10-minute lead, asked at 9:07, rings at **9:20** for the 9:30 occurrence. Not 9:05 — that had gone. A lead longer than the interval is where reading a schedule stops being obvious.
 
-### One honest limit
+### One limit, stated twice because I stated it too broadly the first time
 
-A sub-day repeat arms **one** ring at a time, because there is only ever one open occurrence. If nobody answers, the occurrence keeps nagging on `auto_snooze_min` up to `auto_max`, but the **next** occurrence does not arm until the app runs or an outcome lands.
+I wrote that the next occurrence "does not arm until the app runs". He asked whether pressing Done arms it. It does, and the first wording did not say so.
 
-At daily intervals the app is opened in between. At five-minute intervals it is not. Unchanged design, newly visible. Fixing it is a Kotlin re-arm chain and a new policy, so it is not in this build.
+A repeat has one open occurrence, so one armed ring. The next occurrence is created when the current one closes and armed the moment that write lands — `apply()` dispatches `cascade:store-changed`, and `initAlarms` listens to it with `syncAlarms`. What matters is whether the press reaches the web half.
+
+| Pressed at the lock screen | Ring stops | App comes forward | Next one armed |
+|---|---|---|---|
+| Done | yes | yes, `surface()` | straight away |
+| Push | yes | yes | straight away |
+| Snooze | yes | no | same occurrence, re-armed in Kotlin |
+| Cancel | yes | **no** | at next app open |
+| Dismiss | yes | **no** | at next app open |
+| ignored | auto-snooze to `auto_max`, then UNANSWERED | no | at next app open |
+
+`surface()` exists for exactly this: Done and Push bring the app forward so the press is applied where it can be seen. Cancel and Dismiss deliberately do not, by the session-128 decision that somebody cancelling at a lock screen has said what they wanted to say.
+
+So the limit is an **ignored** alarm, or a Cancel or Dismiss from the lock screen. Invisible at daily intervals; at five-minute intervals the chain pauses while the app is closed.
 
 ### A correction I owe from the start of this session
 
@@ -4456,3 +4469,88 @@ Build 75 and 76 never touch either object. The migration is still owed before th
 The shape of the error is worth naming: I reasoned from the *design* of the offers feature — a column on every task, written on every row — rather than from the function that builds the row. Session 152's defect was real and this is its false positive.
 
 **Shell 76. No migration for this session, no Kotlin, no APK.** Contract 61. Ten checks green.
+
+---
+
+## Session 161 — 11 October 2026
+
+**His job, in four parts:** send offline and let it go later; a dropdown of addresses already used, with names; let him refuse tasks from an address; and the screens, which session 159 held back.
+
+### I was wrong about offline sending, and the reason is worth keeping
+
+Session 159 made a send need a connection, on this: an offer is a message to another person, so queueing one would mean pressing `Give to Raj`, watching the task leave the list, and finding out tomorrow that Raj never got it.
+
+His instruction carried the answer in its second half — *"no change in task till then unless cancelled"*.
+
+The failure was invisible **only because I had the task moving at the press**. With the task untouched until the offer lands there is nothing to be misled about. I was protecting against a consequence of my own ordering.
+
+| | Row says | Action | The task |
+|---|---|---|---|
+| queued, no signal yet | `Sending to Raj` | Cancel | untouched, still yours |
+| landed | `Offered to Raj` | Withdraw | untouched, still yours |
+| accepted | gone from your list | — | theirs |
+
+A queued one is **deleted** on cancel, not withdrawn. Nobody was told, so a `withdrawn` row would be a permanent record of something that never happened.
+
+### And a defect found on the way in
+
+**The offer row was built by spreading the record.** That is session 152's defect sitting in a second table, waiting for its first local-only field — and that field arrived in this same session. `pending` would have gone to PostgREST, been refused, and stopped the queue behind it.
+
+`OFFER_COLUMNS` and `offerRow` now hold it, audited both ways against `migrate_offers.sql`. `BLOCK_COLUMNS` does the same for the new table. No row in this project is built by a spread.
+
+**The offers queue is its own queue.** No task write passes through it, which is the whole reason it is separate: a jam there delays hand-offs and nothing else.
+
+### Why the offer id is *not* derived
+
+Repeats, calendar imports, the calendar relink and accepts all derive an id. This one does not, and the difference is the test for when derivation is the answer: those four have **several independent producers** that must agree on a row. An offer has one producer — the press. The id is minted once and stored, so a drain retrying after a lost reply sends the same id and the primary key refuses it. Deriving from the task and the address would have made re-sending after a decline collide with the declined row.
+
+### Names on the phone, blocks in the account
+
+| | Where | Why |
+|---|---|---|
+| Names | this phone | Your answer. A nickname is a convenience; losing it costs a retype. |
+| Blocks | your account | A boundary absent on a second phone is a setting that happened to work once. |
+
+So there is a **second migration**, `migrate_blocks.sql`. `migrate_offers.sql` was not touched — you had it with its checksum quoted and may paste it at any moment.
+
+**Still no directory.** The dropdown is built out of your own offers: every address in it comes from a row the select policy already lets you read. A card you named but never used still appears, because naming it was deliberate.
+
+### Declined for people you know, silent for strangers
+
+An auto-decline is also a **receipt**: it tells whoever sent it that the address is real and somebody is behind it. That is what a colleague who mistyped an address needs, and exactly what somebody sending unwanted work wants to learn.
+
+"Know" is one earlier offer in either direction. A name typed on your own phone is not an exchange.
+
+The verdict is decided on the `from_email` claim, which a sender writes. The worst a forgery buys is a decline instead of silence — a worse outcome for the forger. Not worth a directory to close.
+
+A silent block keeps the offer where you can find it, in the account screen's list. A boundary applied in anger to the wrong address has to be findable, or the work is gone with no trace of where.
+
+### Finishing it yourself pulls it back
+
+Your answer. The withdraw lives behind `cascade:tasks-written` and not at the four presses that close a task, because session 143 is what a rule at each of them cost.
+
+If they accepted a moment first, the guard refuses the withdraw and **the accept stands** — they hold a copy and that cannot be un-given. One sentence says so.
+
+### Where the control lives
+
+The advanced panel. It is the one surface showing **one existing task at every width**: the detail column is wide-only and you use a phone, and a row on a 320px screen already carries a tick, a pin, a bin and four push chips that session 139 was spent narrowing.
+
+It is drawn for every task and **says why when it cannot be used**. `canSend` refuses for three reasons and each has a sentence; a dim button says none of them.
+
+### Three of my own assertions were wrong before the code was
+
+All three the same mistake: asserting what I expected rather than deriving what the rule says.
+
+- a 20-minute repeat closed five hours late lands on the **anchor's** grid, not one interval on
+- a 15-minute repeat with a 10-minute lead rings for the occurrence **after** the one in view
+- a contact card touched by a send just now outranks an older offer, because a named card's own `used_at` counts as a use
+
+Each corrected to the engine, because each time the engine was right.
+
+### The screens, and how they were checked
+
+Session 159 held them back because a screen is the layer no check can reach — your rule from 137 — and session 133 shipped one that threw at mount and made every tab look empty over an intact store.
+
+That rule is about what the project **carries**, not about building blind. The screens were mounted against a DOM in the build container as a throwaway script: nine mounts, four hand-off states and the six repeat chips, exercised once. The script is not in the zip.
+
+**Shell 77. `migrate_blocks.sql` must be run. No Kotlin, no APK.** Ten checks green.

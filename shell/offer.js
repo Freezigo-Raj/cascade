@@ -29,6 +29,50 @@ const { resolve } = await import(`./resolve.js${v}`);
 /** The four states an offer can be in. Nothing else is legal. */
 export const STATES = ["offered", "accepted", "declined", "withdrawn"];
 
+/**
+ * THE COLUMNS OF `cascade_offer`, AND THE ROW IS BUILT FROM THIS LIST.
+ *
+ * It was built by spreading the record — `{...offer}` — until session 161,
+ * which is session 152's defect sitting in a second table waiting for its
+ * first local-only field. That field arrived in the same session: `pending`,
+ * below. A spread would have sent it, PostgREST would have refused a column
+ * that does not exist, and the queue would have stopped at the first failure
+ * to keep its order, exactly as the task outbox did for hours.
+ *
+ * No row in this project is built by a spread now. `check_offers.mjs` reads
+ * `migrate_offers.sql` and holds this list to it BOTH WAYS: a name here that
+ * the table has not got, and a column there this list leaves out.
+ */
+export const OFFER_COLUMNS = [
+  "id",
+  "from_owner", "from_email",
+  "to_email", "to_owner",
+  "task_id", "accepted_task_id",
+  "payload", "edited",
+  "state", "decline_reason",
+  "done_at", "done_at_offset", "done_state",
+  "created_at", "created_at_offset",
+  "updated_at", "updated_at_offset",
+];
+
+/**
+ * FIELDS THAT LIVE ONLY ON THE PHONE. One, and it is the reason the list above
+ * exists.
+ *
+ * `pending` means: this offer was made while there was no connection and has
+ * not reached the server yet. The server has no column for it and must not be
+ * told about it. Stated as a list so the next one is added here rather than
+ * discovered in a stuck queue.
+ */
+export const LOCAL_ONLY = ["pending"];
+
+/** A record into a row, from the column list and never from the record. */
+export function offerRow(offer) {
+  const row = {};
+  for (const k of OFFER_COLUMNS) if (k in (offer ?? {})) row[k] = offer[k];
+  return row;
+}
+
 /** An open task, written out, as `calendar.js` and `repeat.js` each do. */
 const isOpen = (t) => Boolean(t) && t.task_state === "ready" && !t.archived;
 
@@ -75,10 +119,71 @@ export function offeredOn(taskId, offers) {
   return (offers ?? []).find((o) => o.task_id === taskId && o.state === "offered") ?? null;
 }
 
+/**
+ * WHERE A HAND-OFF HAS GOT TO: nothing, waiting for a signal, or out with
+ * somebody (session 161, his instruction: "signal can't work, it can send
+ * later when connection arrives — no change in task till then unless
+ * cancelled").
+ *
+ * The distinction the row has to draw is NOT sent versus answered. It is SENT
+ * versus NOT YET SENT, because those two offer the person opposite actions and
+ * mean opposite things about the work:
+ *
+ *   queued    nobody has been told anything. Cancel costs nothing and the task
+ *             is untouched and still his to do.
+ *   offered   another person is looking at it. Taking it back is a Withdraw,
+ *             which is a message, and it can lose a race against their accept.
+ *
+ * A queued offer carries `state: "offered"` because that is what it will mean
+ * the moment it lands, and `pending: true` because it has not. One field, and
+ * the row's two labels come off it.
+ */
+export function sendState(task, offers) {
+  const out = offeredOn(task?.id, offers);
+  if (!out) return "none";
+  return out.pending ? "queued" : "offered";
+}
+
 /** Who the sender is waiting on, for the row to say so. */
-export function offerLabel(task, offers) {
-  const out = offeredOn(task.id, offers);
-  return out ? `Offered to ${out.to_email}` : "";
+export function offerLabel(task, offers, contacts) {
+  const out = offeredOn(task?.id, offers);
+  if (!out) return "";
+  // `labelFor` lives in `contact.js` and this file imports nothing, so the
+  // caller hands the name in. An absent list falls back to the address, which
+  // is what a device that has never been given a name shows anyway.
+  const who = nameOf(out.to_email, contacts);
+  return out.pending ? `Sending to ${who}` : `Offered to ${who}`;
+}
+
+/** His word for an address if the caller handed one over, else the address. */
+function nameOf(email, contacts) {
+  const at = String(email ?? "").trim().toLowerCase();
+  const c = (contacts ?? []).find((x) => String(x?.email ?? "").trim().toLowerCase() === at);
+  const name = String(c?.name ?? "").trim();
+  return name || at;
+}
+
+/**
+ * Offers waiting for a signal, OLDEST FIRST, which is the order they are sent
+ * in. Two hand-offs made in a tunnel land in the order he made them, because
+ * the second may have been a correction of the first.
+ */
+export function queued(offers) {
+  return (offers ?? [])
+    .filter((o) => o && o.pending && o.state === "offered")
+    .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
+}
+
+/**
+ * Whether the send can simply be called off.
+ *
+ * A QUEUED OFFER IS NOT WITHDRAWN, IT IS DELETED. Nobody was told, so there is
+ * nothing to take back and nothing to record: a `withdrawn` row would be a
+ * history of a thing that never happened, and it would sit in the sender's own
+ * table for ever saying he changed his mind about something nobody saw.
+ */
+export function canCancelSend(offer) {
+  return Boolean(offer) && offer.state === "offered" && Boolean(offer.pending);
 }
 
 /**
@@ -162,6 +267,11 @@ export function makeOffer(task, toEmail, opts) {
     payload: payloadOf(task),
     edited: null,
     state: "offered",
+    // WHAT IT WILL MEAN WHEN IT LANDS, AND WHETHER IT HAS. `state` is already
+    // `offered` on a queued one, because that is what the row says the moment
+    // it reaches the server and the server is the only thing that reads it.
+    // `pending` is the local half and never leaves the phone.
+    pending: Boolean(opts.pending),
     decline_reason: null,
     done_at: null,
     done_state: null,
@@ -313,7 +423,11 @@ export function canAnswer(offer, who) {
 }
 
 export function canWithdraw(offer, ownerId) {
-  return Boolean(offer) && offer.state === "offered" && offer.from_owner === ownerId;
+  if (!offer || offer.state !== "offered" || offer.from_owner !== ownerId) return false;
+  // A QUEUED ONE IS CANCELLED, NOT WITHDRAWN (session 161). Offering a Withdraw
+  // on an offer that has never left the phone would send a message about a
+  // message nobody received, and the database has no row to update.
+  return !offer.pending;
 }
 
 /**
@@ -333,6 +447,9 @@ export function waitingFor(offers, who) {
 /** Everything this person has handed over and not had back. His answer 1. */
 export function givenAway(offers, ownerId) {
   return (offers ?? [])
-    .filter((o) => o.from_owner === ownerId && o.state !== "withdrawn")
+    // NOT THE QUEUED ONES (session 161). Nothing has been given away until
+    // somebody has been told, and a list that counted a hand-off still sitting
+    // in a tunnel would say he had delegated work that nobody has seen.
+    .filter((o) => o.from_owner === ownerId && o.state !== "withdrawn" && !o.pending)
     .sort((a, b) => String(b.updated_at).localeCompare(String(a.updated_at)));
 }

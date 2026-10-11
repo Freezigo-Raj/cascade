@@ -76,7 +76,7 @@ export function drawPanel(panel, config, state, on) {
   // more. Sniffing it off the date string would be this file deciding what a
   // stated time is, which is the engine's answer and not the screen's.
   const { repeat, dueAt, hasTime } = state;
-  const { durationMin, durationTapped, firmness, notes } = state;
+  const { durationMin, durationTapped, firmness, notes, handOff } = state;
 
   const group = (label, into) => {
     const wrap = el("div", "group");
@@ -91,6 +91,39 @@ export function drawPanel(panel, config, state, on) {
   // (duration) — and the type classification last, because the engine already
   // guessed it and the chips above the panel already offer the likely three.
 
+
+  // ---------------------------------------------------------------- hand-off
+  //
+  // GIVING THE TASK TO SOMEBODY (session 161). It is in the panel because the
+  // panel is the one surface that shows ONE EXISTING TASK AT EVERY WIDTH: the
+  // detail column is wide-only, and a row on a 320px phone already carries a
+  // tick, a pin, a bin and up to four push chips, which session 139 was spent
+  // narrowing rather than adding to.
+  //
+  // FIRST, AND NOT LAST. The order below is the order a person thinks about a
+  // task, and "should I be doing this at all" comes before how long it takes.
+  //
+  // DRAWN ONLY WHEN THERE IS A TASK TO GIVE. `handOff` is absent on a capture,
+  // because a task that does not exist yet cannot be handed to anybody, and a
+  // control offering to is a promise the screen cannot keep.
+  if (handOff) {
+    const hand = el("div", "hand-line");
+    if (handOff.state === "queued") {
+      hand.appendChild(el("div", "hand-said", handOff.label));
+      hand.appendChild(button("act", "Cancel the send", () => handOff.cancel()));
+    } else if (handOff.state === "offered") {
+      hand.appendChild(el("div", "hand-said", handOff.label));
+      hand.appendChild(button("act", "Withdraw", () => handOff.withdraw()));
+    } else if (handOff.why) {
+      // A SENTENCE RATHER THAN A DIM BUTTON. `canSend` refuses for three
+      // reasons and each has one; a control that cannot work is worse than an
+      // absent one, because its presence reads as a promise.
+      hand.appendChild(el("div", "hand-said", handOff.why));
+    } else {
+      hand.appendChild(button("act", "Give to someone\u2026", () => handOff.send()));
+    }
+    group("Hand it over", hand);
+  }
 
   // --------------------------------------------------------------------- notes
   //

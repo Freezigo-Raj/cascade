@@ -47,7 +47,7 @@ const now = nowLocal;
 // screen's question and not the engine's.
 const narrow = window.matchMedia("(max-width: 600px)");
 
-export function mountList(root, { openEdit, openAccount, openAlarms, onTasks } = {}) {
+export function mountList(root, { openEdit, openAccount, openAlarms, onTasks, openReceived } = {}) {
   let tab = "Tasks";
   let slot = "Today";
   let filter = "";
@@ -356,8 +356,56 @@ export function mountList(root, { openEdit, openAccount, openAlarms, onTasks } =
   fab.setAttribute("aria-label", "Capture");
   fab.addEventListener("click", () => openEdit && openEdit(null));
 
+  // THE RECEIVED STRIP, AT THE FOOT, AND ONLY WHEN SOMETHING IS WAITING
+  // (session 161; his words in 159: "the received tasks tab is shown at bottom
+  // of app in main page when such tasks exist"). The element is always in the
+  // tree and the strip hides itself, because building it conditionally would
+  // move everything above it the first time an offer arrived.
+  //
+  // IT IS NOT A FOURTH TAB, for the same reason `Alarms` is not: the rows under
+  // it are offers and not cards, and nothing on them answers to the slot
+  // toggle or the search box.
+  const received = el("div", "received-slot");
+  // Declared before the loader below reaches for it. The `.then` runs after
+  // this whole block, so the reference is safe either way; the order is stated
+  // so a reader does not have to work that out.
+  let strip = null;
+
+  // HIS WORD FOR AN ADDRESS, if he has given one. Kept in a local list here
+  // rather than asked per row: `contact.labelFor` is the rule and this is a
+  // cache of its input, refreshed on the one event that changes it.
+  let cards = [];
+  const labelFor = (email) => {
+    const at = String(email ?? "").trim().toLowerCase();
+    const c = cards.find((x) => String(x?.email ?? "").trim().toLowerCase() === at);
+    return String(c?.name ?? "").trim() || at;
+  };
+  const loadCards = () => import(`./people.bridge.js${v}`)
+    .then((m) => m.contacts())
+    .then((list) => { cards = list; strip?.draw?.(); })
+    .catch(() => {});
+  loadCards();
+  const onPeople = () => { loadCards(); };
+  window.addEventListener("cascade:people-changed", onPeople);
+
   root.innerHTML = "";
-  root.append(headBlock, bar, slots, body, fab, toastSlot);
+  root.append(headBlock, bar, slots, body, received, fab, toastSlot);
+
+  if (openReceived) {
+    import(`./mvp.offers.js${v}`)
+      .then(({ receivedStrip }) => {
+        strip = receivedStrip(received, {
+          open: () => openReceived(),
+          labelFor: (email) => labelFor(email),
+        });
+      })
+      // A STRIP THAT CANNOT LOAD LEAVES NO MARK, which is the one place in this
+      // app where swallowing a failure is right: there is nothing waiting to
+      // announce until the server has been read, so an absent strip and a
+      // broken strip look the same to a person and mean the same thing. The
+      // line in `mvp.js`'s `load()` exists for controls somebody PRESSED.
+      .catch((e) => console.warn("received: strip not drawn —", e?.message ?? e));
+  }
 
   // ---------------------------------------------------------------- painting
 
@@ -505,7 +553,9 @@ export function mountList(root, { openEdit, openAccount, openAlarms, onTasks } =
     },
     unmount() {
       window.removeEventListener("cascade:store-changed", onStore);
+      window.removeEventListener("cascade:people-changed", onPeople);
       narrow.removeEventListener("change", onNarrow);
+      strip?.unmount?.();
       clearTimeout(toastTimer);
     },
   };

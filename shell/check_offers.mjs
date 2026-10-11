@@ -15,7 +15,17 @@ import {
   STATES, normaliseEmail, looksLikeEmail, canSend, offeredOn, offerLabel,
   declinedOn, acceptedId, TRAVELS, payloadOf, makeOffer, asOffered, changesIn,
   readEdit, fromOffer, canAnswer, canWithdraw, waitingFor, givenAway,
+  OFFER_COLUMNS, LOCAL_ONLY, offerRow, sendState, queued, canCancelSend,
 } from "./offer.js";
+import {
+  BLOCK_COLUMNS, blockRow, makeBlock, isBlocked, hasHistory, verdictFor,
+  heldBack, blockedList, BLOCKED_REASON,
+} from "./block.js";
+import {
+  makeContact, upsert, forget, nameFor, labelFor, pickerLabel, suggestions,
+  cleanName,
+} from "./contact.js";
+import { readFileSync } from "node:fs";
 
 let failed = 0;
 const say = (ok, what) => {
@@ -184,6 +194,196 @@ console.log("\nTHE TWO LISTS.");
       "a withdrawn offer is not a record of anything, so it is not in the list");
   say(givenAway([{ ...mine, state: "accepted", done_at: NOW, done_state: "done" }], MINE)[0].done_at === NOW,
       "and an accepted one carries whether the work is finished — his answer 1");
+}
+
+// =================================================== session 161, the columns
+//
+// EVERY FIELD HAS A COLUMN, BOTH WAYS, and this is the assertion that would
+// have caught session 152 a session early. The offer row was built by
+// spreading the record until session 161; the first local-only field arrived
+// in the same session. A spread would have sent `pending`, PostgREST would
+// have refused a column that does not exist, and the offers queue would have
+// stopped at the first failure and stayed stopped.
+//
+// Read out of the MIGRATIONS, because they are what actually ran.
+{
+  const columnsIn = (sql, table) => {
+    const body = sql.slice(sql.indexOf(`create table if not exists ${table} (`));
+    const inner = body.slice(body.indexOf("(") + 1, body.indexOf("\n);"));
+    const names = new Set();
+    for (const raw of inner.split("\n")) {
+      const line = raw.replace(/--.*$/, "").trim();
+      const m = /^([a-z_][a-z0-9_]*)\s+(uuid|text|jsonb|boolean|timestamptz)\b/.exec(line);
+      if (m) names.add(m[1]);
+    }
+    return names;
+  };
+
+  const offerSql = readFileSync(new URL("../migrate_offers.sql", import.meta.url), "utf8");
+  const cols = columnsIn(offerSql, "cascade_offer");
+  say(cols.size > 10, `migrate_offers.sql was read and names ${cols.size} columns`);
+  const extra = OFFER_COLUMNS.filter((c) => !cols.has(c));
+  say(extra.length === 0,
+      `OFFER_COLUMNS names no column cascade_offer lacks${extra.length ? " — " + extra.join(", ") : ""}`);
+  // The offsets are written beside their instants by the bridge and are not in
+  // the record, so they are the one legal absence from the record's own list.
+  const missing = [...cols].filter((c) => !OFFER_COLUMNS.includes(c));
+  say(missing.length === 0,
+      `and leaves none out, or that field would be dropped on its way to the server${missing.length ? " — " + missing.join(", ") : ""}`);
+
+  const blockSql = readFileSync(new URL("../migrate_blocks.sql", import.meta.url), "utf8");
+  const bcols = columnsIn(blockSql, "cascade_block");
+  const bExtra = BLOCK_COLUMNS.filter((c) => !bcols.has(c));
+  const bMissing = [...bcols].filter((c) => !BLOCK_COLUMNS.includes(c));
+  say(bExtra.length === 0 && bMissing.length === 0,
+      `BLOCK_COLUMNS and cascade_block agree, both ways (${bcols.size} columns)`);
+
+  // AND THE ROW THE SERVER IS ACTUALLY SHOWN. A record carrying `pending` must
+  // not be able to send it, and reverting the row builder to a spread fails
+  // here by name.
+  const sent = makeOffer(task(), "raj@example.com", {
+    id: "o-1", owner: MINE, fromEmail: "me@example.com", now: NOW, pending: true,
+  });
+  const row = offerRow(sent);
+  const stray = Object.keys(row).filter((k) => !OFFER_COLUMNS.includes(k));
+  say(stray.length === 0,
+      `the row offerRow builds has nothing Postgres would refuse${stray.length ? " — " + stray.join(", ") : ""}`);
+  for (const f of LOCAL_ONLY) say(!(f in row), `\`${f}\` is local-only and is not sent`);
+  say(offerRow({ id: "x", pending: true, nonsense: 1 }).nonsense === undefined,
+      "and a field no column exists for is dropped rather than queued to fail");
+}
+
+// ============================================== session 161, a queued hand-off
+//
+// His instruction: "signal can't work, it can send later when connection
+// arrives — no change in task till then unless cancelled."
+{
+  const t = task();
+  const q = makeOffer(t, "raj@example.com", {
+    id: "o-q", owner: MINE, fromEmail: "me@example.com", now: NOW, pending: true,
+  });
+  const live = makeOffer(t, "raj@example.com", {
+    id: "o-l", owner: MINE, fromEmail: "me@example.com", now: NOW,
+  });
+
+  say(sendState(t, [q]) === "queued", "a hand-off made with no signal reads as queued");
+  say(sendState(t, [live]) === "offered", "and one that landed reads as offered");
+  say(sendState(t, []) === "none", "and a task nobody has been given reads as neither");
+
+  // THE TWO LABELS, which is the whole of what the distinction buys: a queued
+  // hand-off has told nobody anything, and saying `Offered` there is the
+  // invisible failure session 159 refused queueing over.
+  say(offerLabel(t, [q]) === "Sending to raj@example.com", "the row says Sending while it waits");
+  say(offerLabel(t, [live]) === "Offered to raj@example.com", "and Offered once it has gone");
+  say(offerLabel(t, [live], [{ email: "raj@example.com", name: "Raj" }]) === "Offered to Raj",
+      "and it wears his own word for the address when he has given one");
+
+  // CANCEL versus WITHDRAW. Nobody was told, so there is nothing to take back.
+  say(canCancelSend(q) === true, "a queued hand-off can simply be called off");
+  say(canCancelSend(live) === false, "one that has gone cannot");
+  say(canWithdraw(q, MINE) === false, "and is not offered a Withdraw, which has no row to update");
+  say(canWithdraw(live, MINE) === true, "where one that has gone is");
+
+  // THE TASK IS UNTOUCHED, which is the half of his instruction that answers
+  // the objection session 159 raised.
+  say(canSend(t, [q]) === false, "the task cannot be handed to a second person while one is queued");
+  say(givenAway([q], MINE).length === 0, "and nothing is in Given away until somebody has been told");
+  say(givenAway([live], MINE).length === 1, "where a sent one is");
+
+  // ORDER. Two made in a tunnel go out in the order he made them, because the
+  // second may have been a correction of the first.
+  const first = { ...q, id: "a", created_at: "2026-10-11T10:00:00+05:30" };
+  const second = { ...q, id: "b", created_at: "2026-10-11T11:00:00+05:30" };
+  say(queued([second, first]).map((o) => o.id).join(",") === "a,b",
+      "the queue drains oldest first, whatever order the cache holds them in");
+}
+
+// ============================================ session 161, blocking an address
+//
+// His answer: declined for people he know, silent for strangers.
+{
+  const me = "me@example.com";
+  const known = { id: "k", state: "offered", from_email: "raj@example.com", to_email: me };
+  const old = { id: "old", state: "declined", from_email: me, to_email: "raj@example.com" };
+  const stranger = { id: "s", state: "offered", from_email: "nobody@spam.example", to_email: me };
+  const blocks = [makeBlock("raj@example.com", MINE, NOW), makeBlock("nobody@spam.example", MINE, NOW)];
+
+  say(isBlocked("RAJ@Example.com ", blocks) === true, "a blocked address matches whatever its case and spacing");
+  say(isBlocked("other@example.com", blocks) === false, "and an address nobody blocked does not");
+
+  say(hasHistory("raj@example.com", [known, old], me, "k") === true,
+      "one earlier offer in either direction is enough to count as known");
+  say(hasHistory("nobody@spam.example", [stranger], me, "s") === false,
+      "and the offer being judged is never its own history — without that every stranger reads as known");
+
+  const state = { blocks, offers: [known, old, stranger], me };
+  say(verdictFor(known, state) === "decline", "a blocked colleague gets a decline, and knows");
+  say(verdictFor(stranger, state) === "silent", "a blocked stranger gets nothing, and learns nothing");
+  say(verdictFor({ ...known, from_email: "clear@example.com" }, state) === "allow",
+      "and an address nobody blocked arrives as normal");
+  say(verdictFor({ ...stranger, to_email: "someone.else@example.com" }, state) === "allow",
+      "an offer addressed to somebody else is not this person's to judge");
+
+  say(heldBack([known, stranger], state).map((o) => o.id).join(",") === "s",
+      "only the silent ones are held back, so the strip's count and its rows agree");
+  say(BLOCKED_REASON.length > 20 && /declined/i.test(BLOCKED_REASON),
+      "an auto-decline says who did it, because a bare decline reads as a person's answer");
+  say(blockedList(blocks).length === 2, "and the account screen can list every blocked address");
+
+  const brow = blockRow({ ...makeBlock("x@y.zz", MINE, NOW), nonsense: 1 });
+  say(brow.nonsense === undefined && brow.email === "x@y.zz",
+      "a block row carries its columns and nothing else");
+}
+
+// ============================================= session 161, names and the list
+{
+  const me = "me@example.com";
+  let cards = [];
+  cards = upsert(cards, makeContact("RAJ@example.com ", "  Raj  ", NOW));
+  say(cards[0].email === "raj@example.com" && cards[0].name === "Raj",
+      "a card normalises its address and trims its name");
+
+  // A BLANK NAME NEVER ERASES ONE. `touch` on every send calls this with
+  // nothing typed, and treating that as a rename would lose the label the
+  // first time he picked a contact and pressed send.
+  cards = upsert(cards, makeContact("raj@example.com", "", "2026-10-12T09:00:00+05:30"));
+  say(nameFor("raj@example.com", cards) === "Raj", "and sending again does not wipe the name");
+  cards = upsert(cards, makeContact("raj@example.com", "Raj Patel", NOW));
+  say(nameFor("raj@example.com", cards) === "Raj Patel", "while typing a new one does replace it");
+
+  say(labelFor("raj@example.com", cards) === "Raj Patel", "a row shows the name alone");
+  say(labelFor("who@example.com", cards) === "who@example.com", "and the address when there is no name");
+  say(pickerLabel({ email: "raj@example.com", name: "Raj" }) === "Raj — raj@example.com",
+      "the dropdown shows both, because choosing is the one moment the address matters");
+  say(cleanName("a".repeat(80)).length === 40, "a name is capped, so a label stays a label");
+  say(forget(cards, "raj@example.com").length === 0, "and a name can be forgotten");
+
+  // THE LIST IS HIS OWN HISTORY. No directory anywhere in this feature.
+  const offers = [
+    { id: "1", from_email: me, to_email: "old@example.com", created_at: "2026-09-01T09:00:00+05:30", updated_at: "2026-09-01T09:00:00+05:30" },
+    { id: "2", from_email: "recent@example.com", to_email: me, created_at: "2026-10-10T09:00:00+05:30", updated_at: "2026-10-10T09:00:00+05:30" },
+    { id: "3", from_email: "other@example.com", to_email: "notme@example.com", created_at: "2026-10-11T09:00:00+05:30", updated_at: "2026-10-11T09:00:00+05:30" },
+  ];
+  const list = suggestions(offers, me, cards);
+  const got = list.map((s) => s.email);
+  say(got.includes("old@example.com") && got.includes("recent@example.com"),
+      "the dropdown offers everybody he has written to and everybody who wrote to him");
+  say(!got.includes("notme@example.com") && !got.includes("other@example.com"),
+      "and nobody from an offer that was not his — there is still no directory");
+  say(!got.includes(me), "his own address is never in the list");
+  // MOST RECENTLY USED FIRST, and the first assertion here claimed
+  // `recent@example.com` led. It does not: `raj@example.com` was touched at
+  // NOW two blocks above, which is later than every offer in this fixture, so
+  // the card he just used leads. That is the behaviour wanted — the ordering
+  // counts a NAMED card's own `used_at` as a use — and the claim was wrong
+  // rather than the code. Asserted on the two history-only addresses, where
+  // the comparison is the one the sentence is about.
+  say(got.indexOf("recent@example.com") < got.indexOf("old@example.com"),
+      "most recently used first");
+  say(got[0] === "raj@example.com",
+      "and a card touched by a send just now leads the list, ahead of older offers");
+  say(suggestions([], me, [{ email: "named@example.com", name: "New", used_at: null }])[0].email === "named@example.com",
+      "a card he named but has never used still appears, because he named it on purpose");
 }
 
 console.log(failed ? `\nCHECK OFFERS: ${failed} FAILED\n` : "\nCHECK OFFERS: PASS\n");

@@ -65,7 +65,7 @@ const NOT_BUILT = [
  * @param {HTMLElement} root
  * @param {object} on  { onBack, onSignedOut }
  */
-export function mountAccount(root, { onBack, onSignedOut } = {}) {
+export function mountAccount(root, { onBack, onSignedOut, openGiven } = {}) {
   let all = [];
   let who = null;
   let busy = false;
@@ -393,6 +393,64 @@ export function mountAccount(root, { onBack, onSignedOut } = {}) {
         shellVal.textContent = "unknown";
         said.textContent = "The alarm module did not load: " + (e?.message ?? e);
       }
+    })();
+
+    // HAND-OFFS (session 161). Two things live here and nowhere else: the way
+    // in to what he has given away, and the list of addresses he will not take
+    // work from.
+    //
+    // THE BLOCK LIST IS ON THIS SCREEN AND NOT ON A TASK, unlike the Never
+    // button on an offer, and the difference is what each is for: the button is
+    // for the moment the unwanted task is in front of him, and this is for
+    // undoing one. A boundary applied in anger to the wrong address has to be
+    // findable, or the work is gone with no trace of where.
+    const hand = el("div", "group");
+    hand.appendChild(el("div", "label", "Handing work over"));
+    if (openGiven) {
+      const go = button("act", "Given away", () => openGiven());
+      go.title = "What you have handed to other people, and whether it is finished";
+      hand.appendChild(go);
+    }
+    const blockBox = el("div", "block-list");
+    hand.appendChild(blockBox);
+    const blockSaid = el("div", "said", "");
+    hand.appendChild(blockSaid);
+    root.appendChild(hand);
+
+    (async () => {
+      const draw = async () => {
+        const people = await import(`./people.bridge.js${v}`);
+        const B = await import(`./block.js${v}`);
+        const list = B.blockedList(await people.blocks());
+        blockBox.innerHTML = "";
+        if (!list.length) {
+          // NOT A HEADING WITH NOTHING UNDER IT. An empty bordered list reads
+          // as something that failed to load, which is the lesson the detail
+          // panel's one-line empty state came from.
+          blockSaid.textContent =
+            "Nobody is blocked. Open a task somebody sent you and press "
+            + "\u201cNever from this address\u201d to stop them sending more. "
+            + "Somebody you have worked with before gets a decline; a stranger gets silence.";
+          return;
+        }
+        blockSaid.textContent =
+          "These addresses cannot send you tasks. Anything they sent while blocked "
+          + "is still on the server and is simply never shown to you.";
+        for (const b of list) {
+          const r = el("div", "stat");
+          r.appendChild(el("span", "stat-label", b.email));
+          r.appendChild(button("act", "Unblock", async () => {
+            const out = await people.unblock(b.email);
+            if (!out.ok) { blockSaid.textContent = out.why; return; }
+            await draw();
+          }));
+          blockBox.appendChild(r);
+        }
+      };
+      await draw().catch((e) => {
+        blockSaid.textContent = `The block list could not be read — ${e?.message ?? e}`;
+      });
+      window.addEventListener("cascade:people-changed", () => { draw().catch(() => {}); });
     })();
 
     // THE CALENDAR (session 145, his five answers). It is OFF until he turns it

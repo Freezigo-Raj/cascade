@@ -10,11 +10,11 @@
  * that reason and for no other.
  */
 
-@import url("./mvp.css?v=76");
-@import url("./mvp.account.css?v=76");
-@import url("./mvp.wide.css?v=76");
-@import url("./mvp.chrome.css?v=76");
-@import url("./mvp.web.css?v=76");
+@import url("./mvp.css?v=77");
+@import url("./mvp.account.css?v=77");
+@import url("./mvp.wide.css?v=77");
+@import url("./mvp.chrome.css?v=77");
+@import url("./mvp.web.css?v=77");
 
 /* ------------------------------------------------------------ screen 2
  *
@@ -438,3 +438,139 @@ input[type="range"].lead, input[type="range"].dur {
 .taps.rep-line { flex-wrap: wrap; }
 .taps.rep-line .num { width: 48px; flex-shrink: 0; }
 .taps.rep-line .chip { padding-left: 10px; padding-right: 10px; flex-shrink: 0; }
+
+/* ===================================================================== */
+/* HAND-OFFS (session 161). Four surfaces, and none of them invents a shape:
+   the rows reuse the card, the chips reuse `.chip`, the buttons reuse `.act`.
+   A feature that arrives with its own visual language reads as a second app. */
+
+/* THE STRIP AT THE FOOT OF THE LIST. Not drawn when nothing is waiting — the
+   element is always in the tree and hides itself, because building it only on
+   arrival would move the rows under it the first time an offer came in.
+   Session 139 put a 70% floor under those rows, which is the whole reason this
+   is conditional rather than a fourth tab. */
+.received-slot { flex: 0 0 auto; }
+.received {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: calc(var(--step) * 2.5);
+  width: 100%;
+  margin: calc(var(--step) * 2) 0 0;
+  padding: calc(var(--step) * 2.5) calc(var(--step) * 3.5);
+  border: 1px solid var(--signal);
+  border-radius: var(--r-card);
+  background: var(--signal-wash);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.received:hover, .received:focus-visible { border-color: var(--signal-deep); }
+/* The count, as a number and not as a dot with a number near it: a badge that
+   has to be counted is a badge that has not said anything. */
+.received-dot {
+  min-width: 22px;
+  padding: 1px 6px;
+  border-radius: 11px;
+  background: var(--signal-deep);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 700;
+  text-align: center;
+}
+.received-text { font-size: 14px; font-weight: 600; }
+.received-who {
+  font-size: 12.5px;
+  color: var(--signal-deep);
+  max-width: 40%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ONE ROW PER OFFER, on the two list screens. The same card the task rows use,
+   so a thing somebody sent reads as a task-shaped thing. */
+.given-row {
+  display: block;
+  width: 100%;
+  margin-bottom: calc(var(--step) * 2);
+  padding: calc(var(--step) * 3);
+  border: 1px solid var(--edge);
+  border-radius: var(--r-card);
+  background: var(--sheet);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+}
+.received-row { cursor: pointer; }
+.received-row:hover, .received-row:focus-visible { border-color: var(--signal); }
+/* A SEND THAT HAS NOT GONE YET IS DRAWN AS UNFINISHED, with a dashed edge and
+   no fill: it is a thing in progress and not a record of anything. Nobody has
+   been told, and the row has to look like that is true. */
+.given-queued { border-style: dashed; background: transparent; }
+.given-title { font-size: 15px; font-weight: 600; line-height: 1.3; }
+.given-who { margin-top: calc(var(--step) * 1.5); font-size: 12.5px; color: var(--quiet); }
+.given-edit { margin-top: var(--step); font-size: 12px; color: var(--signal-deep); }
+.given-row .act { margin-top: calc(var(--step) * 2); }
+
+/* THE HAND-OFF ROW IN THE ADVANCED PANEL. One control, or one sentence saying
+   why there is no control — never a dim button, which is the lesson session
+   142 paid for. */
+.hand-line { display: flex; flex-wrap: wrap; align-items: center; gap: calc(var(--step) * 2); }
+.hand-said { flex: 1 1 100%; font-size: 12.5px; color: var(--quiet); line-height: 1.4; }
+.d-hand { display: flex; flex-wrap: wrap; align-items: center; gap: calc(var(--step) * 2); }
+
+/* THE SEND SHEET. A dialog, because it asks one thing. */
+.send-sheet { max-width: 420px; }
+.send-to, .send-name {
+  width: 100%;
+  margin-top: calc(var(--step) * 2);
+  padding: calc(var(--step) * 2.5);
+  border: 1px solid var(--edge);
+  border-radius: 12px;
+  background: var(--sunk);
+  color: var(--ink);
+  font: inherit;
+}
+.send-known { max-height: 96px; overflow-y: auto; }
+/* MARKED AND NOT HIDDEN. A block is about what arrives; nothing about it says
+   he has stopped delegating to them, so the address stays pickable and wears
+   the fact instead. */
+.chip-blocked { border-style: dashed; color: var(--quiet); }
+.send-why { margin-top: calc(var(--step) * 2); font-size: 12.5px; color: var(--warn); }
+
+/* ONE OFFER IN FULL. The correction box and what it would change, side by
+   side: what was sent is kept beside what came back, never instead of it. */
+.offer-line {
+  width: 100%;
+  margin-top: calc(var(--step) * 2);
+  padding: calc(var(--step) * 3);
+  border: 1px solid var(--edge);
+  border-radius: 12px;
+  background: var(--sunk);
+  color: var(--ink);
+  font: inherit;
+}
+.offer-preview { margin-top: calc(var(--step) * 2); font-size: 12.5px; color: var(--quiet); }
+.offer-change {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: calc(var(--step) * 2);
+  padding: var(--step) 0;
+  align-items: baseline;
+}
+.offer-change .f-was { text-decoration: line-through; opacity: 0.7; }
+.offer-change .f-now { color: var(--signal-deep); font-weight: 600; }
+.offer-acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--step) * 2);
+  margin-top: calc(var(--step) * 4);
+}
+/* The one destructive control on the screen wears the one warning colour this
+   app uses, and it is last. */
+.offer-acts .danger { color: var(--warn); }
+
+/* The blocked list on the account screen. */
+.block-list { margin-top: calc(var(--step) * 2); }
