@@ -16,7 +16,7 @@ import {
   declinedOn, acceptedId, TRAVELS, payloadOf, makeOffer, asOffered, changesIn,
   readEdit, fromOffer, canAnswer, canWithdraw, waitingFor, givenAway,
   OFFER_COLUMNS, LOCAL_ONLY, offerRow, sendState, queued, canCancelSend,
-  handedOver,
+  handedOver, returnedLabel,
 } from "./offer.js";
 import {
   BLOCK_COLUMNS, blockRow, makeBlock, isBlocked, hasHistory, verdictFor,
@@ -433,6 +433,44 @@ console.log("\nTHE TWO LISTS.");
   // not be swept away by the offer he answered.
   say(handedOver([{ ...base, state: "accepted" }], THEIRS, here).length === 0,
       "the recipient's device never removes anything from this — only the sender's does");
+}
+
+// ================================== session 163, the reason it came back
+//
+// His report: "task given back after hand it over does not display reason."
+//
+// `declinedOn` has been here since session 159 and NOTHING CALLED IT. The rule
+// existed, the reason travelled, the database kept it, and no screen read it —
+// the same shape as session 162's missing delete, and invisible to this file
+// for the same reason: a check can prove `declinedOn` finds the right offer
+// and cannot prove anybody asks.
+{
+  const t = task();
+  const back = {
+    id: "d1", from_owner: MINE, from_email: "me@example.com", to_email: "raj@example.com",
+    task_id: t.id, state: "declined", decline_reason: "No time this week",
+    created_at: NOW, updated_at: NOW,
+  };
+  const cards = [{ email: "raj@example.com", name: "Raj" }];
+
+  say(returnedLabel(t, [back], cards) === "Raj sent it back — No time this week",
+      "a returned task says who sent it back and why, in his own word for them");
+  say(returnedLabel(t, [back], []) === "raj@example.com sent it back — No time this week",
+      "and falls back to the address when he has named nobody");
+  say(returnedLabel(t, [{ ...back, decline_reason: "" }], cards) === "Raj sent it back",
+      "an empty reason stops the sentence after the name — a decline with no reason is allowed on purpose");
+  say(returnedLabel(t, [], cards) === "", "a task nobody refused says nothing");
+
+  // A LIVE OFFER WINS. Re-sent after a refusal, the row is about where the
+  // work is NOW.
+  const out = { ...back, id: "o2", state: "offered", to_email: "hazrat@example.com", decline_reason: null };
+  say(returnedLabel(t, [back, out], cards) === "",
+      "and a task re-sent to somebody else stops talking about last week's refusal");
+
+  // The newest refusal, when there have been two.
+  const older = { ...back, id: "d0", decline_reason: "Wrong person", updated_at: "2026-10-01T09:00:00+05:30" };
+  say(returnedLabel(t, [older, back], cards) === "Raj sent it back — No time this week",
+      "two refusals show the most recent one");
 }
 
 console.log(failed ? `\nCHECK OFFERS: ${failed} FAILED\n` : "\nCHECK OFFERS: PASS\n");

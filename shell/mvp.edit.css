@@ -10,11 +10,11 @@
  * that reason and for no other.
  */
 
-@import url("./mvp.css?v=78");
-@import url("./mvp.account.css?v=78");
-@import url("./mvp.wide.css?v=78");
-@import url("./mvp.chrome.css?v=78");
-@import url("./mvp.web.css?v=78");
+@import url("./mvp.css?v=79");
+@import url("./mvp.account.css?v=79");
+@import url("./mvp.wide.css?v=79");
+@import url("./mvp.chrome.css?v=79");
+@import url("./mvp.web.css?v=79");
 
 /* ------------------------------------------------------------ screen 2
  *
@@ -574,3 +574,32 @@ input[type="range"].lead, input[type="range"].dur {
 
 /* The blocked list on the account screen. */
 .block-list { margin-top: calc(var(--step) * 2); }
+
+/* PULL DOWN TO REFRESH (session 163). The band lives above the header and has
+   no height until a finger gives it one, so nothing on the screen moves until
+   the gesture has started — which matters here more than usual, because
+   session 139 put a 70% floor under the task rows and a permanent strip at the
+   top would come straight out of that budget. */
+.pull-band {
+  height: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  /* No transition by default: while the finger is down the height follows it
+     and an animation would lag behind the touch. `mvp.pull.js` turns one on
+     for the spring back and takes it off again. */
+}
+.pull-word {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--signal-deep);
+  letter-spacing: 0.01em;
+}
+
+/* A TASK SOMEBODY HANDED BACK. The engine's own sentence says why the task is
+   in this list; this says why it is still his to do, so it is a second line in
+   its own colour rather than a replacement for the first. */
+.said-back { color: var(--signal-deep); font-weight: 600; }
+.hand-back { color: var(--signal-deep); font-weight: 600; }

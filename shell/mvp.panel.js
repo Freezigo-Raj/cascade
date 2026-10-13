@@ -114,6 +114,12 @@ export function drawPanel(panel, config, state, on) {
     } else if (handOff.state === "offered") {
       hand.appendChild(el("div", "hand-said", handOff.label));
       hand.appendChild(button("act", "Withdraw", () => handOff.withdraw()));
+    } else if (handOff.back) {
+      // IT CAME BACK, AND WITH A REASON (session 163). Shown above the control
+      // rather than instead of it: the work is his again and he may well want
+      // to send it to somebody else, so the button stays.
+      hand.appendChild(el("div", "hand-said hand-back", handOff.back));
+      hand.appendChild(button("act", "Give to someone else\u2026", () => handOff.send()));
     } else if (handOff.why) {
       // A SENTENCE RATHER THAN A DIM BUTTON. `canSend` refuses for three
       // reasons and each has one; a control that cannot work is worse than an

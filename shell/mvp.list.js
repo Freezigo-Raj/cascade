@@ -230,7 +230,7 @@ export function mountList(root, { openEdit, openAccount, openAlarms, onTasks, op
   // A row and a block of rows live in `mvp.row.js`; this file crossed the
   // 400-line cap building its chrome once. Everything they need is handed in,
   // so a row cannot read this screen's state behind its own back.
-  const ctx = () => ({ all, tab, slot, narrow, act, say, openEdit });
+  const ctx = () => ({ all, tab, slot, narrow, act, say, openEdit, noteFor });
   const drawRow = (card) => rowOf(card, ctx());
   const drawBlock = (name, cards, isNow) => blockOf(name, cards, isNow, ctx());
 
@@ -370,6 +370,7 @@ export function mountList(root, { openEdit, openAccount, openAlarms, onTasks, op
   // this whole block, so the reference is safe either way; the order is stated
   // so a reader does not have to work that out.
   let strip = null;
+  let pull = null;
 
   // HIS WORD FOR AN ADDRESS, if he has given one. Kept in a local list here
   // rather than asked per row: `contact.labelFor` is the rule and this is a
@@ -385,11 +386,59 @@ export function mountList(root, { openEdit, openAccount, openAlarms, onTasks, op
     .then((list) => { cards = list; strip?.draw?.(); })
     .catch(() => {});
   loadCards();
+
+  // WHAT A ROW SAYS ABOUT A HAND-OFF. Read from the offers this device last
+  // saw, with the rule in `offer.js` and the words it returns drawn as they
+  // come. The list holds the offers rather than asking per row, because a row
+  // is drawn for every card on every paint.
+  let offerRows = [];
+  let rules = null;
+  const noteFor = (task) => {
+    if (!task || !rules) return "";
+    return rules.returnedLabel(task, offerRows, cards) || rules.offerLabel(task, offerRows, cards);
+  };
+  const loadOffers = () => Promise.all([
+    import(`./offer.js${v}`),
+    import(`./offer.bridge.js${v}`).then((m) => m.known()),
+  ]).then(([mod, list]) => { rules = mod; offerRows = list; paint(); }).catch(() => {});
+  loadOffers();
+  const onOffers = () => { loadOffers(); };
+  window.addEventListener("cascade:offers-changed", onOffers);
   const onPeople = () => { loadCards(); };
   window.addEventListener("cascade:people-changed", onPeople);
 
   root.innerHTML = "";
   root.append(headBlock, bar, slots, body, received, fab, toastSlot);
+
+  // PULL DOWN TO REFRESH (session 163, his request). Mounted after the tree
+  // exists so the band can sit above the header, and lazily like every other
+  // screen part: a gesture nobody has made yet is not worth a fetch at boot.
+  import(`./mvp.pull.js${v}`)
+    .then(({ mountPull }) => {
+      pull = mountPull(root, {
+        say: (text) => say(text),
+        refresh: async () => {
+          // EVERYTHING THIS APP CAN BE BEHIND ON, in the order that matters:
+          // the writes it owes go first, so a pull never shows the server's
+          // older answer over a local change that has not left yet.
+          const out = [];
+          if (sync) {
+            await sync.drain().catch(() => {});
+            await sync.pull();
+            out.push("tasks");
+          }
+          const offers = await import(`./offer.bridge.js${v}`);
+          await offers.drain().catch(() => {});
+          const got = await offers.refresh();
+          if (got?.ok) out.push("hand-offs");
+          const people = await import(`./people.bridge.js${v}`);
+          await people.refreshBlocks().catch(() => {});
+          await reload();
+          return out.length ? `Refreshed ${out.join(" and ")}.` : "Nothing to refresh on this device.";
+        },
+      });
+    })
+    .catch((e) => console.warn("pull: not armed —", e?.message ?? e));
 
   if (openReceived) {
     import(`./mvp.offers.js${v}`)
@@ -554,6 +603,8 @@ export function mountList(root, { openEdit, openAccount, openAlarms, onTasks, op
     unmount() {
       window.removeEventListener("cascade:store-changed", onStore);
       window.removeEventListener("cascade:people-changed", onPeople);
+      window.removeEventListener("cascade:offers-changed", onOffers);
+      pull?.unmount?.();
       narrow.removeEventListener("change", onNarrow);
       strip?.unmount?.();
       clearTimeout(toastTimer);

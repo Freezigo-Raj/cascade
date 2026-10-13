@@ -69,7 +69,7 @@ function glyph(path, filled) {
   return svg;
 }
 
-export function rowOf(card, { all, tab, slot, narrow, act, openEdit }) {
+export function rowOf(card, { all, tab, slot, narrow, act, openEdit, noteFor }) {
   const task = all.find((t) => t.id === card.card_id);
   const late = tab !== "Done" && card.card_band === "Today" &&
     (card.card_reason_short || "").startsWith("Overdue");
@@ -125,6 +125,17 @@ export function rowOf(card, { all, tab, slot, narrow, act, openEdit }) {
   }
 
   if (said && !echo && tab !== "Done") body.appendChild(el("div", "said", said));
+
+  // A TASK SOMEBODY HANDED BACK SAYS SO, AND SAYS WHY (session 163, his
+  // report). It is a second line and not a replacement for `said`: the
+  // engine's sentence explains why the task is HERE in the list, and this
+  // explains why it is still his to do. Two different statements.
+  //
+  // Not on the Done tab, for the same reason `said` is not: a finished task's
+  // row answers when it was finished, and a refusal from last week is history
+  // about work that is over.
+  const note = noteFor && tab !== "Done" ? noteFor(task) : "";
+  if (note) body.appendChild(el("div", "said said-back", note));
 
   // WHEN IT WAS FINISHED (session 126, his slide: add "today", "16th August").
   // A Done row was a title alone, which answered "was it done" and nothing

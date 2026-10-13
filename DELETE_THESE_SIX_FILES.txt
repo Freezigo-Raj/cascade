@@ -1,47 +1,32 @@
-CASCADE — SESSION 162. FIVE FIXES ON TOP OF 77.
+CASCADE — SESSION 163. TWO FIXES ON TOP OF 78.
 
-All five of the things you reported. Nothing new was added.
+  1. PULL THE LIST DOWN TO REFRESH. Drag from the top of the task list. A line
+     appears saying `pull to refresh`, then `let go to refresh`. Letting go
+     refreshes the tasks, the hand-offs and the block list in one go, and says
+     what it refreshed. If it cannot, it says that instead of going quiet.
+     It only arms at the very top of the list and only on a downward drag, so
+     ordinary scrolling is untouched.
 
-  1. Giving a task away with no signal said "not signed in". It did not need
-     the network to know who you are and now does not ask it.
-  2. The task did not leave your list when the other account accepted it. It
-     never did — that half was never written. It does now, on the next pull.
-  3. Nothing arrived in the other account without restarting the app. Offers
-     were read once per launch. They now read on a returning signal, on the app
-     being looked at again, and every minute, which is what the task list has
-     always done.
-  4. A withdraw had the same problem, and was worse: the offer stayed
-     acceptable on their side after you took it back.
-  5. `Hand it over` now appears when you are WRITING a new task. The press asks
-     who first, then adds the task, then sends it — so cancelling the sheet
-     leaves no task behind.
+  2. A TASK SOMEBODY SENT BACK NOW SAYS WHY. The row carries a second line:
+       Raj sent it back - no time this week
+     The reason was always in the database. Nothing ever showed it. Open the
+     task and the advanced panel says the same thing with
+     `Give to someone else...` beside it.
 
-NO MIGRATION, NO KOTLIN, NO APK. Shell 78. If you have run both migrations
-already there is nothing to do but deploy.
+NO MIGRATION, NO KOTLIN, NO APK. Shell 79.
 
 
-== WHAT TO CHECK, IN ORDER ==
+== WHAT TO CHECK ==
 
-  1. Header reads build 78.
-  2. Airplane mode on. Open a task, panel, `Give to someone...`, type an
-     address, `Give it`.
-     IT MUST NOT SAY "not signed in". It should say:
-       `Waiting for a signal. It goes to <name> when there is one, and the task
-        is still yours.`
-  3. Airplane mode off. Within about a minute the row should change from
-     `Sending to ...` to `Offered to ...`.
-  4. On the other account, WITHOUT restarting: within about a minute the strip
-     should appear at the foot of the list. Accept it.
-  5. Back on your phone, WITHOUT restarting: within about a minute the task
-     should disappear from your list, and appear under Account -> Given away as
-     `<name> has it`.
-  6. Send another, then press Withdraw. On the other account, without
-     restarting, it should vanish from the strip within about a minute.
-  7. New task: type a line, open the panel, `Give to someone...`. It should ask
-     who BEFORE the task is added. Cancel the sheet and no task should appear.
-
-A MINUTE IS THE NUMBER. Nothing here is instant and nothing should need a
-restart. If something needs a restart, tell me which step.
+  1. Header reads build 79.
+  2. On the task list, drag down from the top. The words should appear. Let go
+     and the sync pill should blink and a line should say what was refreshed.
+  3. Scroll the list normally. Nothing should appear and nothing should stick.
+  4. Swipe the date chips sideways on the capture screen. No pull should start.
+  5. On the other account, send a task back with a reason. On your phone, pull
+     to refresh. The row should read `<name> sent it back - <reason>`.
+  6. Give that same task to somebody else. The sent-back line should disappear
+     and be replaced by `Offered to ...`.
 
 ===========================================================================
 

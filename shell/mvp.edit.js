@@ -596,8 +596,14 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
            + "Edit it here first and it detaches.",
       };
     }
+    // HANDED BACK, with the reason (session 163). `returnedLabel` is the rule;
+    // this hands its sentence to the panel, which draws the control beside it
+    // because the work is his again and may well be going to somebody else.
+    const back = OFFER.returnedLabel(task, offers, contactCards);
+
     return {
       state: "none",
+      back,
       send: async () => {
         const mod = await import(`./mvp.offers.js${v}`).catch(() => null);
         if (!mod) { say("The hand-off sheet is not on this phone yet. Open it once with signal."); return; }

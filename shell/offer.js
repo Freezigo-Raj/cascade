@@ -199,6 +199,37 @@ export function declinedOn(taskId, offers) {
 }
 
 /**
+ * WHAT THE ROW SAYS ABOUT A TASK THAT CAME BACK (session 163, his report:
+ * "task given back after hand it over does not display reason").
+ *
+ * `declinedOn` has been here since session 159 and NOTHING CALLED IT. The rule
+ * for finding the refusal existed, the reason travelled in the row, the
+ * database kept it — and no screen ever read it. The same shape as session
+ * 162's missing delete: a rule written, a table filled, and the last step to
+ * a person's eyes never taken. Both were invisible to ten checks because a
+ * check can see that `declinedOn` returns the right offer and cannot see that
+ * nobody asks.
+ *
+ * IT IS A SENTENCE AND NOT A FLAG, because the useful part is the reason. "Raj
+ * sent it back" tells him to do it himself; "Raj sent it back — needs the
+ * supplier's number" tells him what to do first.
+ *
+ * NO REASON IS ALSO AN ANSWER. A decline with an empty box is allowed on
+ * purpose — forcing a sentence out of somebody who wants to say no produces
+ * "no" — so the sentence stops after the name.
+ */
+export function returnedLabel(task, offers, contacts) {
+  const back = declinedOn(task?.id, offers);
+  if (!back) return "";
+  // A LIVE OFFER WINS. Re-sent to somebody else after a refusal, the row is
+  // about where the work is NOW, not about who turned it down last week.
+  if (offeredOn(task.id, offers)) return "";
+  const who = nameOf(back.to_email, contacts);
+  const why = String(back.decline_reason ?? "").trim();
+  return why ? `${who} sent it back \u2014 ${why}` : `${who} sent it back`;
+}
+
+/**
  * The id an accepted offer's task gets.
  *
  * DERIVED FROM THE OFFER, never invented, for the three reasons `successorId`

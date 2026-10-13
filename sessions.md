@@ -4608,3 +4608,46 @@ Order is **sheet, then add, then send**. Asking first costs nothing when he chan
 Five reports in an hour, from one person opening the app. Twenty-five sessions of my own checking found none of them. Two were in a table I wrote myself and never implemented.
 
 **Shell 78. No migration, no Kotlin, no APK.** Ten checks green.
+
+---
+
+## Session 163 — 13 October 2026
+
+Two reports. One is a gesture; the other is the same hole as yesterday, one function along.
+
+### Pull down to refresh
+
+Not a setting. The page scrolls the **document** — `#app` has padding and no `overflow`, which is what lets momentum scrolling and the address bar behave normally — so there is no scroll container to hang a native pull-to-refresh on, and the WebView gives none. The gesture is read from touch events.
+
+Four rules stop it fighting the scroll, each one a way this usually goes wrong:
+
+| Rule | Why |
+|---|---|
+| Arms only at the very top | `scrollY > 0` and the finger belongs to the scroll |
+| Arms only on a **downward** first move | a flick back to the top is not a pull |
+| Never inside a sideways scroller | the date chips, push rungs and unit chips all scroll horizontally |
+| Dead while a dialog is open | what is under a dialog is not what the finger is aimed at |
+
+`preventDefault` happens only after it has armed, so a scroll that was never a pull keeps every default it had.
+
+The band has no height until a finger gives it one. Session 139 put a 70% floor under the task rows, and a permanent strip at the top comes straight out of that.
+
+**One refresh does everything you can be behind on**, writes first so the server's older answer never lands over a local change: the task outbox and pull, the hand-off queue and pull, then the block list.
+
+**And a pull that failed says so.** The gesture promises the screen now matches the server. Silence reads as "nothing changed", which is a different statement and an untrue one.
+
+### The reason a task came back
+
+`declinedOn` was written in session 159. **Nothing ever called it.**
+
+The rule existed, the reason travelled in the row, the database kept it, and the last step to your eyes was never taken.
+
+That is the same shape as yesterday's missing delete, one session apart. Both were invisible to the checks for the same reason: a check can prove `declinedOn` finds the right offer, and cannot prove that anybody asks it.
+
+**The lesson is not about either function. An exported rule with no caller does nothing, and nothing in this project reports one.** Worth a check of its own, and I have not built one — it would need to read the import graph, which is a different kind of check from everything here.
+
+The row now carries a second line: `Raj sent it back — no time this week`. Second, not instead of: `card_reason` says why the task is in this list, this says why it is still yours. A live offer silences it, because a task re-sent to somebody else is about where the work is now. An empty reason stops the sentence after the name, since a decline with no reason is allowed on purpose.
+
+The advanced panel shows the same sentence with `Give to someone else…` beside it.
+
+**Shell 79. No migration, no Kotlin, no APK.** Ten checks green, and the pull gesture was exercised against a DOM in the build container.
