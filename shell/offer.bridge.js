@@ -107,7 +107,23 @@ function db() {
  * nowhere near the boot path: every caller of this is already a press that
  * needs the server, so a question the server answers costs nothing extra.
  */
+/**
+ * THIS ACCOUNT'S ID, WITH NO NETWORK (session 162, his first report).
+ *
+ * It was `account.current()`, which is `getUser()` and is a network call, so
+ * an offline press was refused with "Not signed in, so there is nobody to send
+ * it from" while the account screen said the opposite. The account screen was
+ * right.
+ *
+ * `knownId()` reads what this app wrote down when a real session last arrived.
+ * `current()` is kept as a fallback for the one case the local answer cannot
+ * cover — a first sign-in on a device that has never stored anything — and is
+ * only reached when the local answer is empty, so it never costs an offline
+ * press a single millisecond.
+ */
 async function ownerId() {
+  const local = account.knownId();
+  if (local) return local;
   const who = await account.current().catch(() => null);
   return who?.id ?? null;
 }
@@ -147,7 +163,49 @@ export async function refresh() {
   }
   for (const o of await cache.all()) if (!seen.has(o.id)) await cache.remove(o.id);
   window.dispatchEvent(new CustomEvent("cascade:offers-changed"));
-  return { ok: true, count: (data ?? []).length };
+  // AND THE HALF OF THE HANDOVER THAT WAS NEVER WRITTEN (session 162).
+  const gone = await collect();
+  return { ok: true, count: (data ?? []).length, gone: gone.length };
+}
+
+/**
+ * THE TASK LEAVES THIS LIST WHEN SOMEBODY ELSE HAS TAKEN IT.
+ *
+ * His report: "the task doesn't vanish when the other account accepts." It
+ * never did. Session 159's table said `accept -> task deleted` and no code
+ * deleted it, because the only device that CAN is this one — `cascade_task` is
+ * locked to one owner, which is the decision the whole feature rests on — and
+ * nothing on this device was watching for the answer coming back.
+ *
+ * SO IT HAPPENS ON THE PULL, where the answer arrives, and not at a press. The
+ * accept is somebody else's press on another phone; there is no moment here to
+ * hang it on but the one where the offer is read.
+ *
+ * `handedOver` decides which, and it refuses every state but `accepted`: a
+ * declined or withdrawn offer means the work came BACK, and deleting then
+ * would destroy the task this feature exists to protect.
+ */
+export async function collect() {
+  const owner = await ownerId();
+  if (!owner) return [];
+  const taken = O.handedOver(await known(), owner, await tasks.all());
+  const done = [];
+  for (const t of taken) {
+    try {
+      await tasks.remove(t.taskId);
+      done.push(t);
+    } catch (e) {
+      // LEFT ON THE LIST RATHER THAN HALF-REMOVED. The offer still says
+      // accepted, so the next pull tries again; a task that failed to delete
+      // is a task still owed, which is the safe side of this to be wrong on.
+      console.warn("offers: handed-over task not removed —", e?.message ?? e);
+    }
+  }
+  if (done.length) {
+    window.dispatchEvent(new CustomEvent("cascade:store-changed", { detail: "handed-over" }));
+    window.dispatchEvent(new CustomEvent("cascade:handed-over", { detail: done }));
+  }
+  return done;
 }
 
 /**
@@ -362,11 +420,28 @@ export function initOffers() {
   sweep();
   people.refreshBlocks().catch(() => {});
 
-  // A SIGNAL COMING BACK IS WHAT THE QUEUE WAS WAITING FOR. `online` is the
-  // browser's own event and it is the only thing in this file that is allowed
-  // to start work nobody pressed.
+  // THE SAME THREE TRIGGERS THE TASK PULL HAS, AND FOR THE SAME REASON
+  // (session 162, his report: "task doesn't appear in another account when
+  // sent if the app isn't restarted — same for withdraw").
+  //
+  // It had `online` and `cascade:signed-in` and nothing else, which meant the
+  // offers were read ONCE PER LAUNCH. An offer arriving while the app sat open
+  // was invisible until it was closed and reopened, and so was a withdraw —
+  // the sender taking it back left it sitting in the recipient's strip, which
+  // is worse than the arrival being late because it is an offer that can still
+  // be accepted after it was cancelled.
+  //
+  // `store.sync.js` has pulled on these three since it was written: a signal
+  // returning, the tab being looked at again, and a minute passing. Offers are
+  // the same kind of row and were given one of the three. The number is stated
+  // here rather than shared, because a config member for it would be a version
+  // bump for a value neither file reads from the other.
   window.addEventListener("online", sweep);
   window.addEventListener("cascade:signed-in", sweep);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") sweep();
+  });
+  setInterval(sweep, 60_000);
 
   window.addEventListener("cascade:tasks-written", async () => {
     // A task that came from an offer and has just been closed owes its sender

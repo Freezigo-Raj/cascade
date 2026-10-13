@@ -16,6 +16,7 @@ import {
   declinedOn, acceptedId, TRAVELS, payloadOf, makeOffer, asOffered, changesIn,
   readEdit, fromOffer, canAnswer, canWithdraw, waitingFor, givenAway,
   OFFER_COLUMNS, LOCAL_ONLY, offerRow, sendState, queued, canCancelSend,
+  handedOver,
 } from "./offer.js";
 import {
   BLOCK_COLUMNS, blockRow, makeBlock, isBlocked, hasHistory, verdictFor,
@@ -384,6 +385,54 @@ console.log("\nTHE TWO LISTS.");
       "and a card touched by a send just now leads the list, ahead of older offers");
   say(suggestions([], me, [{ email: "named@example.com", name: "New", used_at: null }])[0].email === "named@example.com",
       "a card he named but has never used still appears, because he named it on purpose");
+}
+
+// ======================================= session 162, the task actually leaves
+//
+// His report: "the task doesn't vanish when the other account accepts."
+//
+// IT NEVER DID. Session 159's own table said `accept -> task deleted` and
+// nothing deleted it. The recipient cannot — `cascade_task` is one owner and
+// four policies, which is the decision the whole feature rests on — so the
+// sender's device is the only one that can, and nothing on it was watching.
+//
+// THE ASSERTIONS THAT MATTER HERE ARE THE NEGATIVE ONES. This function deletes
+// a task. Firing it on a declined or a withdrawn offer would destroy the work
+// the feature exists to protect, and the state test is the only thing
+// standing between those two cases.
+{
+  const t = task();
+  const here = [t];
+  const base = {
+    id: "o", from_owner: MINE, from_email: "me@example.com",
+    to_email: "raj@example.com", task_id: t.id, created_at: NOW, updated_at: NOW,
+  };
+
+  const taken = handedOver([{ ...base, state: "accepted" }], MINE, here);
+  say(taken.length === 1 && taken[0].taskId === t.id,
+      "a task somebody has accepted is named for removal");
+  say(taken[0].to === "raj@example.com", "and it says who took it, for the line the screen shows");
+
+  // EVERY OTHER STATE LEAVES IT ALONE. A declined or withdrawn offer means the
+  // work came BACK.
+  for (const state of ["offered", "declined", "withdrawn"]) {
+    say(handedOver([{ ...base, state }], MINE, here).length === 0,
+        `a ${state} offer never removes the task — the work came back`);
+  }
+
+  say(handedOver([{ ...base, state: "accepted", from_owner: THEIRS }], MINE, here).length === 0,
+      "somebody else's offer never removes anything of his");
+  say(handedOver([{ ...base, state: "accepted", pending: true }], MINE, here).length === 0,
+      "and an offer still waiting for a signal cannot have been accepted by anybody");
+  say(handedOver([{ ...base, state: "accepted" }], MINE, []).length === 0,
+      "a task already gone is not named twice, so running the sweep again does nothing");
+  say(handedOver([{ ...base, state: "accepted", task_id: "other" }], MINE, here).length === 0,
+      "and an offer pointing at a task that is not here is left alone");
+
+  // THE RECIPIENT'S SIDE OF THE SAME ROW. He accepted it, so his own copy must
+  // not be swept away by the offer he answered.
+  say(handedOver([{ ...base, state: "accepted" }], THEIRS, here).length === 0,
+      "the recipient's device never removes anything from this — only the sender's does");
 }
 
 console.log(failed ? `\nCHECK OFFERS: ${failed} FAILED\n` : "\nCHECK OFFERS: PASS\n");

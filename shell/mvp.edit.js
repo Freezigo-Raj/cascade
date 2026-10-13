@@ -63,6 +63,10 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
   // Offers this device last saw, so the hand-off row can draw with no signal.
   // Refreshed on the one event that changes them.
   let offers = [];
+  // WHO A BRAND-NEW TASK IS BEING GIVEN TO, set by the sheet and read by
+  // `commit()` after the task exists (session 162, his request: "the hand it
+  // over should also show when creating new task").
+  let giveTo = null;
   let contactCards = [];
   let myAddress = "";
   // Read once per mount and refreshed on the two events that change them. Not
@@ -425,17 +429,42 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
     // to be undefined in storage.
     const task = { ...out.task, ...advancedFields(), calendar_uid: "", calendar_detached: false };
     await tasks.add(task);
+
+    // AND HAND IT OVER, IF THAT IS WHAT THE PRESS WAS (session 162).
+    //
+    // THE ORDER IS SHEET, THEN ADD, THEN SEND, and the sheet having already
+    // happened is why this reads as an afterthought here. Adding first and
+    // asking second would leave an unwanted task behind every cancel; asking
+    // first costs nothing when he changes his mind. By the time this line runs
+    // he has named somebody, so the task exists for one reason.
+    //
+    // It rides `commit()` rather than doing its own add so that the duplicate
+    // dialog, the clash dialog and the return to the list are the ones every
+    // other capture gets. A second add path would be a second set of warnings
+    // to keep in step.
+    const giving = giveTo;
+    giveTo = null;
+    let handed = "";
+    if (giving) {
+      const out2 = await OFFERS.send(task, giving.to, giving.name);
+      const who = giving.name || giving.to;
+      if (!out2.ok) handed = ` \u00b7 not sent: ${out2.why}`;
+      else if (out2.queued) handed = ` \u00b7 goes to ${who} when there is a signal`;
+      else handed = ` \u00b7 given to ${who}`;
+      offers = await OFFERS.known();
+    }
+
     const said = when(out);
     unbind();
     await reload();
-    say(`Added "${task.title}"` + (said ? ` \u00b7 ${said}` : ""));
+    say(`Added "${task.title}"` + (said ? ` \u00b7 ${said}` : "") + handed);
     // ADDING IS FINISHED WHEN IT IS ADDED (session 125, his words: "once a
     // task is added, go back to home screen"). A save has returned since
     // session 112 and an add did not, so the one press that happens twenty
     // times a day left you looking at an empty box with a toast about a task
     // you could no longer see. In the wide layout `onBack` is null and the
     // list is already beside the box, so nothing moves there.
-    if (onBack) onBack(`Added "${task.title}"` + (said ? ` \u00b7 ${said}` : ""));
+    if (onBack) onBack(`Added "${task.title}"` + (said ? ` \u00b7 ${said}` : "") + handed);
   }
 
 
@@ -513,8 +542,31 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
    * table owns, which is the thing `canSend`'s comment refuses.
    */
   function handOff() {
-    const task = heldTask ?? all.find((t) => t.id === boundId);
-    if (!task) return null;
+    const task = boundId ? (heldTask ?? all.find((t) => t.id === boundId)) : null;
+
+    // A CAPTURE (session 162). There is no task yet, so there is nothing to
+    // ask `canSend` about and nothing to label. The press asks who, keeps the
+    // answer, and hands it to `commit()`, which adds the task and then sends
+    // it — so the hand-off inherits the duplicate warning, the clash warning
+    // and the return to the list that every other capture gets.
+    if (!task) {
+      return {
+        state: "none",
+        send: async () => {
+          const out = read();
+          if (!out || !out.task?.title) {
+            say("Write the task first, then say who it is for.");
+            return;
+          }
+          const mod = await import(`./mvp.offers.js${v}`).catch(() => null);
+          if (!mod) { say("The hand-off sheet is not on this phone yet. Open it once with signal."); return; }
+          const picked = await mod.sendSheet(out.task, offers, myAddress);
+          if (!picked) return;
+          giveTo = picked;
+          await commit();
+        },
+      };
+    }
     const where = OFFER.sendState(task, offers);
     const label = OFFER.offerLabel(task, offers, contactCards);
     const after = async (out, said) => {
@@ -693,9 +745,11 @@ export function mountEdit(root, { taskId = null, onBack, inPanel = false } = {})
         durationTapped: durTap !== null,
         firmness: firmTap,
         notes: notesText,
-        // ABSENT ON A CAPTURE, on purpose: `boundId` is null until a row has
-        // been opened, and a task that does not exist cannot be given away.
-        handOff: boundId ? handOff() : null,
+        // DRAWN ON A CAPTURE TOO (session 162, his request). It was absent
+        // there because a task that does not exist cannot be given away —
+        // true, and the answer is to create it, not to hide the control. On a
+        // capture the press asks who first and adds the task second.
+        handOff: handOff(),
       }, {
         setRepeat: (r) => { repeat = r; paint(); },
         setDuration: (n) => { durTap = n; paint(); },

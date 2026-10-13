@@ -54,6 +54,10 @@ const no = (error) => ({ ok: false, error: readable(error) });
  * will not let the question be asked at all.
  */
 const SIGNED_IN = "cascade:signed-in";
+// WHO, in this app's own namespace. Session 162: the id is local knowledge in
+// exactly the way the signed-in flag is, and asking the network for it stopped
+// an offline hand-off from being queued at all.
+const WHO = "cascade:who";
 
 function remember(on) {
   try {
@@ -61,6 +65,48 @@ function remember(on) {
     else window.localStorage.removeItem(SIGNED_IN);
   } catch {
     // A browser refusing storage is not a reason to fail a sign-in.
+  }
+}
+
+/**
+ * WHO, WRITTEN DOWN (session 162, his report: "not signed in, nobody to send
+ * it from, if I send it when offline — it says account signed in on the
+ * account page").
+ *
+ * The account page was right and the send was wrong. `current()` is
+ * `getUser()`, which is a NETWORK CALL, and `from_owner` is checked by the
+ * insert policy so the send would not go without it. Offline it answered null
+ * and the press was refused — while `knownEmail()`, two functions below, had
+ * been getting this right since session 141 and only kept the address.
+ *
+ * SESSION 141'S LESSON, APPLIED ONE FIELD SHORT. "Being signed in is local
+ * knowledge. The network is needed to SYNC, never to remember who you are."
+ * The id is the same kind of fact as the address and is now kept the same way,
+ * in this app's own namespace rather than by reading the shape of Supabase's
+ * storage.
+ *
+ * IN STORAGE AND NOT ONLY IN MEMORY, which is the part `knownEmail()` still
+ * gets wrong: `lastSession` is empty on a cold offline start, because
+ * `sessionSoon()` falls back to a marker carrying no user. Written down, both
+ * answers survive the app being closed.
+ */
+function rememberWho(user) {
+  try {
+    if (user?.id) {
+      window.localStorage.setItem(WHO, JSON.stringify({ id: user.id, email: user.email ?? "" }));
+    } else {
+      window.localStorage.removeItem(WHO);
+    }
+  } catch {
+    // Same as above: storage being refused is not a reason to fail anything.
+  }
+}
+
+function whoWritten() {
+  try {
+    return JSON.parse(window.localStorage.getItem(WHO) || "null");
+  } catch {
+    return null;
   }
 }
 
@@ -120,7 +166,7 @@ export const account = {
     if (!db) return null;
     const { data } = await db.auth.getSession();
     remember(Boolean(data?.session));
-    if (data?.session) lastSession = data.session;
+    if (data?.session) { lastSession = data.session; rememberWho(data.session.user); }
     return data?.session ?? null;
   },
 
@@ -135,7 +181,20 @@ export const account = {
    * there, let alone the alarms not being armed.
    */
   knownEmail() {
-    return lastSession?.user?.email ?? "";
+    return lastSession?.user?.email ?? whoWritten()?.email ?? "";
+  },
+
+  /**
+   * THE SIGNED-IN USER'S ID, with no await and no network — the companion to
+   * `knownEmail()` and the fix for session 162's first report.
+   *
+   * `from_owner` on an offer is checked by the insert policy, so a hand-off
+   * cannot be made without it; asking `getUser()` for it meant a hand-off
+   * could not be QUEUED without a network either, which is the opposite of
+   * what queueing is for.
+   */
+  knownId() {
+    return lastSession?.user?.id ?? whoWritten()?.id ?? "";
   },
 
   /**
@@ -261,6 +320,11 @@ export const account = {
     // this device carrying on from its cache, and the cache is emptied either
     // way — a sign-out that half happened is the one state worth ruling out.
     remember(false);
+    // AND WHO. A signed-out phone that still remembered the id would offer to
+    // hand work over as somebody who is no longer here, and the insert policy
+    // would refuse it at the server — which is the right answer arriving in
+    // the wrong place.
+    rememberWho(null);
     lastSession = null;
     soon = null;
     const { error } = await db.auth.signOut();

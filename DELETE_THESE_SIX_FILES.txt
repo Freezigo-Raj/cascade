@@ -1,86 +1,47 @@
-CASCADE — SESSION 161. TWO MIGRATIONS NOW, AND HAND-OFFS ARE LIVE.
+CASCADE — SESSION 162. FIVE FIXES ON TOP OF 77.
 
-== 1. YOU HAVE RUN migrate_offers.sql. RUN THE SECOND ONE. ==
+All five of the things you reported. Nothing new was added.
 
-  Supabase -> SQL Editor -> paste the whole of cascade\migrate_blocks.sql -> Run
+  1. Giving a task away with no signal said "not signed in". It did not need
+     the network to know who you are and now does not ask it.
+  2. The task did not leave your list when the other account accepted it. It
+     never did — that half was never written. It does now, on the next pull.
+  3. Nothing arrived in the other account without restarting the app. Offers
+     were read once per launch. They now read on a returning signal, on the app
+     being looked at again, and every minute, which is what the task list has
+     always done.
+  4. A withdraw had the same problem, and was worse: the offer stayed
+     acceptable on their side after you took it back.
+  5. `Hand it over` now appears when you are WRITING a new task. The press asks
+     who first, then adds the task, then sends it — so cancelling the sheet
+     leaves no task behind.
 
-One small table, cascade_block, with three policies. Safe to run twice. It is
-what lets you refuse tasks from an address.
-
-WHY A SECOND FILE AND NOT AN EDIT TO THE FIRST: you already had
-migrate_offers.sql with its checksum quoted and could have pasted it at any
-moment. Editing a file somebody may be about to run is how a half-run
-migration happens.
-
-TO CHECK BOTH IN ONE GO, one query, one row (the SQL editor only ever shows the
-LAST statement's result, which is why you saw guard_trigger on its own):
-
-  select
-    (select count(*) from information_schema.columns
-       where table_schema='public' and table_name='cascade_offer')   as offer_cols,
-    (select count(*) from information_schema.columns
-       where table_schema='public' and table_name='cascade_block')   as block_cols,
-    (select count(*) from pg_policies
-       where schemaname='public' and tablename='cascade_offer')      as offer_policies,
-    (select count(*) from pg_policies
-       where schemaname='public' and tablename='cascade_block')      as block_policies;
-
-  Expect  18, 4, 4, 3.
+NO MIGRATION, NO KOTLIN, NO APK. Shell 78. If you have run both migrations
+already there is nothing to do but deploy.
 
 
-== 2. HANDING A TASK TO SOMEBODY — IT IS PRESSABLE NOW ==
+== WHAT TO CHECK, IN ORDER ==
 
-WHERE: open a task (tap the row), open the advanced panel, top row,
-`Hand it over`.
+  1. Header reads build 78.
+  2. Airplane mode on. Open a task, panel, `Give to someone...`, type an
+     address, `Give it`.
+     IT MUST NOT SAY "not signed in". It should say:
+       `Waiting for a signal. It goes to <name> when there is one, and the task
+        is still yours.`
+  3. Airplane mode off. Within about a minute the row should change from
+     `Sending to ...` to `Offered to ...`.
+  4. On the other account, WITHOUT restarting: within about a minute the strip
+     should appear at the foot of the list. Accept it.
+  5. Back on your phone, WITHOUT restarting: within about a minute the task
+     should disappear from your list, and appear under Account -> Given away as
+     `<name> has it`.
+  6. Send another, then press Withdraw. On the other account, without
+     restarting, it should vanish from the strip within about a minute.
+  7. New task: type a line, open the panel, `Give to someone...`. It should ask
+     who BEFORE the task is added. Cancel the sheet and no task should appear.
 
-  Give to someone...   a sheet asking who. Addresses you have used before sit
-                       above the box as chips, with your name for them.
-  Cancel the send      shown instead while it is waiting for a signal
-  Withdraw             shown instead once it has gone
-
-WHAT TO TRY, in order:
-
-  1. Open a task, panel, `Give to someone...`. Type an address and a name for
-     them. Press `Give it`.
-     WITH SIGNAL it says: `Given to Raj. It leaves your list when they take it.`
-     WITH NO SIGNAL it says: `Waiting for a signal. It goes to Raj when there
-     is one, and the task is still yours.`
-     THOSE TWO SENTENCES ARE THE POINT. A queued hand-off has told nobody
-     anything, and the task has not moved.
-  2. Turn airplane mode on, give a task away, look at the row. It should read
-     `Sending to ...` and offer Cancel. Turn airplane mode off. Within a few
-     seconds it should read `Offered to ...` and offer Withdraw.
-  3. Account screen -> `Given away`. Anything still waiting for a signal is at
-     the top under `Waiting for a signal`, dashed, with Cancel.
-  4. On the OTHER account: when something is sent to them, a strip appears at
-     the FOOT OF THE MAIN LIST — only when something is waiting. Tapping it
-     lists what arrived; tapping one of those opens it.
-  5. On that screen: `Take it` adds it to their list. `Send it back` asks for a
-     reason (four quick ones and a box; empty is allowed). The box labelled
-     `Change it before you take it` takes a whole line like the capture box —
-     type `fix the chiller tuesday 4pm` and it shows what that would change,
-     before accepting.
-  6. `Never from this address` blocks the sender and refuses that offer too.
-     Undo it in Account -> Handing work over -> Unblock.
-
-BLOCKING, AND WHAT THE OTHER PERSON SEES:
-
-  somebody you have swapped a task with before  ->  it comes back DECLINED
-  a first-time sender                           ->  nothing. It never arrives
-                                                    and they are never told
-
-The second one still sits in your Blocked list, so a block on the wrong address
-can be found and undone.
-
-FINISHING A TASK YOU HAVE GIVEN AWAY pulls it back automatically. If they
-accepted a second before you did, their accept stands and you get one line
-saying so — they hold a copy and that cannot be un-given.
-
-TWO THINGS YOU NEED BEFORE ANY OF STEP 4 ONWARDS: a second Cascade account
-signed in somewhere, and an email on both accounts. Check with
-`select id, email from auth.users;` — a row with no email can never be sent to.
-
-NO KOTLIN AND NO APK IN THIS SESSION. Shell 77.
+A MINUTE IS THE NUMBER. Nothing here is instant and nothing should need a
+restart. If something needs a restart, tell me which step.
 
 ===========================================================================
 

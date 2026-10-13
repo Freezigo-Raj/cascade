@@ -444,6 +444,42 @@ export function waitingFor(offers, who) {
     .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
 }
 
+/**
+ * TASKS THAT HAVE BEEN TAKEN BY SOMEBODY ELSE AND ARE STILL ON THIS LIST
+ * (session 162, his report: "the task doesn't vanish when the other account
+ * accepts").
+ *
+ * IT NEVER DID, AND THAT WAS A HOLE RATHER THAN A SLIP. Session 159's own
+ * table said `accept -> task deleted`, and nothing deleted it. The recipient
+ * CANNOT: `cascade_task` is locked to one owner by four policies, which is the
+ * decision the whole feature rests on. So the only device that can remove the
+ * sender's row is the sender's, and the only thing it can act on is the offer
+ * coming back marked `accepted`.
+ *
+ * ASKED OF THE OFFERS AND THE STORE TOGETHER, so it is a fact and not a
+ * guess: an offer that says accepted, whose task is still here, under an owner
+ * who is this person. Anything else is somebody else's row or already gone.
+ *
+ * THE DELETE IS SAFE TO REPEAT AND SAFE TO LOSE. Running twice finds nothing
+ * the second time; failing leaves the task on the list and the offer still
+ * saying accepted, so the next pull tries again. The one thing it must never
+ * do is fire on a state that is not `accepted` — a declined or withdrawn offer
+ * means the work came back, and deleting then would destroy the task this
+ * feature exists to protect.
+ */
+export function handedOver(offers, ownerId, tasks) {
+  const here = new Set((tasks ?? []).map((t) => t?.id).filter(Boolean));
+  const out = [];
+  for (const o of offers ?? []) {
+    if (!o || o.state !== "accepted") continue;
+    if (o.from_owner !== ownerId) continue;
+    if (o.pending) continue;
+    if (!here.has(o.task_id)) continue;
+    out.push({ taskId: o.task_id, offerId: o.id, to: o.to_email });
+  }
+  return out;
+}
+
 /** Everything this person has handed over and not had back. His answer 1. */
 export function givenAway(offers, ownerId) {
   return (offers ?? [])

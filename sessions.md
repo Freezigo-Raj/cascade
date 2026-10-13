@@ -4554,3 +4554,57 @@ Session 159 held them back because a screen is the layer no check can reach — 
 That rule is about what the project **carries**, not about building blind. The screens were mounted against a DOM in the build container as a throwaway script: nine mounts, four hand-off states and the six repeat chips, exercised once. The script is not in the zip.
 
 **Shell 77. `migrate_blocks.sql` must be run. No Kotlin, no APK.** Ten checks green.
+
+---
+
+## Session 162 — 12 October 2026
+
+**His five reports, an hour after build 77 went up.** All five real. Two were holes rather than slips.
+
+### 1. "Not signed in, nobody to send it from" offline
+
+The account screen said signed in. **The account screen was right.**
+
+`ownerId()` asked `account.current()`, which is `getUser()` — a network call. `from_owner` is checked by the insert policy, so a hand-off cannot be made without it, and I had made the one thing a **queued** hand-off cannot do without the one thing it asked the network for.
+
+Session 141 settled this already: *being signed in is local knowledge; the network is needed to sync, never to remember who you are.* `knownEmail()` has honoured that since. It kept the address and not the id.
+
+`knownId()` is its companion, and both now write to storage rather than sitting in memory — `lastSession` is empty on a cold offline start, because `sessionSoon()` falls back to a marker carrying no user.
+
+### 2. The task did not leave his list when the other account accepted
+
+**It never did.** Session 159's own table in this file said `accept → task deleted`. Nothing deleted it.
+
+The recipient cannot: `cascade_task` is one owner and four policies, which is the decision the whole feature rests on. So the sender's device is the only one that can — and nothing on it was watching for the offer coming back marked `accepted`.
+
+`handedOver` names them on the pull, because the accept is somebody else's press on another phone and there is no moment on this one to hang it on.
+
+**A table in a session note is not an implementation.** This survived ten green checks because every one of them asked about the offer and none asked about the task.
+
+`handedOver` is a delete, so its check leads with the negative cases — a declined or withdrawn offer means the work came **back**, and firing then would destroy the task the feature exists to protect.
+
+### 3 and 4. Nothing arrived without a restart, withdraw included
+
+The offers were read **once per launch**: `online` and `cascade:signed-in`, nothing else.
+
+`store.sync.js` has pulled on three triggers since it was written. Offers had one of them.
+
+| Trigger | Tasks | Offers, before | Offers, now |
+|---|---|---|---|
+| signal returns | yes | yes | yes |
+| tab looked at again | yes | **no** | yes |
+| a minute passing | yes | **no** | yes |
+
+The withdraw case is the worse one: the sender taking it back left it sitting in the recipient's strip, still acceptable.
+
+### 5. Hand it over on a new task
+
+His request. The answer to "a task that does not exist cannot be given away" is to **create** it, not to hide the control.
+
+Order is **sheet, then add, then send**. Asking first costs nothing when he changes his mind; adding first would leave an unwanted task behind every cancel. It rides `commit()`, so the duplicate warning, the clash warning and the return to the list are the ones every capture gets.
+
+### What this session is really about
+
+Five reports in an hour, from one person opening the app. Twenty-five sessions of my own checking found none of them. Two were in a table I wrote myself and never implemented.
+
+**Shell 78. No migration, no Kotlin, no APK.** Ten checks green.

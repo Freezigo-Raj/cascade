@@ -35,7 +35,10 @@ const nowIso = () => {
   return local.toISOString().slice(0, 19) + sign + p(Math.trunc(off / 60)) + ":" + p(off % 60);
 };
 
+/** This account's id, local first. The reason is on `offer.bridge.js`'s copy. */
 async function ownerId() {
+  const local = account.knownId();
+  if (local) return local;
   const who = await account.current().catch(() => null);
   return who?.id ?? null;
 }
